@@ -8,7 +8,9 @@
 #include "current_cfw.hpp"
 #include "fs.hpp"
 #include "main_frame.hpp"
+#include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_logger.hpp"
 #include "warning_page.hpp"
 
 namespace i18n = brls::i18n;
@@ -25,6 +27,7 @@ int main(int argc, char* argv[])
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
+    ryazhenka::branding::applyBranding();
 
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
     if (languageFile.find("language") != languageFile.end())
@@ -55,6 +58,8 @@ int main(int argc, char* argv[])
 
     brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
     brls::Logger::debug("Start");
+    ryazhenka::log::init();
+    ryazhenka::log::info("Ryazhenka Updater started");
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
         brls::Application::pushView(new MainFrame());
