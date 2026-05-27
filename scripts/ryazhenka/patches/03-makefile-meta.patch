@@ -1,0 +1,19 @@
+diff --git a/Makefile b/Makefile
+index 7ac3ff0..9c7ddc6 100644
+--- a/Makefile
++++ b/Makefile
+@@ -20,10 +20,10 @@ SOURCES		:=	source
+ RESOURCES	:=	resources
+ DATA		:=	data
+ INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
+-APP_TITLE	:=	All-in-One Switch Updater
+-APP_AUTHOR	:=	HamletDuFromage
+-APP_VERSION :=	2.23.3
+-TARGET		:=	$(notdir $(CURDIR))
++APP_TITLE	:=	Ryazhenka Updater
++APP_AUTHOR	:=	Dimasick-git
++APP_VERSION :=	2.23.3-ryazhenka.1
++TARGET		:=	ryazhenka-updater
+ 
+ ROMFS				:=	resources
+ BOREALIS_PATH		:=	lib/borealis

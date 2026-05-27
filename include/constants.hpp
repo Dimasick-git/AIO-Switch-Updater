@@ -13,31 +13,31 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
 constexpr const char MARIKO_PAYLOAD_PATH[] = "/payload.bin";
 constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
 
-constexpr const char CHANGELOG_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases";
+constexpr const char CHANGELOG_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Updater/releases";
 
-constexpr const char APP_URL[] = "https://github.com/HamletDuFromage/aio-switch-updater/releases/latest/download/aio-switch-updater.zip";
-constexpr const char TAGS_INFO[] = "https://api.github.com/repos/HamletDuFromage/aio-switch-updater/releases/latest";
+constexpr const char APP_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/ryazhenka-updater.zip";
+constexpr const char TAGS_INFO[] = "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest";
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
-constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/nx-links.json";
+constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/nx-links.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
 
-constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/firmwares.json";
+constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/firmwares.json";
 constexpr const char FIRMWARE_FILENAME[] = "/config/aio-switch-updater/firmware.zip";
 constexpr const char FIRMWARE_PATH[] = "/firmware/";
 
-constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/bootloaders.json";
+constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/bootloaders.json";
 constexpr const char BOOTLOADER_FILENAME[] = "/config/aio-switch-updater/bootloader.zip";
 
-constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/cfws.json";
-constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/sxos.json";
+constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/cfws.json";
+constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/sxos.json";
 constexpr const char AMS_FILENAME[] = "/config/aio-switch-updater/ams.zip";
 
-constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/hekate.json";
+constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/hekate.json";
 
-constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/payloads.json";
+constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/payloads.json";
 
 constexpr const char DEEPSEA_META_JSON[] = "https://builder.teamneptune.net/meta.json";
 constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/build/";
@@ -75,9 +75,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
 constexpr const char TITLES_PATH[] = "titles/";
 
 constexpr const char COLOR_PICKER_URL[] = "https://git.io/jcpicker";
-constexpr const char JC_COLOR_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/aio-switch-updater/master/jc_profiles.json";
+constexpr const char JC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/jc_profiles.json";
 constexpr const char JC_COLOR_PATH[] = "/config/aio-switch-updater/jc_profiles.json";
-constexpr const char PC_COLOR_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/aio-switch-updater/master/pc_profiles.json";
+constexpr const char PC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/pc_profiles.json";
 constexpr const char PC_COLOR_PATH[] = "/config/aio-switch-updater/pc_profiles.json";
 
 constexpr const char PAYLOAD_PATH[] = "/payloads/";
