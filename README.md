@@ -1,128 +1,177 @@
-# AIO-Switch-Updater
-![hbappstore](https://img.shields.io/endpoint?url=https%3A%2F%2Frunkit.io%2Fhomlet%2Fhbappstore-shieldsio%2Fbranches%2Fmaster%3Furl%3Dhttps%3A%2F%2Fswitchbru.com%2Fappstore%2Frepo.json%26name%3Daio-switch-updater)
-![releases](https://img.shields.io/github/downloads/HamletDuFromage/AIO-switch-updater/total)
-[![Build AIO-switch-updater](https://github.com/HamletDuFromage/aio-switch-updater/actions/workflows/main.yml/badge.svg)](https://github.com/HamletDuFromage/aio-switch-updater/actions/workflows/main.yml)
-![tag](https://img.shields.io/github/v/release/HamletDuFromage/AIO-switch-updater)
-![GitHub](https://img.shields.io/github/license/HamletDuFromage/aio-switch-updater)
+# Ryazhenka Updater
 
-<a href="https://liberapay.com/HamletDuFromage/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
-[![btc](https://img.shields.io/badge/BTC-1CoFc1bY5AHLP6Noe1zmqnJnp7ZWBxyo79-yellow?logo=bitcoin)](https://github.com/HamletDuFromage/aio-switch-updater#like-the-app)
-[![eth](https://img.shields.io/badge/ETH-0xf68f568e21a15934e0e9a6949288c3ca009140ba-purple?logo=ethereum)](https://github.com/HamletDuFromage/aio-switch-updater#like-the-app)
-[![xmr](https://img.shields.io/badge/XMR-88wjCuhHX3oNhVpEdYeUx3LvrkdTvcTHx7v7L5fQpjCg7QiAReJUVR4LPase5Byj2UhdVdLtvysJaXTFKq2EnuvuLjvQMGL-orange?logo=monero)](https://github.com/HamletDuFromage/aio-switch-updater#like-the-app)
+[![Build](https://github.com/Dimasick-git/AIO-Switch-Updater/actions/workflows/build.yml/badge.svg)](https://github.com/Dimasick-git/AIO-Switch-Updater/actions/workflows/build.yml)
+[![Sync upstream](https://github.com/Dimasick-git/AIO-Switch-Updater/actions/workflows/sync-upstream.yml/badge.svg)](https://github.com/Dimasick-git/AIO-Switch-Updater/actions/workflows/sync-upstream.yml)
+[![Release](https://img.shields.io/github/v/release/Dimasick-git/AIO-Switch-Updater)](https://github.com/Dimasick-git/AIO-Switch-Updater/releases)
+[![License](https://img.shields.io/github/license/Dimasick-git/AIO-Switch-Updater)](LICENSE)
 
-<!-- ([![ko-fi](https://img.shields.io/badge/ko--fi-buy%20me%20a%20coffee-ff69b4)](https://ko-fi.com/hamletdufromage)) -->
+> Homebrew updater for the **Ряженка** (Ryazhenka) custom-firmware pack for Nintendo Switch.
 
-<p align="center">
-<img src = "https://user-images.githubusercontent.com/61667930/93691188-7833f000-fad1-11ea-866d-42e19be54425.jpg"\><br>
-</p>
+---
 
-A Nintendo Switch homebrew app to download and update CFWs, FWs and cheat codes. Supports Atmosphère, ReiNX and SXOS.
+## English (short)
 
-Works on **unpatched** (Erista) and **patched** (v2/Mariko) Switches.
+Ryazhenka Updater is a Russian-localized fork of
+[HamletDuFromage/aio-switch-updater](https://github.com/HamletDuFromage/aio-switch-updater)
+adapted for the Ryazhenka CFW ecosystem under
+[github.com/Dimasick-git](https://github.com/Dimasick-git). It downloads and
+updates Atmosphère, Hekate, sigpatches, payloads, firmware images, and the
+full Ryazhenka pack directly on the console.
 
-## How to install
-Copy the `aio-switch-updater/` directory to `/switch/` on your sdcard.
+**Differences from upstream**
 
-## Features
-### ⬦ Update CFW
-- Update the Atmosphère Switch Custom Firmware. AIO-Switch-Updater uses a custom RCM payload to finalise the install as it can't be performed while HOS is running.
-  - If you would like to preserve additional files or directories, write their path (one line each) in `/config/aio-switch-updater/preserve.txt` and they won't be overwritten when updating.
-  - Place [this file](https://github.com/HamletDuFromage/aio-switch-updater/blob/master/copy_files.txt) in `/config/aio-switch-updater/copy_files.txt` in order to have specific copy operations performed after each download. This is mainly meant for users with trinkets who want payloads automatically copied to a directory.
+- Default interface language is **Russian**; English and 11 other locales
+  remain selectable.
+- Source URLs point at Dimasick-git infrastructure
+  (`Dimasick-git/nx-links` for the JSON catalogue, `Dimasick-git/Ryzhenka` for
+  the full pack archive).
+- Self-update target is this fork's GitHub Releases.
+- New "Install Ryazhenka pack" entry downloads the latest pack as
+  `sd_card.zip` (rolled out in upcoming releases).
+- A daily GitHub Actions job pulls upstream changes and replays the
+  Ryazhenka-specific patches so we stay close to upstream master.
 
-### ⬦ Update Hekate/Payload
-- Download and update Hekate, as well as a selection of RCM payloads
+**Build (devkitPro required)**
 
-### ⬦ Custom Downloads
-- A custom Atmosphère url can be entered in [this file](https://github.com/HamletDuFromage/aio-switch-updater/blob/master/custom_packs.json). Once moved to `/config/aio-switch-updater/custom_packs.json`, it will show on the `Custom Download` menu. This can be used to support third-party packs through AIO-Switch-Updater. Packs whose name starts by `[PACK]` won't prompt for a Hekate download.
-- Non-Atmosphère downloads can also be added in the `misc` category.
-
-### ⬦ Download firmwares
-- Download firmware files to `/firmware` that can then be installed using DayBreak.
-
-### ⬦ Download cheats
-- Download and extract daily-updated cheat code. The program will only extract cheat codes for the games you own. By default, this homebrew will overwrite the existing cheats. If you have your own cheat files that you'd like to keep as is, you can turn off cheat updates for specific titles in `Tools→Cheat Menu`.
-- Download cheat sheets from [Cheat Slips](https://www.cheatslips.com/). 
-- Download individual cheat codes from the `GBAtemp.net` database.
-
-## Extras (in the `Tools` tab)
-- Reboot to specific payload.
-- Consult games with missing updates.
-- Change software color scheme of Joy-Cons. Additional color profiles can be found in the releases and should be copied to `config/aio-switch-updater/jc_profiles.json`. Use [this webpage](https://hamletdufromage.github.io/JC-color-picker/JCpicker.html) to generate your own profiles.
-- Change software color scheme of Pro Controllers (has to be paired as Player 1). Additional color profiles can be found in the releases and should be copied to `config/aio-switch-updater/pc_profiles.json`.
-- Consult installed cheat codes.
-- Launch the Switch's web browser.
-- Edit internet settings (DNS, IP address, MTU, etc). Add you own configs to `config/aio-switch-updater/internet.json`. You can find a template in the root of the repo.
-- Tabs can be hidden through the `Hide tabs` menu, and more entries can be hidden by manually editing [`config/aio-switch-updater/hide_tabs.json`](https://github.com/HamletDuFromage/aio-switch-updater/blob/master/hide_tabs.json).
-
-## Screenshots
-<details><summary>Expand to view the screenshots</summary>
-
-![ams_tab](https://user-images.githubusercontent.com/61667930/193625554-ad9a8a5a-72ad-462e-95d9-94979c9750ac.jpg)
-![cheats_tab](https://user-images.githubusercontent.com/61667930/193625551-9912210a-c99c-434f-ab5e-b468a698ddcf.jpg)
-![individual_cheats](https://user-images.githubusercontent.com/61667930/193625547-18bff50c-1985-4ce5-aadf-2394fa5d29ca.jpg)
-![tools_tab](https://user-images.githubusercontent.com/61667930/193625542-4722690a-a86f-48d1-8935-367b16f355f8.jpg)
-
-</details>
-
-## Build
-
-<details><summary>Expand to view the build instructions</summary>
-
-You need to have installed devkitPro and devkitARM in order to compile this project.
-
-Install the required dependencies:
 ```bash
-$ sudo (dkp-)pacman -Sy
-```
-```bash
-$ sudo (dkp-)pacman -S  switch-glfw \
-                        switch-curl \
-                        switch-glad \
-                        switch-glm \
-                        switch-mbedtls \
-                        switch-zlib \
-                        devkitarm-rules
-```
-Use [`switch-ex-curl`](https://github.com/eXhumer/switch-ex-curl) instead of `switch-curl` to use this app with an invalid SSL certificate.
-
-Clone the repository
-```bash
-$ git clone --recursive https://github.com/HamletDuFromage/aio-switch-updater
-$ cd aio-switch-updater
+git clone --recursive https://github.com/Dimasick-git/AIO-Switch-Updater
+cd AIO-Switch-Updater
+make -C aiosu-forwarder
+make -j"$(nproc)"
+bash scripts/ryazhenka/pack-release.sh   # produces ryazhenka-updater.zip
 ```
 
-Compile 
+Licensed under **GPL-3.0**. All upstream attributions are preserved — see
+[LICENSE](LICENSE) and the *Special thanks* section below.
+
+---
+
+## Русский
+
+**Ряженка Updater** — это форк
+[AIO-Switch-Updater](https://github.com/HamletDuFromage/aio-switch-updater)
+адаптированный под кастомную прошивку **Ряженка** и под русскоязычное
+сообщество Nintendo Switch.
+
+### Что внутри
+
+- 🇷🇺 Интерфейс на русском по умолчанию (другие 12 языков доступны через меню).
+- 🥛 Источники прошивок и CFW указывают на инфраструктуру
+  [Dimasick-git](https://github.com/Dimasick-git): свой каталог
+  `nx-links`, релизы пака `Ryzhenka`, форки Atmosphere, Sys-clk, EdiZon,
+  FPSLocker, Fizeau и тд.
+- 🔄 Ежедневная авто-синхронизация с апстримом: новые версии и багфиксы
+  HamletDuFromage подтягиваются без участия человека, наши правки
+  переприменяются через `git apply` (см. `scripts/ryazhenka/`).
+- 🛠 Самообновление приложения через GitHub Releases этого репозитория.
+
+### Установка
+
+1. Скачайте `ryazhenka-updater.zip` со страницы
+   [Releases](https://github.com/Dimasick-git/AIO-Switch-Updater/releases).
+2. Распакуйте архив в корень SD-карты — внутри лежит структура
+   `switch/aio-switch-updater/aio-switch-updater.nro`.
+3. Запустите через hbmenu. При первом запуске откроется предупреждение,
+   подтвердите чтобы продолжить.
+
+### Возможности (из апстрима, перевод сохранён)
+
+- **Обновить Atmosphere** — скачивает свежий релиз и финализирует установку
+  через специальный RCM payload.
+- **Hekate / Payloads** — обновляет загрузчик, скачивает RCM payload'ы.
+- **Сторонние загрузки (Custom Downloads)** — добавляйте свои ссылки в
+  `/config/aio-switch-updater/custom_packs.json`.
+- **Прошивки** — скачивает архивы firmware, которые потом ставятся через
+  Daybreak.
+- **Читы** — читы из GBAtemp и Cheat Slips, обновляются ежедневно.
+- **Инструменты**: смена цвета Joy-Con / Pro Controller, настройки сети,
+  скрытие вкладок, веб-браузер, перезагрузка в payload.
+
+### Установка пака Ряженки
+
+Доступно через одноимённую вкладку (раскатывается в ближайших релизах).
+Скачивается полный архив пака с
+[`Dimasick-git/Ryzhenka/releases/latest`](https://github.com/Dimasick-git/Ryzhenka/releases/latest)
+и распаковывается в корень SD.
+
+### Экосистема Ряженки
+
+| Компонент | Репозиторий |
+|---|---|
+| Сам пак Ряженки | <https://github.com/Dimasick-git/Ryzhenka> |
+| Atmosphere (форк) | <https://github.com/Dimasick-git/Atmosphere> |
+| Sys-clk с русским переводом | <https://github.com/Dimasick-git/Sys-clk> |
+| Ryazhahand-Overlay | <https://github.com/Dimasick-git/Ryazhahand-Overlay> |
+| FPSLocker | <https://github.com/Dimasick-git/FPSLocker> |
+| EdiZon | <https://github.com/Dimasick-git/EdiZon> |
+| Fizeau | <https://github.com/Dimasick-git/Fizeau> |
+| ovlSysmodules | <https://github.com/Dimasick-git/ovlSysmodules> |
+| Mission-Control | <https://github.com/Dimasick-git/Mission-Control> |
+| Ryazha-Status-Monitor | <https://github.com/Dimasick-git/Ryazha-Status-Monitor> |
+| Ryazhenkabestcfw-Tuner | <https://github.com/Dimasick-git/Ryazhenkabestcfw-Tuner> |
+| Telegram канал | <https://t.me/Ryazhenkacfw> |
+
+### Сборка из исходников
+
+Нужен установленный
+[devkitPro / devkitARM](https://devkitpro.org/wiki/Getting_Started):
+
 ```bash
-$ cd aiosu-forwarder
-$ make
-$ cd ..
-$ make
+sudo (dkp-)pacman -Sy
+sudo (dkp-)pacman -S switch-glfw switch-curl switch-glad switch-glm \
+                    switch-mbedtls switch-zlib devkitarm-rules
+git clone --recursive https://github.com/Dimasick-git/AIO-Switch-Updater
+cd AIO-Switch-Updater
+make -C aiosu-forwarder
+make -j"$(nproc)"
+bash scripts/ryazhenka/pack-release.sh
 ```
 
-</details>
+В CI используется контейнер `devkitpro/devkita64:latest` — см.
+[`.github/workflows/build.yml`](.github/workflows/build.yml).
 
-## Contribute
+### Как мы синхронизируемся с апстримом
 
-PRs and suggestions are encouraged! If you wish to help with the localization of the app, you can translate the files in `resources/i18n/`. To easily find the non-translated strings and translate them, you may use `localizer.py` (e.g. `python localizer.py -r resources//i18n//en-US//menus.json -w resources//i18n//fr//menus.json`).
+Раз в сутки workflow [`sync-upstream.yml`](.github/workflows/sync-upstream.yml)
+делает следующее:
 
-## Disclaimer
-I do not own, host nor distribute any of the files that can be downloaded with this homebrew tool. At the owner's request, I will immediately remove the ability to download any problematic file.
+1. Подтягивает `HamletDuFromage/aio-switch-updater@master`.
+2. Сливает в наш `main` через `git merge --no-ff`.
+3. Перенакладывает патчи из `scripts/ryazhenka/patches/` (через
+   `apply-patches.sh` с reverse-check — идемпотентно).
+4. Если был конфликт merge или патч не наложился — создаётся issue с
+   лейблом `upstream-conflict` и человек разруливает вручную.
 
-## Special thanks
-- [natinusala](https://github.com/natinusala) for the Borealis library.
-- [tiansongyu](https://github.com/tiansongyu) for bringing support for multi-language and for his Chinese translation.
-- [yyoossk](https://github.com/yyoossk) for the Japanese locale.
-- [sergiou87](https://github.com/sergiou87) for the Spanish locale.
-- [pedruhb](https://github.com/pedruhb) for the Brazilian locale.
-- [AD2076](https://github.com/AD2076) for the Italian locale.
-- [qazrfv1234](https://github.com/qazrfv1234) for the Traditional Chinese locale.
-- [Nota Inutilis](https://github.com/NotaInutilis/) for the French locale.
-- [Team Neptune](https://github.com/Team-Neptune) whose rcm code I used.
-- [fennectech](https://github.com/fennectech) for helping test the app and providing suggestions.
-- Iliak for [Cheat Slips](https://www.cheatslips.com/).
+Подробности — в [`docs/sync-policy.md`](docs/sync-policy.md).
 
-### Like the app?
-- Liberapay : <a href="https://liberapay.com/HamletDuFromage/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
-- BTC: 1CoFc1bY5AHLP6Noe1zmqnJnp7ZWBxyo79
-- ETH: 0xf68f568e21a15934e0e9a6949288c3ca009140ba
-- Monero (XMR): 88wjCuhHX3oNhVpEdYeUx3LvrkdTvcTHx7v7L5fQpjCg7QiAReJUVR4LPase5Byj2UhdVdLtvysJaXTFKq2EnuvuLjvQMGL
+### Контрибьютинг
+
+PR и идеи приветствуются. Перед коммитом проверьте:
+
+- `bash scripts/ryazhenka/apply-patches.sh --check` — патчи на месте.
+- `python3 scripts/ryazhenka/check_i18n.py` — ru покрывает en-US.
+- Сборка проходит в CI (`build.yml`).
+
+Если хотите помочь с переводами — правьте `resources/i18n/ru/menus.json`,
+шаблоны в `resources/i18n/en-US/menus.json`.
+
+### Лицензия
+
+GPL-3.0, как и апстрим. Полный текст — [LICENSE](LICENSE).
+
+### Благодарности
+
+Этот форк не существовал бы без огромной работы апстрим-команды:
+
+- [HamletDuFromage](https://github.com/HamletDuFromage) — оригинальный
+  AIO-Switch-Updater.
+- [natinusala](https://github.com/natinusala) — UI-фреймворк borealis.
+- [tiansongyu](https://github.com/tiansongyu) — мультиязычность и
+  китайский перевод.
+- [yyoossk](https://github.com/yyoossk), [sergiou87](https://github.com/sergiou87),
+  [pedruhb](https://github.com/pedruhb), [AD2076](https://github.com/AD2076),
+  [qazrfv1234](https://github.com/qazrfv1234),
+  [Nota Inutilis](https://github.com/NotaInutilis/) — локализации.
+- [Team Neptune](https://github.com/Team-Neptune) — RCM код.
+- [fennectech](https://github.com/fennectech) — тесты и фидбек.
+- Iliak — [Cheat Slips](https://www.cheatslips.com/).
