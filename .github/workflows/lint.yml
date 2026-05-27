@@ -1,0 +1,23 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  i18n:
+    name: i18n keyset parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Russian translations cover English keyset
+        run: python3 scripts/ryazhenka/check_i18n.py
+
+  patches:
+    name: Ryazhenka patches applicable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: bash scripts/ryazhenka/apply-patches.sh --check

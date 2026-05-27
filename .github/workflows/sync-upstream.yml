@@ -1,0 +1,76 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge HamletDuFromage/aio-switch-updater@master
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          submodules: false
+
+      - name: Configure git identity
+        run: |
+          git config user.name "Dimasick-git"
+          git config user.email "caspiilauluxg@outlook.com"
+
+      - name: Run sync script
+        id: sync
+        env:
+          UPSTREAM_REMOTE: upstream
+          UPSTREAM_BRANCH: master
+          UPSTREAM_URL: https://github.com/HamletDuFromage/aio-switch-updater.git
+        run: |
+          set +e
+          bash scripts/ryazhenka/sync-upstream.sh
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Push merged main
+        if: steps.sync.outputs.rc == '0'
+        run: |
+          if git log origin/main..HEAD --oneline | grep -q .; then
+            git push origin main
+          else
+            echo "no new commits to push"
+          fi
+
+      - name: Open issue on merge conflict
+        if: steps.sync.outputs.rc == '10'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Upstream sync: merge conflict on $(date -u +%Y-%m-%d)" \
+            --label upstream-conflict \
+            --body "Daily sync from HamletDuFromage/aio-switch-updater@master could not auto-merge into main. Resolve locally:\n\n\`\`\`\ngit fetch upstream\ngit merge upstream/master\n# resolve conflicts\nbash scripts/ryazhenka/apply-patches.sh\ngit push origin main\n\`\`\`"
+
+      - name: Open issue on patch re-application failure
+        if: steps.sync.outputs.rc == '11'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Upstream sync: Ryazhenka patches failed to re-apply on $(date -u +%Y-%m-%d)" \
+            --label upstream-conflict \
+            --body "Upstream merged cleanly but scripts/ryazhenka/patches/*.patch could not be re-applied. The affected patch likely needs regeneration."
+
+      - name: Fail on unexpected error
+        if: steps.sync.outputs.rc != '0' && steps.sync.outputs.rc != '10' && steps.sync.outputs.rc != '11'
+        run: |
+          echo "sync-upstream.sh exited with ${{ steps.sync.outputs.rc }}"
+          exit 1

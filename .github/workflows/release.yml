@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. v2.23.3-ryazhenka.1)"
+        required: true
+
+jobs:
+  release:
+    name: Build and publish GitHub Release
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Mark workspace as safe for git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/lib/borealis"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/TegraExplorer"
+
+      - name: Verify Ryazhenka patches are intact
+        run: bash scripts/ryazhenka/apply-patches.sh --check
+
+      - name: Install host dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential zip python3
+
+      - name: Build aiosu-forwarder
+        run: make -C aiosu-forwarder -f Makefile
+
+      - name: Build ryazhenka-updater.nro
+        run: make -j"$(nproc)"
+
+      - name: Pack release zip
+        run: bash scripts/ryazhenka/pack-release.sh
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ryazhenka-updater.nro
+            ryazhenka-updater.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
