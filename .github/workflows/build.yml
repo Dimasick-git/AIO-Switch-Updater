@@ -51,14 +51,14 @@ jobs:
         run: bash scripts/ryazhenka/pack-release.sh
 
       - name: Upload .nro artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ryazhenka-updater-nro
           path: ryazhenka-updater.nro
           if-no-files-found: error
 
       - name: Upload release zip artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ryazhenka-updater-zip
           path: Ryazhenka_AIO.zip
