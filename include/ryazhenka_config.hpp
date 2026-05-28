@@ -51,6 +51,20 @@ inline constexpr char kPackUrl[] =
     "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/ryazhenka-pack.zip";
 inline constexpr char kPackFilename[] = "/config/aio-switch-updater/ryazhenka-pack.zip";
 
+// Sigpatches staleness check — points at the Ryazhenka pack release feed
+// because the pack bundles the freshest sigpatches we ship.
+inline constexpr char kSigpatchesReleasesUrl[] =
+    "https://api.github.com/repos/Dimasick-git/Ryzhenka/releases/latest";
+inline constexpr char kSigpatchesRemoteCachePath[] =
+    "/config/aio-switch-updater/.sigpatches_remote.json";
+inline constexpr int  kSigpatchesStaleThresholdDays = 14;
+inline constexpr int  kSigpatchesCacheTtlHours      = 6;
+
+// Behaviour flags (kept here so they ship with a default even if config.json
+// has not been touched yet).
+inline constexpr bool kAutoHealthAfterActions = true;
+inline constexpr int  kDashboardSampleHz      = 1;
+
 // Localization
 inline constexpr std::string_view kDefaultLanguage = "ru";
 

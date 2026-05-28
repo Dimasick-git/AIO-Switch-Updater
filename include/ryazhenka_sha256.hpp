@@ -66,6 +66,29 @@ inline std::string ofFile(const std::string& path) {
     return toHex(digest);
 }
 
+inline std::string ofBuffer(const std::string& data) {
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    if (mbedtls_sha256_starts(&ctx, /*is224=*/0) != 0) {
+        mbedtls_sha256_free(&ctx);
+        return {};
+    }
+    if (mbedtls_sha256_update(
+            &ctx,
+            reinterpret_cast<const unsigned char*>(data.data()),
+            data.size()) != 0) {
+        mbedtls_sha256_free(&ctx);
+        return {};
+    }
+    std::array<std::uint8_t, 32> digest{};
+    if (mbedtls_sha256_finish(&ctx, digest.data()) != 0) {
+        mbedtls_sha256_free(&ctx);
+        return {};
+    }
+    mbedtls_sha256_free(&ctx);
+    return toHex(digest);
+}
+
 inline bool matches(const std::string& path, const std::string& expected_hex) {
     if (expected_hex.size() != 64) return false;
     const std::string actual = ofFile(path);

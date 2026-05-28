@@ -12,6 +12,8 @@
 #include <string>
 #include <system_error>
 
+#include "ryazhenka_sigpatches.hpp"
+
 namespace ryazhenka::health {
 
 namespace {
@@ -74,6 +76,7 @@ std::vector<Issue> run() {
                            "/atmosphere/exefs_patches пуст — установите sigpatches"});
         } else {
             out.push_back({Severity::ok, "sigpatches", std::to_string(n) + " патчей"});
+            out.push_back(sigpatches::evaluate());
         }
     }
 
