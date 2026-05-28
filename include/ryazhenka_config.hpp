@@ -20,7 +20,7 @@ inline constexpr std::string_view kRepoUrl = "https://github.com/Dimasick-git/AI
 
 // Self-update endpoints
 inline constexpr char kAppUrl[] =
-    "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/ryazhenka-updater.zip";
+    "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/Ryazhenka_AIO.zip";
 inline constexpr char kTagsInfoUrl[] =
     "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest";
 inline constexpr char kChangelogUrl[] =

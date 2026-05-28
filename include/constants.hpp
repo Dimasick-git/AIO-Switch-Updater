@@ -15,7 +15,7 @@ constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
 
 constexpr const char CHANGELOG_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Updater/releases";
 
-constexpr const char APP_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/ryazhenka-updater.zip";
+constexpr const char APP_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/Ryazhenka_AIO.zip";
 constexpr const char TAGS_INFO[] = "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest";
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 

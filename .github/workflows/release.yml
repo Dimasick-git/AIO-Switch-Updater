@@ -53,6 +53,6 @@ jobs:
         with:
           files: |
             ryazhenka-updater.nro
-            ryazhenka-updater.zip
+            Ryazhenka_AIO.zip
           generate_release_notes: true
           fail_on_unmatched_files: true

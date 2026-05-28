@@ -11,7 +11,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
 SRC_NRO="ryazhenka-updater.nro"
-RELEASE_ZIP="ryazhenka-updater.zip"
+RELEASE_ZIP="Ryazhenka_AIO.zip"
 STAGING="switch/aio-switch-updater"
 
 if [[ ! -f "$SRC_NRO" ]]; then

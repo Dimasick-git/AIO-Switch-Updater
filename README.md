@@ -38,7 +38,7 @@ git clone --recursive https://github.com/Dimasick-git/AIO-Switch-Updater
 cd AIO-Switch-Updater
 make -C aiosu-forwarder
 make -j"$(nproc)"
-bash scripts/ryazhenka/pack-release.sh   # produces ryazhenka-updater.zip
+bash scripts/ryazhenka/pack-release.sh   # produces Ryazhenka_AIO.zip
 ```
 
 Licensed under **GPL-3.0**. All upstream attributions are preserved — see
@@ -67,7 +67,7 @@ Licensed under **GPL-3.0**. All upstream attributions are preserved — see
 
 ### Установка
 
-1. Скачайте `ryazhenka-updater.zip` со страницы
+1. Скачайте `Ryazhenka_AIO.zip` со страницы
    [Releases](https://github.com/Dimasick-git/AIO-Switch-Updater/releases).
 2. Распакуйте архив в корень SD-карты — внутри лежит структура
    `switch/aio-switch-updater/aio-switch-updater.nro`.

@@ -1,18 +1,19 @@
 diff --git a/source/main.cpp b/source/main.cpp
-index 842c971..b0c8f76 100644
+index 842c971..ac123c7 100644
 --- a/source/main.cpp
 +++ b/source/main.cpp
-@@ -8,6 +8,9 @@
+@@ -8,6 +8,10 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
 +#include "ryazhenka_branding.hpp"
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_logger.hpp"
++#include "ryazhenka_version_check.hpp"
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -24,12 +27,13 @@ int main(int argc, char* argv[])
+@@ -24,12 +28,13 @@ int main(int argc, char* argv[])
          brls::Logger::error("Unable to init Borealis application");
          return EXIT_FAILURE;
      }
@@ -27,12 +28,13 @@ index 842c971..b0c8f76 100644
  
          //appletInitializeGamePlayRecording();
  
-@@ -54,6 +58,8 @@ int main(int argc, char* argv[])
+@@ -54,6 +59,9 @@ int main(int argc, char* argv[])
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
 +    ryazhenka::log::init();
 +    ryazhenka::log::info("Ryazhenka Updater started");
++    ryazhenka::version_check::scheduleBackgroundCheck();
  
      if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
          brls::Application::pushView(new MainFrame());

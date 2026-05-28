@@ -1,0 +1,118 @@
+{
+  "_comment": "List of Dimasick-git Ryazhenka tools that the updater checks for updates against GitHub releases. Each entry: name (display), repo (owner/name), local_path (expected .nro path on SD), api_url (GitHub releases/latest endpoint). The updater compares NACP display_version from local_path with the tag_name returned by api_url.",
+  "tools": [
+    {
+      "name": "Ryazhenka Updater (self)",
+      "repo": "Dimasick-git/AIO-Switch-Updater",
+      "local_path": "/switch/aio-switch-updater/aio-switch-updater.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest"
+    },
+    {
+      "name": "FPSLocker",
+      "repo": "Dimasick-git/FPSLocker",
+      "local_path": "/switch/FPSLocker/FPSLocker.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/FPSLocker/releases/latest"
+    },
+    {
+      "name": "EdiZon",
+      "repo": "Dimasick-git/EdiZon",
+      "local_path": "/switch/EdiZon/EdiZon.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/EdiZon/releases/latest"
+    },
+    {
+      "name": "Fizeau",
+      "repo": "Dimasick-git/Fizeau",
+      "local_path": "/switch/Fizeau/Fizeau.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Fizeau/releases/latest"
+    },
+    {
+      "name": "SwitchWave",
+      "repo": "Dimasick-git/SwitchWave",
+      "local_path": "/switch/SwitchWave/SwitchWave.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/SwitchWave/releases/latest"
+    },
+    {
+      "name": "ReverseNX-RT",
+      "repo": "Dimasick-git/ReverseNX-RT",
+      "local_path": "/switch/ReverseNX-RT/ReverseNX-RT.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/ReverseNX-RT/releases/latest"
+    },
+    {
+      "name": "Mission-Control",
+      "repo": "Dimasick-git/Mission-Control",
+      "local_path": "/switch/Mission-Control/Mission-Control.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Mission-Control/releases/latest"
+    },
+    {
+      "name": "Ryazha Status Monitor",
+      "repo": "Dimasick-git/Ryazha-Status-Monitor",
+      "local_path": "/switch/Ryazha-Status-Monitor/Ryazha-Status-Monitor.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazha-Status-Monitor/releases/latest"
+    },
+    {
+      "name": "Ryazhenkabestcfw-Tuner",
+      "repo": "Dimasick-git/Ryazhenkabestcfw-Tuner",
+      "local_path": "/switch/Ryazhenkabestcfw-Tuner/Ryazhenkabestcfw-Tuner.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazhenkabestcfw-Tuner/releases/latest"
+    },
+    {
+      "name": "PPSSPP",
+      "repo": "Dimasick-git/PPSSPP",
+      "local_path": "/switch/PPSSPP/PPSSPP.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/PPSSPP/releases/latest"
+    },
+    {
+      "name": "ovlSysmodules",
+      "repo": "Dimasick-git/ovlSysmodules",
+      "local_path": "/switch/ovlSysmodules/ovlSysmodules.nro",
+      "api_url": "https://api.github.com/repos/Dimasick-git/ovlSysmodules/releases/latest"
+    }
+  ],
+  "overlays": [
+    {
+      "name": "Ryazhahand-Overlay",
+      "repo": "Dimasick-git/Ryazhahand-Overlay",
+      "local_path": "/switch/.overlays/ovlmenu.ovl",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazhahand-Overlay/releases/latest"
+    },
+    {
+      "name": "Status Monitor Overlay",
+      "repo": "Dimasick-git/Status-Monitor-Overlay",
+      "local_path": "/switch/.overlays/Status-Monitor-Overlay.ovl",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Status-Monitor-Overlay/releases/latest"
+    }
+  ],
+  "sysmodules": [
+    {
+      "name": "Sys-clk (RU)",
+      "repo": "Dimasick-git/Sys-clk",
+      "local_path": "/atmosphere/contents/00FF0000636C6BFF/exefs.nsp",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Sys-clk/releases/latest"
+    },
+    {
+      "name": "nx-ovlloader",
+      "repo": "Dimasick-git/nx-ovlloader",
+      "local_path": "/atmosphere/contents/420000000007E51A/exefs.nsp",
+      "api_url": "https://api.github.com/repos/Dimasick-git/nx-ovlloader/releases/latest"
+    },
+    {
+      "name": "RCU (Ryazha Clock Utility)",
+      "repo": "Dimasick-git/RCU",
+      "local_path": "/atmosphere/contents/00FF0000526B7975/exefs.nsp",
+      "api_url": "https://api.github.com/repos/Dimasick-git/RCU/releases/latest"
+    },
+    {
+      "name": "RyazhaTune",
+      "repo": "Dimasick-git/RyazhaTune",
+      "local_path": "/atmosphere/contents/00FF000052547531/exefs.nsp",
+      "api_url": "https://api.github.com/repos/Dimasick-git/RyazhaTune/releases/latest"
+    }
+  ],
+  "pack": {
+    "name": "Ryazhenka pack",
+    "repo": "Dimasick-git/Ryzhenka",
+    "asset_filename": "Ryazhenka_AIO.zip",
+    "api_url": "https://api.github.com/repos/Dimasick-git/Ryzhenka/releases/latest",
+    "marker_file": "/atmosphere/package3"
+  }
+}

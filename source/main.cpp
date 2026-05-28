@@ -11,6 +11,7 @@
 #include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_version_check.hpp"
 #include "warning_page.hpp"
 
 namespace i18n = brls::i18n;
@@ -60,6 +61,7 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
     ryazhenka::log::init();
     ryazhenka::log::info("Ryazhenka Updater started");
+    ryazhenka::version_check::scheduleBackgroundCheck();
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
         brls::Application::pushView(new MainFrame());

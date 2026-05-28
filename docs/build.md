@@ -21,7 +21,7 @@ make -j"$(nproc)"
 
 # Упаковка в релизный zip
 bash scripts/ryazhenka/pack-release.sh
-# → ryazhenka-updater.zip с layout switch/aio-switch-updater/...
+# → Ryazhenka_AIO.zip с layout switch/aio-switch-updater/...
 ```
 
 ## Через docker
