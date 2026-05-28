@@ -3,6 +3,55 @@
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
 версии — [SemVer](https://semver.org) с суффиксом `-ryazhenka.N`.
 
+## [Unreleased] — Live dashboard + операционные модули
+
+### Added
+
+- **Status tab** — новая первая вкладка приложения с живой панелью
+  показателей. 2×2 сетка графиков: CPU °C, Skin °C, Battery %, SD
+  free %. NanoVG-отрисовка, обновление ~10 Гц, кольцевой буфер на 120
+  семплов (2 минуты истории). Sampler-поток (`psm`/`ts` + filesystem)
+  стартует в `willAppear` и останавливается в `willDisappear`. См.
+  `docs/dashboard.md`.
+- **Sysmodule Manager** — `Tools → Управление sysmodules`: список всех
+  модулей в `/atmosphere/contents/<tid>/` с toggle-ом по
+  `flags/boot2.flag`. Семь системно-критичных TID помечены `[SYS]` и
+  toggle для них запрещён. Имена читаются из `toolbox.json`. См.
+  `docs/sysmodule-manager.md`.
+- **Factory Restore** — `Tools → Восстановление /atmosphere/`: список
+  снимков `/aio-backup/atmosphere-*` (новые сверху, размер и
+  количество файлов рядом). Восстановление двухфазное: защитный
+  pre-snapshot текущего /atmosphere/ → wipe + recursive copy. См.
+  `docs/factory-restore.md`.
+- **Sigpatches staleness detector** — в `About → Состояние CFW`
+  появилась строка `sigpatches актуальность` со сравнением даты
+  локальных патчей и `published_at` последнего релиза пака. WARN если
+  разница ≥ 14 дней; кэш JSON на 6 часов.
+- **Auto health re-check** — после установки пака, toggle sysmodule и
+  factory restore автоматически прогоняется `health::run()` и при
+  WARN/ERROR показывается `Application::notify` toast.
+- **Dashboard quick-link** — `Tools → Открыть монитор системы`.
+- Документация: `docs/dashboard.md`, `docs/sysmodule-manager.md`,
+  `docs/factory-restore.md`. Дополнения в `docs/TROUBLESHOOTING.md`.
+
+### Internal
+
+- Новые модули: `ryazhenka_metrics`, `ryazhenka_chart_view`,
+  `ryazhenka_status_tab`, `ryazhenka_sysmodule_manager`,
+  `ryazhenka_sigpatches`, `ryazhenka_factory_restore`.
+- `ryazhenka::sha256::ofBuffer` для in-memory хэширования.
+- `ryazhenka::health::runAndNotifyIfDegraded` — централизованный
+  post-action hook.
+- В `ryazhenka_config.hpp`: `kSigpatchesReleasesUrl`,
+  `kSigpatchesRemoteCachePath`, `kSigpatchesStaleThresholdDays`,
+  `kSigpatchesCacheTtlHours`, `kAutoHealthAfterActions`,
+  `kDashboardSampleHz`.
+- Новый patch `scripts/ryazhenka/patches/07-main-frame.patch` —
+  StatusTab регистрируется первым табом в MainFrame.
+- i18n: +16 ключей (status_tab, status_header, sysmodule_*,
+  open_dashboard, factory_restore, restore_*); parity ru ↔ en-US
+  держится на 228 ключах.
+
 ## [Unreleased] — Ryazhenka fork bootstrap
 
 ### Added
