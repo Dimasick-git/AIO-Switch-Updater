@@ -17,6 +17,8 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_diagnostics.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_status_tab.hpp"
+#include "ryazhenka_sysmodule_manager.hpp"
 #include "ryazhenka_system_info.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -138,6 +140,51 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         util::showDialogBoxInfo("menus/common/all_done"_i18n + std::string("\n") + std::to_string(removed));
     });
     cleanupBackups->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* sysmoduleManager = new brls::ListItem("menus/ryazhenka/sysmodule_manager"_i18n);
+    sysmoduleManager->getClickEvent()->subscribe([](brls::View* view) {
+        const auto entries = ryazhenka::sysmodule::list();
+        if (entries.empty()) {
+            util::showDialogBoxInfo("menus/ryazhenka/sysmodule_empty"_i18n);
+            return;
+        }
+        brls::List* list = new brls::List();
+        for (const auto& e : entries) {
+            std::string label = e.display_name;
+            if (e.critical) label += "  [SYS]";
+            label += "  (" + e.title_id + ")";
+            brls::ToggleListItem* toggle = new brls::ToggleListItem(
+                label,
+                e.enabled,
+                "",
+                "menus/ryazhenka/sysmodule_on"_i18n,
+                "menus/ryazhenka/sysmodule_off"_i18n);
+            toggle->setHeight(LISTITEM_HEIGHT);
+            ryazhenka::sysmodule::Entry captured = e;
+            toggle->getClickEvent()->subscribe([captured](brls::View* v) {
+                auto* t = dynamic_cast<brls::ToggleListItem*>(v);
+                if (!t) return;
+                if (captured.critical) {
+                    util::showDialogBoxInfo("menus/ryazhenka/sysmodule_critical"_i18n);
+                    return;
+                }
+                const bool desired = t->getToggleState();
+                const bool ok = ryazhenka::sysmodule::setEnabled(captured, desired);
+                if (!ok) {
+                    util::showDialogBoxInfo("menus/ryazhenka/sysmodule_failed"_i18n);
+                }
+            });
+            list->addView(toggle);
+        }
+        brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, list, "menus/ryazhenka/sysmodule_hint"_i18n, "");
+    });
+    sysmoduleManager->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* openDashboard = new brls::ListItem("menus/ryazhenka/open_dashboard"_i18n);
+    openDashboard->getClickEvent()->subscribe([](brls::View* view) {
+        brls::Application::pushView(new ryazhenka::StatusTab());
+    });
+    openDashboard->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
@@ -280,6 +327,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);
+    this->addView(sysmoduleManager);
+    this->addView(openDashboard);
     this->addView(cleanupBackups);
     this->addView(showLog);
     this->addView(diagDump);

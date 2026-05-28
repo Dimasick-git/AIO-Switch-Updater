@@ -24,7 +24,15 @@
     "free_space_low": "Недостаточно свободного места на SD-карте. Освободите хотя бы 500 МБ и попробуйте снова.",
     "cleanup_backups": "Очистить старые резервные копии",
     "status_tab": "Состояние",
-    "status_header": "Состояние системы"
+    "status_header": "Состояние системы",
+    "sysmodule_manager": "Управление sysmodules",
+    "sysmodule_empty": "В /atmosphere/contents/ ничего не найдено",
+    "sysmodule_on": "Вкл",
+    "sysmodule_off": "Выкл",
+    "sysmodule_critical": "Это системно важный модуль. Переключение запрещено.",
+    "sysmodule_failed": "Не удалось изменить состояние модуля. См. лог.",
+    "sysmodule_hint": "Переключает флаг boot2.flag. Действует после перезагрузки.",
+    "open_dashboard": "Открыть монитор системы"
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

@@ -24,7 +24,15 @@
     "free_space_low": "Not enough free space on the SD card. Free at least 500 MB and try again.",
     "cleanup_backups": "Clean up old backups",
     "status_tab": "Status",
-    "status_header": "System health"
+    "status_header": "System health",
+    "sysmodule_manager": "Sysmodule manager",
+    "sysmodule_empty": "No sysmodules found under /atmosphere/contents/",
+    "sysmodule_on": "On",
+    "sysmodule_off": "Off",
+    "sysmodule_critical": "This is a system-critical module. Toggling refused.",
+    "sysmodule_failed": "Could not change sysmodule state. See log.",
+    "sysmodule_hint": "Toggle the flag boot2.flag. Changes take effect on next reboot.",
+    "open_dashboard": "Open system monitor"
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
