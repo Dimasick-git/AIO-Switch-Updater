@@ -9,7 +9,7 @@ jobs:
     name: i18n keyset parity
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check Russian translations cover English keyset
         run: python3 scripts/ryazhenka/check_i18n.py
 
@@ -17,7 +17,7 @@ jobs:
     name: Ryazhenka patches applicable
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - run: bash scripts/ryazhenka/apply-patches.sh --check
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install cppcheck
         run: sudo apt-get update -y && sudo apt-get install -y cppcheck
       - name: Run cppcheck (warnings only, non-blocking)
@@ -50,7 +50,7 @@ jobs:
     name: Validate YAML workflows and JSON resources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install pyyaml
         run: pip3 install pyyaml
       - name: Validate YAML workflows
