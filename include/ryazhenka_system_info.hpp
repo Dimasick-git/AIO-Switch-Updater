@@ -26,4 +26,9 @@ Snapshot collect();
 // Single-line human summary, useful for the SD log on startup.
 std::string formatOneLine(const Snapshot& s);
 
+// Quick free-space probe without taking a full snapshot. Returns true if the
+// SD card has at least `min_bytes` of free space available. False on any
+// filesystem error (better to be conservative and warn the user).
+bool hasEnoughFreeSpace(std::uint64_t min_bytes);
+
 } // namespace ryazhenka::sysinfo

@@ -93,4 +93,11 @@ std::string formatOneLine(const Snapshot& s) {
     return line;
 }
 
+bool hasEnoughFreeSpace(std::uint64_t min_bytes) {
+    std::error_code ec;
+    const auto space = std::filesystem::space("/", ec);
+    if (ec) return false;
+    return space.available >= min_bytes;
+}
+
 } // namespace ryazhenka::sysinfo

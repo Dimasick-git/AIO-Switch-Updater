@@ -13,9 +13,11 @@
 #include "hide_tabs_page.hpp"
 #include "net_page.hpp"
 #include "payload_page.hpp"
+#include "ryazhenka_backup.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_diagnostics.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_system_info.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -95,11 +97,28 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     brls::ListItem* installPack = new brls::ListItem("menus/ryazhenka/install_pack"_i18n);
     installPack->getClickEvent()->subscribe([](brls::View* view) {
+        constexpr std::uint64_t kMinFreeBytes = 500ull * 1024ull * 1024ull;
+        if (!ryazhenka::sysinfo::hasEnoughFreeSpace(kMinFreeBytes)) {
+            util::showDialogBoxInfo("menus/ryazhenka/free_space_low"_i18n);
+            return;
+        }
         const std::string packUrl(ryazhenka::kPackUrl);
         const std::string confirmText = std::string("menus/ryazhenka/install_pack_confirm"_i18n) + "\n\n" + packUrl;
         brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
         stagedFrame->setTitle("menus/ryazhenka/install_pack"_i18n);
         stagedFrame->addStage(new ConfirmPage(stagedFrame, confirmText));
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/ryazhenka/backup_before_pack"_i18n, []() {
+            if (ryazhenka::backup::isAutoBackupEnabled()) {
+                const std::string backup = ryazhenka::backup::snapshotAtmosphere();
+                if (backup.empty()) {
+                    ryazhenka::log::warn("pack installer: backup skipped or failed; proceeding");
+                } else {
+                    ryazhenka::log::info("pack installer: backup at " + backup);
+                }
+            } else {
+                ryazhenka::log::info("pack installer: auto_backup_before_pack disabled, skipping");
+            }
+        }));
         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [packUrl]() {
             ryazhenka::log::info("pack installer: downloading " + packUrl);
             util::downloadArchive(packUrl, contentType::custom);
@@ -112,6 +131,13 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::Application::pushView(stagedFrame);
     });
     installPack->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* cleanupBackups = new brls::ListItem("menus/ryazhenka/cleanup_backups"_i18n);
+    cleanupBackups->getClickEvent()->subscribe([](brls::View* view) {
+        const std::size_t removed = ryazhenka::backup::pruneOlderThan(30);
+        util::showDialogBoxInfo("menus/common/all_done"_i18n + std::string("\n") + std::to_string(removed));
+    });
+    cleanupBackups->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
@@ -254,6 +280,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);
+    this->addView(cleanupBackups);
     this->addView(showLog);
     this->addView(diagDump);
     this->addView(netDiag);
