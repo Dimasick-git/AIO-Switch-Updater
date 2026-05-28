@@ -17,6 +17,7 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_diagnostics.hpp"
 #include "ryazhenka_factory_restore.hpp"
+#include "ryazhenka_health.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_status_tab.hpp"
 #include "ryazhenka_sysmodule_manager.hpp"
@@ -129,6 +130,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
             ryazhenka::log::info("pack installer: extracting Ryazhenka_AIO.zip");
             util::extractArchive(contentType::custom);
+            ryazhenka::health::runAndNotifyIfDegraded();
         }));
         stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
         brls::Application::pushView(stagedFrame);
@@ -174,6 +176,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                 if (!ok) {
                     util::showDialogBoxInfo("menus/ryazhenka/sysmodule_failed"_i18n);
                 }
+                ryazhenka::health::runAndNotifyIfDegraded();
             });
             list->addView(toggle);
         }
@@ -219,6 +222,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                             captured,
                             [](ryazhenka::restore::Stage, std::size_t, std::size_t) {});
                         if (!ok) ryazhenka::log::warn("restore: failed");
+                        ryazhenka::health::runAndNotifyIfDegraded();
                     }));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/ryazhenka/restore_done"_i18n));
                 brls::Application::pushView(stagedFrame);

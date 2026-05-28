@@ -12,6 +12,10 @@
 #include <string>
 #include <system_error>
 
+#include <borealis.hpp>
+
+#include "ryazhenka_config.hpp"
+#include "ryazhenka_logger.hpp"
 #include "ryazhenka_sigpatches.hpp"
 
 namespace ryazhenka::health {
@@ -120,6 +124,27 @@ std::vector<Issue> run() {
     }
 
     return out;
+}
+
+void runAndNotifyIfDegraded() {
+    if (!kAutoHealthAfterActions) return;
+    try {
+        const auto issues = run();
+        const auto w = worst(issues);
+        if (w == Severity::ok) {
+            log::info("health: all green after action");
+            return;
+        }
+        std::string msg = (w == Severity::error)
+            ? "⚠ обнаружены ошибки CFW — проверьте «Состояние»"
+            : "⚠ есть предупреждения CFW — проверьте «Состояние»";
+        brls::Application::notify(msg);
+        log::warn("health: post-action " + msg);
+    } catch (const std::exception& e) {
+        log::warn(std::string("health: runAndNotifyIfDegraded — ") + e.what());
+    } catch (...) {
+        log::warn("health: runAndNotifyIfDegraded — unknown exception");
+    }
 }
 
 Severity worst(const std::vector<Issue>& issues) {

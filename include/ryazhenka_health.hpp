@@ -31,4 +31,10 @@ std::vector<Issue> run();
 /// Helper for callers that want a single severity for "all good or not".
 Severity worst(const std::vector<Issue>& issues);
 
+/// Run health::run() and, if the worst severity is WARN or ERROR, surface
+/// a brls::Application::notify() toast so the user knows to check the
+/// dashboard. No-op when ryazhenka::kAutoHealthAfterActions is false.
+/// Safe to call from a brls worker thread — notify() is queued.
+void runAndNotifyIfDegraded();
+
 } // namespace ryazhenka::health
