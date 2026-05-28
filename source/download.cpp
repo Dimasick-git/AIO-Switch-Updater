@@ -122,6 +122,8 @@ namespace download {
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
             curl_easy_perform(curl);
             auto res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &dl);
             if (!res) {
@@ -179,6 +181,8 @@ namespace download {
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
             curl_easy_setopt(
                 curl,
                 CURLOPT_WRITEFUNCTION,
@@ -324,6 +328,9 @@ namespace download {
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
                     curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
+                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
                     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
                     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
 
@@ -374,6 +381,8 @@ namespace download {
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback2);
         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
         curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, API_AGENT);
+        curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 5L);
+        curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 15L);
 
         curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_perform(curl_handle);
@@ -406,6 +415,8 @@ namespace download {
 
         curl_handle = curl_easy_init();
         curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 5L);
+        curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 15L);
         if (!headers.empty()) {
             for (auto& h : headers) {
                 list = curl_slist_append(list, h.c_str());
