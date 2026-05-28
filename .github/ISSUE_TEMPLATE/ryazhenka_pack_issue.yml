@@ -1,0 +1,49 @@
+name: Проблема с самим паком Ряженки
+description: Что-то не так с содержимым sd_card архива из Ryzhenka, а не с updater'ом.
+title: "[PACK] "
+labels: ["ryazhenka-pack"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Этот шаблон — для проблем с **содержимым пака Ряженки**
+        (Atmosphere fork, sigpatches, sysmodules, Hekate config), а не с
+        приложением Ryazhenka Updater.
+
+        Если проблема в updater (краш UI, не скачивается архив, ошибка
+        парсинга .nro) — используйте шаблон "Сообщить о баге".
+
+  - type: input
+    id: pack_version
+    attributes:
+      label: Версия пака
+      placeholder: "ryazhenka-pack-2026-05-28 или тег из Dimasick-git/Ryzhenka/releases"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: revision
+    attributes:
+      label: Ревизия Switch
+      options:
+        - Erista (unpatched)
+        - Mariko (patched / v2)
+        - OLED
+        - Lite
+        - Не уверен
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Что не работает
+      placeholder: "Не загружается Atmosphere / падает на splash / зависает на …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: ryazha_status
+    attributes:
+      label: Вывод Ryazha-Status-Monitor (если есть)
+      render: shell

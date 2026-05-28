@@ -1,0 +1,59 @@
+name: Сообщить о баге
+description: Что-то работает не так, как ожидалось.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за репорт. Перед заполнением проверьте, что:
+        - проблема воспроизводится с последнего release (`releases/latest`);
+        - в файле `/config/aio-switch-updater/log.txt` нет очевидной подсказки;
+        - желательно прикрепить диагностический отчёт из `Tools → Создать диагностический отчёт`.
+
+  - type: input
+    id: version
+    attributes:
+      label: Версия Ryazhenka Updater
+      description: Из About tab или из имени релиза (например 7 или 2.23.3-ryazhenka.1).
+      placeholder: "7"
+    validations:
+      required: true
+
+  - type: input
+    id: ams
+    attributes:
+      label: Версия Atmosphere
+      placeholder: "1.10.0"
+
+  - type: input
+    id: hos
+    attributes:
+      label: Версия HOS Switch
+      placeholder: "20.1.1"
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Открыть Tools → …
+        2. Нажать …
+        3. Ожидаю X, получаю Y
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи / diag-отчёт
+      description: Содержимое или вставьте файл diag-*.txt
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Подтверждение
+      options:
+        - label: Я искал среди существующих issue и не нашёл такого же.
+          required: true

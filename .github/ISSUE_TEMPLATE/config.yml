@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Telegram канал Ряженки
+    url: https://t.me/Ryazhenkacfw
+    about: Быстрые вопросы и обсуждения — в канале.
+  - name: Апстрим AIO-Switch-Updater
+    url: https://github.com/HamletDuFromage/aio-switch-updater/issues
+    about: Если баг существует и в оригинальном aio-switch-updater, репортите в апстрим.

@@ -1,0 +1,32 @@
+name: Предложить фичу
+description: Идея для нового функционала или улучшения.
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую проблему решает фича?
+      placeholder: "Сейчас приходится вручную делать X каждый раз, когда…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Как вы это видите?
+      placeholder: "Например, добавить кнопку в Tools, которая делает…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативы, которые рассматривали
+      placeholder: "Можно было бы использовать существующий X, но он…"
+
+  - type: input
+    id: upstream
+    attributes:
+      label: Есть ли это в апстриме HamletDuFromage/aio-switch-updater?
+      placeholder: "Нет / да (ссылка на issue)"
