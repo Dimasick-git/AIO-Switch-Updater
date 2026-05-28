@@ -1,0 +1,22 @@
+diff --git a/source/main_frame.cpp b/source/main_frame.cpp
+index 2bfe9e3..de13f57 100644
+--- a/source/main_frame.cpp
++++ b/source/main_frame.cpp
+@@ -8,6 +8,7 @@
+ #include "download.hpp"
+ #include "fs.hpp"
+ #include "list_download_tab.hpp"
++#include "ryazhenka_status_tab.hpp"
+ #include "tools_tab.hpp"
+ #include "utils.hpp"
+ 
+@@ -37,6 +38,9 @@ MainFrame::MainFrame() : TabFrame()
+ 
+     bool erista = util::isErista();
+ 
++    if (!util::getBoolValue(hideStatus, "status"))
++        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
++
+     if (!util::getBoolValue(hideStatus, "about"))
+         this->addTab("menus/main/about"_i18n, new AboutTab());
+ 
