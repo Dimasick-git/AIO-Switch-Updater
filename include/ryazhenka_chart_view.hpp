@@ -24,7 +24,7 @@
 #include <string>
 
 #include <borealis.hpp>
-#include <nanovg.h>
+#include <nanovg/nanovg.h>
 
 #include "ryazhenka_metrics.hpp"
 
