@@ -14,6 +14,7 @@
 #include "net_page.hpp"
 #include "payload_page.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_diagnostics.hpp"
 #include "ryazhenka_logger.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
@@ -47,6 +48,50 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         updateApp->setHeight(LISTITEM_HEIGHT);
         this->addView(updateApp);
     }
+
+    brls::ListItem* showLog = new brls::ListItem("menus/ryazhenka/show_log"_i18n);
+    showLog->getClickEvent()->subscribe([](brls::View* view) {
+        const auto lines = ryazhenka::diagnostics::tailLog(200);
+        if (lines.empty()) {
+            util::showDialogBoxInfo("menus/ryazhenka/log_empty"_i18n);
+            return;
+        }
+        brls::List* list = new brls::List();
+        for (const auto& line : lines) {
+            brls::ListItem* item = new brls::ListItem(line);
+            item->setHeight(LISTITEM_HEIGHT);
+            list->addView(item);
+        }
+        brls::PopupFrame::open("menus/ryazhenka/show_log"_i18n, list, "", "");
+    });
+    showLog->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* diagDump = new brls::ListItem("menus/ryazhenka/diag_dump"_i18n);
+    diagDump->getClickEvent()->subscribe([](brls::View* view) {
+        const std::string path = ryazhenka::diagnostics::writeDumpFile();
+        if (path.empty()) {
+            util::showDialogBoxInfo("menus/ryazhenka/diag_failed"_i18n);
+        } else {
+            util::showDialogBoxInfo(std::string("menus/ryazhenka/diag_saved"_i18n) + "\n\n" + path);
+        }
+    });
+    diagDump->setHeight(LISTITEM_HEIGHT);
+
+    brls::ListItem* netDiag = new brls::ListItem("menus/ryazhenka/net_diag"_i18n);
+    netDiag->getClickEvent()->subscribe([](brls::View* view) {
+        const auto results = ryazhenka::diagnostics::runNetworkProbe();
+        brls::List* list = new brls::List();
+        for (const auto& r : results) {
+            std::string label = (r.ok ? "[OK] " : "[FAIL] ") + r.host;
+            std::string value = std::to_string(r.http_code) + "  " + std::to_string(r.latency_ms) + " ms";
+            brls::ListItem* item = new brls::ListItem(label);
+            item->setValue(value);
+            item->setHeight(LISTITEM_HEIGHT);
+            list->addView(item);
+        }
+        brls::PopupFrame::open("menus/ryazhenka/net_diag"_i18n, list, "", "");
+    });
+    netDiag->setHeight(LISTITEM_HEIGHT);
 
     brls::ListItem* installPack = new brls::ListItem("menus/ryazhenka/install_pack"_i18n);
     installPack->getClickEvent()->subscribe([](brls::View* view) {
@@ -209,6 +254,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);
+    this->addView(showLog);
+    this->addView(diagDump);
+    this->addView(netDiag);
     if (!util::getBoolValue(hideStatus, "outdatedtitles")) this->addView(outdatedTitles);
     if (!util::getBoolValue(hideStatus, "jccolor")) this->addView(JCcolor);
     if (!util::getBoolValue(hideStatus, "pccolor")) this->addView(PCcolor);
