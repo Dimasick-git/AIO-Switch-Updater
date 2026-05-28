@@ -41,6 +41,27 @@ jobs:
           apt-get update -y
           apt-get install -y build-essential zip python3
 
+      - name: Read APP_VERSION from Makefile
+        id: version
+        run: |
+          ver="$(grep -E '^APP_VERSION' Makefile | sed -E 's/^APP_VERSION[[:space:]]*:=[[:space:]]*//' | tr -d '[:space:]')"
+          if [ -z "$ver" ]; then
+            echo "APP_VERSION not found in Makefile" >&2
+            exit 1
+          fi
+          tag="v${ver}"
+          echo "APP_VERSION=${ver}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
+          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          if git rev-parse --verify "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Tag ${tag} already exists — release publish step will be skipped. Bump APP_VERSION in Makefile to cut a new release."
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Will publish release ${tag}"
+          fi
+
       - name: Build aiosu-forwarder
         run: make -C aiosu-forwarder -f Makefile
 
@@ -64,18 +85,27 @@ jobs:
           path: Ryazhenka_AIO.zip
           if-no-files-found: error
 
-      - name: Publish GitHub Release (main branch only)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.event.inputs.skip_release != 'true'
+      - name: Publish GitHub Release (main branch only, on APP_VERSION bump)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.event.inputs.skip_release != 'true' && steps.version.outputs.tag_exists != 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.run_number }}
-          name: "${{ github.run_number }}"
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
           body: |
-            Сборка №${{ github.run_number }}
+            **Ряженка Updater ${{ steps.version.outputs.tag }}**
 
-            * Commit: `${{ github.sha }}`
-            * Built: ${{ github.event.head_commit.timestamp }}
-            * Branch: `${{ github.ref_name }}`
+            * Версия: `${{ steps.version.outputs.version }}` (из `Makefile::APP_VERSION`)
+            * Коммит: `${{ github.sha }}`
+            * Сборка CI: №${{ github.run_number }}
+            * Дата: ${{ github.event.head_commit.timestamp }}
+
+            Установка: скачайте `Ryazhenka_AIO.zip` и распакуйте в корень SD,
+            либо положите `ryazhenka-updater.nro` в `/switch/aio-switch-updater/`
+            (имя на SD остаётся `aio-switch-updater.nro` для совместимости с
+            внутриприложным апдейтером).
+
+            Чтобы выпустить следующий релиз — поднимите `APP_VERSION` в
+            `Makefile` и запушьте в main.
           prerelease: false
           make_latest: "true"
           files: |

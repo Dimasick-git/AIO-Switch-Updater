@@ -34,25 +34,29 @@ constexpr const char* kPatchesDir = "/atmosphere/exefs_patches";
 
 using SysTime = std::chrono::system_clock::time_point;
 
+// Howard Hinnant's "days from civil" — converts (Y, M, D) to days since
+// 1970-01-01 in proleptic Gregorian. Avoids POSIX timegm() which newlib
+// (devkitA64 libc) does not ship.
+std::time_t toEpochUtc(int y, int m, int d, int hr, int mi, int se) {
+    y -= (m <= 2);
+    const int era = (y >= 0 ? y : y - 399) / 400;
+    const unsigned yoe = static_cast<unsigned>(y - era * 400);
+    const unsigned doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    const long long days = static_cast<long long>(era) * 146097 +
+                           static_cast<long long>(doe) - 719468;
+    return static_cast<std::time_t>(days * 86400LL + hr * 3600 + mi * 60 + se);
+}
+
 std::optional<SysTime> parseIso8601(const std::string& s) {
     // Accepts "2026-05-28T14:30:00Z" — GitHub published_at format.
+    // strptime/timegm are POSIX extensions absent from devkitA64 newlib,
+    // so we sscanf the fixed shape and feed it to our own days-from-civil.
     if (s.size() < 20) return std::nullopt;
-    std::tm tm{};
-#if defined(__GLIBCXX__) || defined(__GNUC__)
-    if (!strptime(s.c_str(), "%Y-%m-%dT%H:%M:%SZ", &tm)) return std::nullopt;
-#else
     int yr, mo, da, hr, mi, se;
     if (std::sscanf(s.c_str(), "%d-%d-%dT%d:%d:%dZ",
                     &yr, &mo, &da, &hr, &mi, &se) != 6) return std::nullopt;
-    tm.tm_year = yr - 1900;
-    tm.tm_mon  = mo - 1;
-    tm.tm_mday = da;
-    tm.tm_hour = hr;
-    tm.tm_min  = mi;
-    tm.tm_sec  = se;
-#endif
-    const std::time_t tt = timegm(&tm);
-    if (tt == static_cast<std::time_t>(-1)) return std::nullopt;
+    const std::time_t tt = toEpochUtc(yr, mo, da, hr, mi, se);
     return std::chrono::system_clock::from_time_t(tt);
 }
 

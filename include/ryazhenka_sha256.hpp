@@ -38,10 +38,7 @@ inline std::string ofFile(const std::string& path) {
 
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
-    if (mbedtls_sha256_starts(&ctx, /*is224=*/0) != 0) {
-        mbedtls_sha256_free(&ctx);
-        return {};
-    }
+    mbedtls_sha256_starts(&ctx, /*is224=*/0);
 
     constexpr std::size_t kBuf = 64 * 1024;
     std::vector<char> buf(kBuf);
@@ -49,19 +46,13 @@ inline std::string ofFile(const std::string& path) {
         f.read(buf.data(), static_cast<std::streamsize>(buf.size()));
         const auto got = static_cast<std::size_t>(f.gcount());
         if (got == 0) break;
-        if (mbedtls_sha256_update(&ctx,
-                                  reinterpret_cast<const unsigned char*>(buf.data()),
-                                  got) != 0) {
-            mbedtls_sha256_free(&ctx);
-            return {};
-        }
+        mbedtls_sha256_update(&ctx,
+                              reinterpret_cast<const unsigned char*>(buf.data()),
+                              got);
     }
 
     std::array<std::uint8_t, 32> digest{};
-    if (mbedtls_sha256_finish(&ctx, digest.data()) != 0) {
-        mbedtls_sha256_free(&ctx);
-        return {};
-    }
+    mbedtls_sha256_finish(&ctx, digest.data());
     mbedtls_sha256_free(&ctx);
     return toHex(digest);
 }
@@ -69,22 +60,13 @@ inline std::string ofFile(const std::string& path) {
 inline std::string ofBuffer(const std::string& data) {
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
-    if (mbedtls_sha256_starts(&ctx, /*is224=*/0) != 0) {
-        mbedtls_sha256_free(&ctx);
-        return {};
-    }
-    if (mbedtls_sha256_update(
-            &ctx,
-            reinterpret_cast<const unsigned char*>(data.data()),
-            data.size()) != 0) {
-        mbedtls_sha256_free(&ctx);
-        return {};
-    }
+    mbedtls_sha256_starts(&ctx, /*is224=*/0);
+    mbedtls_sha256_update(
+        &ctx,
+        reinterpret_cast<const unsigned char*>(data.data()),
+        data.size());
     std::array<std::uint8_t, 32> digest{};
-    if (mbedtls_sha256_finish(&ctx, digest.data()) != 0) {
-        mbedtls_sha256_free(&ctx);
-        return {};
-    }
+    mbedtls_sha256_finish(&ctx, digest.data());
     mbedtls_sha256_free(&ctx);
     return toHex(digest);
 }
