@@ -1,18 +1,19 @@
 diff --git a/source/about_tab.cpp b/source/about_tab.cpp
-index d6c4a74..2162f72 100644
+index d6c4a74..628853a 100644
 --- a/source/about_tab.cpp
 +++ b/source/about_tab.cpp
-@@ -1,5 +1,9 @@
+@@ -1,5 +1,10 @@
  #include "about_tab.hpp"
  
 +#include <string>
 +
 +#include "ryazhenka_config.hpp"
++#include "ryazhenka_health.hpp"
 +
  namespace i18n = brls::i18n;
  using namespace i18n::literals;
  
-@@ -16,12 +20,29 @@ AboutTab::AboutTab()
+@@ -16,12 +21,56 @@ AboutTab::AboutTab()
      // Copyright
      brls::Label* copyright = new brls::Label(
          brls::LabelStyle::DESCRIPTION,
@@ -23,6 +24,33 @@ index d6c4a74..2162f72 100644
      this->addView(copyright);
  
 -    // Links
++    // CFW health snapshot
++    this->addView(new brls::Header("menus/ryazhenka/health_title"_i18n));
++    {
++        std::string healthText;
++        for (const auto& issue : ryazhenka::health::run()) {
++            const char* tag = "?";
++            switch (issue.severity) {
++                case ryazhenka::health::Severity::ok:    tag = "[OK]";    break;
++                case ryazhenka::health::Severity::warn:  tag = "[WARN]";  break;
++                case ryazhenka::health::Severity::error: tag = "[ERROR]"; break;
++            }
++            healthText.append(tag);
++            healthText.append(" ");
++            healthText.append(issue.title);
++            if (!issue.detail.empty()) {
++                healthText.append(": ");
++                healthText.append(issue.detail);
++            }
++            healthText.push_back('\n');
++        }
++        brls::Label* healthLabel = new brls::Label(
++            brls::LabelStyle::SMALL,
++            healthText,
++            true);
++        this->addView(healthLabel);
++    }
++
 +    // Ryazhenka ecosystem links — visible on About tab so users can find the
 +    // companion repos shipped with the pack without having to remember URLs.
 +    this->addView(new brls::Header("menus/ryazhenka/ecosystem_title"_i18n));

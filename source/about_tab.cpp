@@ -3,6 +3,7 @@
 #include <string>
 
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_health.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -24,6 +25,33 @@ AboutTab::AboutTab()
         true);
     copyright->setHorizontalAlign(NVG_ALIGN_CENTER);
     this->addView(copyright);
+
+    // CFW health snapshot
+    this->addView(new brls::Header("menus/ryazhenka/health_title"_i18n));
+    {
+        std::string healthText;
+        for (const auto& issue : ryazhenka::health::run()) {
+            const char* tag = "?";
+            switch (issue.severity) {
+                case ryazhenka::health::Severity::ok:    tag = "[OK]";    break;
+                case ryazhenka::health::Severity::warn:  tag = "[WARN]";  break;
+                case ryazhenka::health::Severity::error: tag = "[ERROR]"; break;
+            }
+            healthText.append(tag);
+            healthText.append(" ");
+            healthText.append(issue.title);
+            if (!issue.detail.empty()) {
+                healthText.append(": ");
+                healthText.append(issue.detail);
+            }
+            healthText.push_back('\n');
+        }
+        brls::Label* healthLabel = new brls::Label(
+            brls::LabelStyle::SMALL,
+            healthText,
+            true);
+        this->addView(healthLabel);
+    }
 
     // Ryazhenka ecosystem links — visible on About tab so users can find the
     // companion repos shipped with the pack without having to remember URLs.
