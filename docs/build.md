@@ -49,12 +49,14 @@ docker run --rm -it -v "$PWD:/work" -w /work devkitpro/devkita64:latest bash -c 
 
 ## Версионирование
 
-- `APP_VERSION` в `Makefile` имеет формат
-  `<upstream>-ryazhenka.<patch>` (например `2.23.3-ryazhenka.1`).
-  Используется в самообновлении и отображается в About.
-- **Git-теги релизов** — чистые числа (`1`, `2`, `3`, …),
-  автоматически создаются `build.yml` на каждый push в `main`
-  через `${{ github.run_number }}`. Каждый коммит → новый release с
-  `make_latest=true`, поэтому
-  `releases/latest/download/Ryazhenka_AIO.zip` всегда указывает на
+- `APP_VERSION` в `Makefile` — обычный SemVer (например `2.23.3`).
+  Совпадает с upstream-веткой AIO-Switch-Updater, на которой
+  собрана наша сборка. Используется в самообновлении и в About.
+- **Git-теги релизов** = `v${APP_VERSION}` (например `v2.23.3`).
+  Создаются автоматически в `build.yml` только когда `APP_VERSION`
+  в Makefile отличается от уже опубликованных тегов. Это значит:
+  push в main без bump APP_VERSION только собирает артефакты, но
+  не создаёт повторных релизов. Чтобы выпустить релиз — поднимите
+  patch-цифру и запушьте. `releases/latest/download/Ryazhenka_AIO.zip`
+  указывает на
   последнюю удачную сборку.

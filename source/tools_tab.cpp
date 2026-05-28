@@ -68,7 +68,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             item->setHeight(LISTITEM_HEIGHT);
             list->addView(item);
         }
-        brls::PopupFrame::open("menus/ryazhenka/show_log"_i18n, list, "", "");
+        brls::AppletFrame* logView = new brls::AppletFrame(true, true);
+        logView->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/show_log"_i18n, logView, "", "");
     });
     showLog->setHeight(LISTITEM_HEIGHT);
 
@@ -95,7 +97,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             item->setHeight(LISTITEM_HEIGHT);
             list->addView(item);
         }
-        brls::PopupFrame::open("menus/ryazhenka/net_diag"_i18n, list, "", "");
+        brls::AppletFrame* diagView = new brls::AppletFrame(true, true);
+        diagView->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/net_diag"_i18n, diagView, "", "");
     });
     netDiag->setHeight(LISTITEM_HEIGHT);
 
@@ -180,7 +184,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             });
             list->addView(toggle);
         }
-        brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, list, "menus/ryazhenka/sysmodule_hint"_i18n, "");
+        brls::AppletFrame* sysView = new brls::AppletFrame(true, true);
+        sysView->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, sysView, "menus/ryazhenka/sysmodule_hint"_i18n, "");
     });
     sysmoduleManager->setHeight(LISTITEM_HEIGHT);
 
@@ -229,7 +235,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             });
             list->addView(item);
         }
-        brls::PopupFrame::open("menus/ryazhenka/factory_restore"_i18n, list, "menus/ryazhenka/restore_hint"_i18n, "");
+        brls::AppletFrame* restoreView = new brls::AppletFrame(true, true);
+        restoreView->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/factory_restore"_i18n, restoreView, "menus/ryazhenka/restore_hint"_i18n, "");
     });
     factoryRestore->setHeight(LISTITEM_HEIGHT);
 

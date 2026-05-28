@@ -1,7 +1,7 @@
 # Changelog
 
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/),
-версии — [SemVer](https://semver.org) с суффиксом `-ryazhenka.N`.
+версии — [SemVer](https://semver.org), синхронны с upstream.
 
 ## [Unreleased] — Live dashboard + операционные модули
 
@@ -78,7 +78,7 @@
 
 ### Changed
 - `Makefile`: `APP_TITLE = "Ryazhenka Updater"`, `APP_AUTHOR =
-  Dimasick-git`, `APP_VERSION = 2.23.3-ryazhenka.1`,
+  Dimasick-git`, `APP_VERSION = 2.23.3`,
   `TARGET = ryazhenka-updater`.
 - `include/constants.hpp`: URL для самообновления, nx-links каталога,
   CFW, Hekate, payloads, Joy-Con/Pro профилей перенаправлены на
