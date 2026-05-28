@@ -21,3 +21,58 @@ jobs:
         with:
           fetch-depth: 0
       - run: bash scripts/ryazhenka/apply-patches.sh --check
+
+  cppcheck:
+    name: cppcheck on ryazhenka_* modules
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cppcheck
+        run: sudo apt-get update -y && sudo apt-get install -y cppcheck
+      - name: Run cppcheck (warnings only, non-blocking)
+        run: |
+          cppcheck \
+            --enable=warning,style,performance,portability \
+            --inline-suppr \
+            --suppress=missingIncludeSystem \
+            --suppress=unmatchedSuppression \
+            --error-exitcode=0 \
+            --quiet \
+            include/ryazhenka_*.hpp source/ryazhenka_*.cpp 2>&1 | tee cppcheck.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cppcheck-log
+          path: cppcheck.log
+
+  workflows:
+    name: Validate YAML workflows and JSON resources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pyyaml
+        run: pip3 install pyyaml
+      - name: Validate YAML workflows
+        run: |
+          python3 -c "
+          import yaml, pathlib, sys
+          for p in sorted(pathlib.Path('.github').rglob('*.yml')):
+              yaml.safe_load(p.read_text())
+              print(f'{p}: ok')
+          "
+      - name: Validate JSON resources
+        run: |
+          python3 -c "
+          import json, pathlib, sys
+          bad = 0
+          for p in pathlib.Path('.').rglob('*.json'):
+              if any(s in p.parts for s in ('.git','lib','TegraExplorer','aiosu-forwarder','build')):
+                  continue
+              try:
+                  json.loads(p.read_text())
+                  print(f'{p}: ok')
+              except Exception as e:
+                  print(f'{p}: FAIL {e}'); bad += 1
+          sys.exit(1 if bad else 0)
+          "

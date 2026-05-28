@@ -7,6 +7,11 @@ on:
       - "feature/**"
   pull_request:
   workflow_dispatch:
+    inputs:
+      skip_release:
+        description: "Build without publishing a GitHub Release (for smoke tests)"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -60,7 +65,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release (main branch only)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.event.inputs.skip_release != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.run_number }}
