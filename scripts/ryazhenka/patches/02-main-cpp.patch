@@ -1,5 +1,5 @@
 diff --git a/source/main.cpp b/source/main.cpp
-index 842c971..b274f69 100644
+index 842c971..69617d4 100644
 --- a/source/main.cpp
 +++ b/source/main.cpp
 @@ -1,6 +1,7 @@
@@ -10,7 +10,7 @@ index 842c971..b274f69 100644
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,12 @@
+@@ -8,6 +9,11 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -18,12 +18,11 @@ index 842c971..b274f69 100644
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_crash_handler.hpp"
 +#include "ryazhenka_logger.hpp"
-+#include "ryazhenka_system_info.hpp"
-+#include "ryazhenka_version_check.hpp"
++// system_info / version_check headers intentionally not included — see body
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -25,11 +32,15 @@ int main(int argc, char* argv[])
+@@ -25,11 +31,15 @@ int main(int argc, char* argv[])
          return EXIT_FAILURE;
      }
  
@@ -40,7 +39,7 @@ index 842c971..b274f69 100644
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +54,9 @@ int main(int argc, char* argv[])
+@@ -43,6 +53,9 @@ int main(int argc, char* argv[])
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -50,22 +49,24 @@ index 842c971..b274f69 100644
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,6 +68,14 @@ int main(int argc, char* argv[])
+@@ -54,6 +67,16 @@ int main(int argc, char* argv[])
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
 +    try { ryazhenka::log::init(); } catch (...) {}
 +    try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
-+    try {
-+        ryazhenka::log::info("sysinfo: " + ryazhenka::sysinfo::formatOneLine(ryazhenka::sysinfo::collect()));
-+    } catch (...) {
-+        brls::Logger::error("sysinfo collect threw — skipping startup banner");
-+    }
-+    try { ryazhenka::version_check::scheduleBackgroundCheck(); } catch (...) {}
++    // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
++    // intentionally NOT called here. They each touch the filesystem and the
++    // network respectively, and on Switch their failure modes (filesystem_
++    // error on libstdc++, mbedtls SSL state on detached curl threads) were
++    // showing up as a black screen on launch. They are still in the codebase
++    // and can be triggered on-demand from the Status tab if/when the user
++    // opens it — by that point the UI is up and a hang/crash there is at
++    // worst a single-tab problem, not an app-launch problem.
  
      if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
          brls::Application::pushView(new MainFrame());
-@@ -69,6 +91,7 @@ int main(int argc, char* argv[])
+@@ -69,6 +92,7 @@ int main(int argc, char* argv[])
      splExit();
      pminfoExit();
      pmdmntExit();

@@ -13,8 +13,7 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_logger.hpp"
-#include "ryazhenka_system_info.hpp"
-#include "ryazhenka_version_check.hpp"
+// system_info / version_check headers intentionally not included — see body
 #include "warning_page.hpp"
 
 namespace i18n = brls::i18n;
@@ -70,12 +69,14 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
     try { ryazhenka::log::init(); } catch (...) {}
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
-    try {
-        ryazhenka::log::info("sysinfo: " + ryazhenka::sysinfo::formatOneLine(ryazhenka::sysinfo::collect()));
-    } catch (...) {
-        brls::Logger::error("sysinfo collect threw — skipping startup banner");
-    }
-    try { ryazhenka::version_check::scheduleBackgroundCheck(); } catch (...) {}
+    // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
+    // intentionally NOT called here. They each touch the filesystem and the
+    // network respectively, and on Switch their failure modes (filesystem_
+    // error on libstdc++, mbedtls SSL state on detached curl threads) were
+    // showing up as a black screen on launch. They are still in the codebase
+    // and can be triggered on-demand from the Status tab if/when the user
+    // opens it — by that point the UI is up and a hang/crash there is at
+    // worst a single-tab problem, not an app-launch problem.
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
         brls::Application::pushView(new MainFrame());

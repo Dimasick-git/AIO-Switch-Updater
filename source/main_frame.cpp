@@ -8,7 +8,6 @@
 #include "download.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
-#include "ryazhenka_status_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
 
@@ -59,12 +58,9 @@ MainFrame::MainFrame() : TabFrame()
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
 
-    // Status tab is added LAST so borealis does not call willAppear() on it
-    // during construction (borealis calls willAppear only on the first tab
-    // added via addTab → switchToView). willAppear() starts the Sampler
-    // background thread — safe to do only after the UI is up.
-    if (!util::getBoolValue(hideStatus, "status"))
-        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
+    // StatusTab is temporarily disabled — its willAppear() spawns the metrics
+    // Sampler std::thread which touches psm/ts/spl services. Until we have a
+    // confirmed-working baseline build, the Status tab is not registered.
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }
