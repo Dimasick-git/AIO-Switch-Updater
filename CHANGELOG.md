@@ -19,8 +19,10 @@
   i18n keyset'ов.
 - `scripts/ryazhenka/pack-release.sh` — упаковка `.nro` в zip с
   обратно-совместимым layout SD-карты.
-- 4 GitHub Actions workflows: `build`, `release`, `sync-upstream`,
-  `lint`. Заменяют апстримный `main.yml`.
+- 3 GitHub Actions workflows: `build`, `sync-upstream`, `lint`.
+  Заменяют апстримный `main.yml`. `build.yml` сам публикует release
+  c числовым тэгом (`${{ github.run_number }}`) после каждого
+  пуша в `main`, `make_latest=true`.
 - `docs/sync-policy.md`, `docs/build.md`, двуязычный `README.md`.
 - 8 недостающих ключей в `resources/i18n/ru/menus.json` (cheats,
   common, worker).

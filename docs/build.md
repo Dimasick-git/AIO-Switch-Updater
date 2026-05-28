@@ -49,7 +49,12 @@ docker run --rm -it -v "$PWD:/work" -w /work devkitpro/devkita64:latest bash -c 
 
 ## Версионирование
 
-`APP_VERSION` в `Makefile` имеет формат
-`<upstream>-ryazhenka.<patch>` (например `2.23.3-ryazhenka.1`). Когда
-sync-workflow подтягивает новую upstream-версию через bump, патч-число
-сбрасывается обратно на `.1`. Релизные git-теги — `vX.Y.Z-ryazhenka.N`.
+- `APP_VERSION` в `Makefile` имеет формат
+  `<upstream>-ryazhenka.<patch>` (например `2.23.3-ryazhenka.1`).
+  Используется в самообновлении и отображается в About.
+- **Git-теги релизов** — чистые числа (`1`, `2`, `3`, …),
+  автоматически создаются `build.yml` на каждый push в `main`
+  через `${{ github.run_number }}`. Каждый коммит → новый release с
+  `make_latest=true`, поэтому
+  `releases/latest/download/Ryazhenka_AIO.zip` всегда указывает на
+  последнюю удачную сборку.

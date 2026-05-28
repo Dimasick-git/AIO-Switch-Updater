@@ -24,8 +24,10 @@
   отсутствие коллизий имен и автоматический pickup стандартным `*.cpp` glob
   в апстримном `Makefile`.
 - `scripts/ryazhenka/*` — вся sync-инфраструктура.
-- `.github/workflows/{build,release,sync-upstream,lint}.yml` — наш CI
-  (заменяет апстримный `main.yml`).
+- `.github/workflows/{build,sync-upstream,lint}.yml` — наш CI
+  (заменяет апстримный `main.yml`). `build.yml` сам публикует
+  релиз с числовым тэгом `${{ github.run_number }}` после каждого
+  успешного билда на `main`.
 - `.upstream-base`, `docs/*`, `CHANGELOG.md`.
 
 ### 2. Патчи апстримных файлов (≈ 10%)

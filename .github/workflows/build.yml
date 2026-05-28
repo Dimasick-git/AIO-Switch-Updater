@@ -59,21 +59,20 @@ jobs:
           path: Ryazhenka_AIO.zip
           if-no-files-found: error
 
-      - name: Publish rolling "nightly" release (main branch only)
+      - name: Publish GitHub Release (main branch only)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
-          name: "Nightly build — ${{ github.sha }}"
+          tag_name: ${{ github.run_number }}
+          name: "${{ github.run_number }}"
           body: |
-            Automatic rolling build from the latest commit on `main`.
+            Сборка №${{ github.run_number }}
 
             * Commit: `${{ github.sha }}`
             * Built: ${{ github.event.head_commit.timestamp }}
-
-            For stable releases see https://github.com/Dimasick-git/AIO-Switch-Updater/releases
-          prerelease: true
-          make_latest: false
+            * Branch: `${{ github.ref_name }}`
+          prerelease: false
+          make_latest: "true"
           files: |
             ryazhenka-updater.nro
             Ryazhenka_AIO.zip
