@@ -32,7 +32,13 @@
     "sysmodule_critical": "This is a system-critical module. Toggling refused.",
     "sysmodule_failed": "Could not change sysmodule state. See log.",
     "sysmodule_hint": "Toggle the flag boot2.flag. Changes take effect on next reboot.",
-    "open_dashboard": "Open system monitor"
+    "open_dashboard": "Open system monitor",
+    "factory_restore": "Factory Restore",
+    "restore_no_backups": "No /aio-backup/atmosphere-* snapshots found.",
+    "restore_confirm": "This will REPLACE the live /atmosphere/ with the chosen snapshot. The current state will be backed up first.\nProceed?",
+    "restore_progress": "Restoring /atmosphere/ from snapshot…",
+    "restore_done": "Restore complete. Reboot via Hekate to apply.",
+    "restore_hint": "Newest snapshots first. A defensive pre-snapshot is taken before the restore."
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
