@@ -25,6 +25,7 @@
     "cleanup_backups": "Очистить старые резервные копии",
     "status_tab": "Состояние",
     "status_header": "Состояние системы",
+    "status_charts_unavailable": "Графики недоступны на этой прошивке",
     "sysmodule_manager": "Управление sysmodules",
     "sysmodule_empty": "В /atmosphere/contents/ ничего не найдено",
     "sysmodule_on": "Вкл",

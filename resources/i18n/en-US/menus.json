@@ -25,6 +25,7 @@
     "cleanup_backups": "Clean up old backups",
     "status_tab": "Status",
     "status_header": "System health",
+    "status_charts_unavailable": "Live charts unavailable on this firmware",
     "sysmodule_manager": "Sysmodule manager",
     "sysmodule_empty": "No sysmodules found under /atmosphere/contents/",
     "sysmodule_on": "On",

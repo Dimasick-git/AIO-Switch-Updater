@@ -197,17 +197,23 @@ void scheduleBackgroundCheck() {
     if (s_started.test_and_set()) return;
 
     std::thread([]() {
-        ryazhenka::log::info("version_check: starting background scan");
-        const auto results = runChecks();
-        for (const auto& r : results) {
-            std::string line = r.name;
-            line += "  local=" + r.local_version.value_or("?");
-            line += "  latest=" + r.latest_version.value_or("?");
-            if (r.update_available) line += "  [UPDATE]";
-            if (!r.note.empty()) line += "  (" + r.note + ")";
-            ryazhenka::log::info(line);
+        try {
+            ryazhenka::log::info("version_check: starting background scan");
+            const auto results = runChecks();
+            for (const auto& r : results) {
+                std::string line = r.name;
+                line += "  local=" + r.local_version.value_or("?");
+                line += "  latest=" + r.latest_version.value_or("?");
+                if (r.update_available) line += "  [UPDATE]";
+                if (!r.note.empty()) line += "  (" + r.note + ")";
+                ryazhenka::log::info(line);
+            }
+            ryazhenka::log::info("version_check: scan complete");
+        } catch (const std::exception& e) {
+            try { ryazhenka::log::error(std::string("version_check thread: ") + e.what()); } catch (...) {}
+        } catch (...) {
+            try { ryazhenka::log::error("version_check thread: unknown exception"); } catch (...) {}
         }
-        ryazhenka::log::info("version_check: scan complete");
     }).detach();
 }
 

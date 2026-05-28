@@ -24,16 +24,19 @@ namespace {
             ryazhenka::log::error("std::terminate with no active exception");
         }
     } catch (...) {
-        // Last-ditch swallow — logger itself raised, nothing useful left to do.
+        // Logger itself failed — nothing more we can salvage.
     }
-    std::abort();
+    // _Exit rather than abort: leaves the SD-card log file in a flushed
+    // state and returns the user cleanly to HOME, instead of triggering
+    // the Switch crash dialog with a useless register dump.
+    std::_Exit(EXIT_FAILURE);
 }
 
 } // namespace
 
 void install() {
     std::set_terminate(&terminateHandler);
-    ryazhenka::log::debug("crash handler installed");
+    try { ryazhenka::log::debug("crash handler installed"); } catch (...) {}
 }
 
 } // namespace ryazhenka::crash

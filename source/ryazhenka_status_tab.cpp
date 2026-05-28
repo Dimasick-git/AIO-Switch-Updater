@@ -36,27 +36,33 @@ StatusTab::StatusTab()
     this->setSpacing(12);
     this->setMargins(16, 16, 16, 16);
 
-    // ── Header sysinfo line ──────────────────────────────────────────
-    {
+    std::string header = "menus/ryazhenka/status_header"_i18n;
+    try {
         const auto snap = sysinfo::collect();
-        const std::string header = sysinfo::formatOneLine(snap);
-        auto* lbl = new brls::Label(
-            brls::LabelStyle::REGULAR,
-            "menus/ryazhenka/status_header"_i18n + "  —  " + header,
-            true);
-        lbl->setHorizontalAlign(NVG_ALIGN_LEFT);
-        this->addView(lbl, false);
+        header += "  —  " + sysinfo::formatOneLine(snap);
+    } catch (...) {
+        header += "  —  (sysinfo unavailable)";
     }
+    auto* lbl = new brls::Label(brls::LabelStyle::REGULAR, header, true);
+    lbl->setHorizontalAlign(NVG_ALIGN_LEFT);
+    this->addView(lbl, false);
 
-    // ── 2x2 grid of charts ───────────────────────────────────────────
-    this->addView(
-        makeChartRow(chart::makeChartFor(metrics::Metric::CpuTempC),
-                     chart::makeChartFor(metrics::Metric::SkinTempC)),
-        true /* fill */);
-    this->addView(
-        makeChartRow(chart::makeChartFor(metrics::Metric::BatteryPct),
-                     chart::makeChartFor(metrics::Metric::SdFreePct)),
-        true);
+    try {
+        this->addView(
+            makeChartRow(chart::makeChartFor(metrics::Metric::CpuTempC),
+                         chart::makeChartFor(metrics::Metric::SkinTempC)),
+            true);
+        this->addView(
+            makeChartRow(chart::makeChartFor(metrics::Metric::BatteryPct),
+                         chart::makeChartFor(metrics::Metric::SdFreePct)),
+            true);
+    } catch (...) {
+        auto* fallback = new brls::Label(
+            brls::LabelStyle::REGULAR,
+            "menus/ryazhenka/status_charts_unavailable"_i18n,
+            true);
+        this->addView(fallback, false);
+    }
 
     this->registerAction("", brls::Key::B, [] { return true; });
 }

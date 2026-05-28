@@ -25,14 +25,14 @@ CFW CurrentCfw::running_cfw;
 
 int main(int argc, char* argv[])
 {
-    ryazhenka::crash::install();
+    try { ryazhenka::crash::install(); } catch (...) {}
 
     // Init the app
     if (!brls::Application::init(APP_TITLE)) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
-    ryazhenka::branding::applyBranding();
+    try { ryazhenka::branding::applyBranding(); } catch (...) {}
 
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
     if (languageFile.find("language") != languageFile.end())
@@ -63,10 +63,14 @@ int main(int argc, char* argv[])
 
     brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
     brls::Logger::debug("Start");
-    ryazhenka::log::init();
-    ryazhenka::log::info("Ryazhenka Updater started");
-    ryazhenka::log::info("sysinfo: " + ryazhenka::sysinfo::formatOneLine(ryazhenka::sysinfo::collect()));
-    ryazhenka::version_check::scheduleBackgroundCheck();
+    try { ryazhenka::log::init(); } catch (...) {}
+    try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
+    try {
+        ryazhenka::log::info("sysinfo: " + ryazhenka::sysinfo::formatOneLine(ryazhenka::sysinfo::collect()));
+    } catch (...) {
+        brls::Logger::error("sysinfo collect threw — skipping startup banner");
+    }
+    try { ryazhenka::version_check::scheduleBackgroundCheck(); } catch (...) {}
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
         brls::Application::pushView(new MainFrame());
