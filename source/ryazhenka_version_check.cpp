@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_curl_retry.hpp"
 #include "ryazhenka_logger.hpp"
 
 namespace ryazhenka::version_check {
@@ -70,9 +71,8 @@ std::optional<std::string> fetchLatestTag(const std::string& url) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &curlWriteToString);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
 
-    const CURLcode rc = curl_easy_perform(curl);
     long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    const CURLcode rc = ryazhenka::curl::performWithRetry(curl, &http_code);
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
 

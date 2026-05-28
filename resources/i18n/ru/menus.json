@@ -1,4 +1,10 @@
 {
+  "ryazhenka": {
+    "ecosystem_title": "Экосистема Ряженки",
+    "update_available": "Доступно обновление",
+    "version_check_running": "Проверяем версии тулзов Ряженки…",
+    "version_check_done": "Проверка версий завершена"
+  },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
     "copyright": "AIO-Switch-Updater находится под лицензией GPL-3.0",

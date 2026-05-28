@@ -1,5 +1,9 @@
 #include "about_tab.hpp"
 
+#include <string>
+
+#include "ryazhenka_config.hpp"
+
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
@@ -16,12 +20,29 @@ AboutTab::AboutTab()
     // Copyright
     brls::Label* copyright = new brls::Label(
         brls::LabelStyle::DESCRIPTION,
-        "menus/about/copyright"_i18n + "\n© 2020-2022 HamletDuFromage",
+        "menus/about/copyright"_i18n + "\n© 2020-2022 HamletDuFromage\n© 2025-2026 Dimasick-git (Ryazhenka rework)",
         true);
     copyright->setHorizontalAlign(NVG_ALIGN_CENTER);
     this->addView(copyright);
 
-    // Links
+    // Ryazhenka ecosystem links — visible on About tab so users can find the
+    // companion repos shipped with the pack without having to remember URLs.
+    this->addView(new brls::Header("menus/ryazhenka/ecosystem_title"_i18n));
+    std::string ecosystem;
+    for (const auto& link : ryazhenka::kEcosystemLinks) {
+        ecosystem.append("• ");
+        ecosystem.append(link.name);
+        ecosystem.append("  —  ");
+        ecosystem.append(link.url);
+        ecosystem.push_back('\n');
+    }
+    brls::Label* ecoLabel = new brls::Label(
+        brls::LabelStyle::SMALL,
+        ecosystem,
+        true);
+    this->addView(ecoLabel);
+
+    // Original disclaimers
     this->addView(new brls::Header("menus/about/disclaimers_title"_i18n));
     brls::Label* links = new brls::Label(
         brls::LabelStyle::SMALL,
