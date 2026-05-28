@@ -1,8 +1,16 @@
 diff --git a/source/main.cpp b/source/main.cpp
-index 842c971..3f4ce33 100644
+index 842c971..b274f69 100644
 --- a/source/main.cpp
 +++ b/source/main.cpp
-@@ -8,6 +8,12 @@
+@@ -1,6 +1,7 @@
+ #include <switch.h>
+ 
+ #include <borealis.hpp>
++#include <curl/curl.h>
+ #include <filesystem>
+ #include <json.hpp>
+ 
+@@ -8,6 +9,12 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -15,29 +23,34 @@ index 842c971..3f4ce33 100644
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +25,20 @@ CFW CurrentCfw::running_cfw;
- 
- int main(int argc, char* argv[])
- {
-+    try { ryazhenka::crash::install(); } catch (...) {}
-+
-     // Init the app
-     if (!brls::Application::init(APP_TITLE)) {
-         brls::Logger::error("Unable to init Borealis application");
+@@ -25,11 +32,15 @@ int main(int argc, char* argv[])
          return EXIT_FAILURE;
      }
-+    try { ryazhenka::branding::applyBranding(); } catch (...) {}
  
++    // Install crash handler AFTER borealis init so its logger is usable.
++    try { ryazhenka::crash::install(); } catch (...) {}
++    try { ryazhenka::branding::applyBranding(); } catch (...) {}
++
      nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
      if (languageFile.find("language") != languageFile.end())
          i18n::loadTranslations(languageFile["language"]);
      else
 -        i18n::loadTranslations();
-+        i18n::loadTranslations(std::string(ryazhenka::kDefaultLanguage));
++        i18n::loadTranslations(); // system locale fallback, same as upstream
  
          //appletInitializeGamePlayRecording();
  
-@@ -54,6 +63,14 @@ int main(int argc, char* argv[])
+@@ -43,6 +54,9 @@ int main(int argc, char* argv[])
+     nsInitialize();
+     socketInitializeDefault();
+     nxlinkStdio();
++    // curl_global_init must be called once after the socket layer is up and
++    // before ANY curl_easy_init() — including calls from background threads.
++    curl_global_init(CURL_GLOBAL_ALL);
+     pmdmntInitialize();
+     pminfoInitialize();
+     splInitialize();
+@@ -54,6 +68,14 @@ int main(int argc, char* argv[])
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
@@ -52,3 +65,11 @@ index 842c971..3f4ce33 100644
  
      if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
          brls::Application::pushView(new MainFrame());
+@@ -69,6 +91,7 @@ int main(int argc, char* argv[])
+     splExit();
+     pminfoExit();
+     pmdmntExit();
++    curl_global_cleanup();
+     socketExit();
+     nsExit();
+     setsysExit();

@@ -1,6 +1,7 @@
 #include <switch.h>
 
 #include <borealis.hpp>
+#include <curl/curl.h>
 #include <filesystem>
 #include <json.hpp>
 
@@ -25,20 +26,21 @@ CFW CurrentCfw::running_cfw;
 
 int main(int argc, char* argv[])
 {
-    try { ryazhenka::crash::install(); } catch (...) {}
-
     // Init the app
     if (!brls::Application::init(APP_TITLE)) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
+
+    // Install crash handler AFTER borealis init so its logger is usable.
+    try { ryazhenka::crash::install(); } catch (...) {}
     try { ryazhenka::branding::applyBranding(); } catch (...) {}
 
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
     if (languageFile.find("language") != languageFile.end())
         i18n::loadTranslations(languageFile["language"]);
     else
-        i18n::loadTranslations(std::string(ryazhenka::kDefaultLanguage));
+        i18n::loadTranslations(); // system locale fallback, same as upstream
 
         //appletInitializeGamePlayRecording();
 
@@ -52,6 +54,9 @@ int main(int argc, char* argv[])
     nsInitialize();
     socketInitializeDefault();
     nxlinkStdio();
+    // curl_global_init must be called once after the socket layer is up and
+    // before ANY curl_easy_init() — including calls from background threads.
+    curl_global_init(CURL_GLOBAL_ALL);
     pmdmntInitialize();
     pminfoInitialize();
     splInitialize();
@@ -86,6 +91,7 @@ int main(int argc, char* argv[])
     splExit();
     pminfoExit();
     pmdmntExit();
+    curl_global_cleanup();
     socketExit();
     nsExit();
     setsysExit();

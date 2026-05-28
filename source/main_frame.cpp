@@ -38,9 +38,6 @@ MainFrame::MainFrame() : TabFrame()
 
     bool erista = util::isErista();
 
-    if (!util::getBoolValue(hideStatus, "status"))
-        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
-
     if (!util::getBoolValue(hideStatus, "about"))
         this->addTab("menus/main/about"_i18n, new AboutTab());
 
@@ -61,6 +58,13 @@ MainFrame::MainFrame() : TabFrame()
 
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
+
+    // Status tab is added LAST so borealis does not call willAppear() on it
+    // during construction (borealis calls willAppear only on the first tab
+    // added via addTab → switchToView). willAppear() starts the Sampler
+    // background thread — safe to do only after the UI is up.
+    if (!util::getBoolValue(hideStatus, "status"))
+        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }

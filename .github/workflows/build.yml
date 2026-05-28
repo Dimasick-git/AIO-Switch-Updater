@@ -17,12 +17,7 @@ jobs:
   build:
     name: Build Ryazhenka Updater
     runs-on: ubuntu-latest
-    # Pinned to the same dated image as the Dimasick-git/SwitchWave Dockerfile
-    # — that combination of libnx+devkitA64 is verified to run on real hardware.
-    # The :latest tag currently points to 20260219, which has a libnx ABI delta
-    # that breaks runtime for the borealis submodule (pinned at May-2023 by
-    # upstream AIO). Bump this date only after verifying on console.
-    container: devkitpro/devkita64:20260215
+    container: devkitpro/devkita64:latest
     permissions:
       contents: write
     steps:
