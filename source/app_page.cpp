@@ -133,7 +133,7 @@ u32 AppPage::GetControlData(u64 tid, NsApplicationControlData* controlData, u64&
     rc = nacpGetLanguageEntry(&controlData->nacp, &langEntry);
     if (R_FAILED(rc)) return rc;
 
-    if (!langEntry->name) return 200;
+    if (!langEntry->name[0]) return 200;
 
     name = langEntry->name;
 

@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 7ac3ff0..0812ca7 100644
+index 7ac3ff0..bb0859f 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -20,10 +20,10 @@ SOURCES		:=	source
@@ -16,3 +16,12 @@ index 7ac3ff0..0812ca7 100644
  
  ROMFS				:=	resources
  BOREALIS_PATH		:=	lib/borealis
+@@ -161,7 +161,7 @@ $(ROMFS):
+ 	@[ -d $@ ] || mkdir -p $@
+ 	@cp -rf $(CURDIR)/$(ROMFS)/i18n/zh-CN/. $(CURDIR)/$(ROMFS)/i18n/zh-Hans/
+ 	@cp -rf $(CURDIR)/$(ROMFS)/i18n/zh-TW/. $(CURDIR)/$(ROMFS)/i18n/zh-Hant/
+-	@$(MAKE) -C $(CURDIR)/TegraExplorer -f $(CURDIR)/TegraExplorer/Makefile
++	@$(MAKE) -C $(CURDIR)/TegraExplorer -f $(CURDIR)/scripts/ryazhenka/tegraexplorer.override.mk
+ 	@cp $(CURDIR)/TegraExplorer/output/TegraExplorer.bin $(CURDIR)/$(ROMFS)/aio_rcm.bin
+ # @$(MAKE) -C $(CURDIR)/aiosu-forwarder -f $(CURDIR)/aiosu-forwarder/Makefile
+ 	@cp $(CURDIR)/aiosu-forwarder/aiosu-forwarder.nro $(CURDIR)/$(ROMFS)/aiosu-forwarder.nro

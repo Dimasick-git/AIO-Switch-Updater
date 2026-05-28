@@ -33,7 +33,7 @@ std::string utcTimestamp() {
     const auto t = system_clock::to_time_t(now);
     std::tm tm{};
     gmtime_r(&t, &tm);
-    char buf[32];
+    char buf[64];
     std::snprintf(buf, sizeof buf, "%04d%02d%02dT%02d%02d%02dZ",
                   tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
                   tm.tm_hour, tm.tm_min, tm.tm_sec);

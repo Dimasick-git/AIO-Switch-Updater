@@ -1,0 +1,26 @@
+diff --git a/source/app_page.cpp b/source/app_page.cpp
+index b1bf429..5305b80 100644
+--- a/source/app_page.cpp
++++ b/source/app_page.cpp
+@@ -133,7 +133,7 @@ u32 AppPage::GetControlData(u64 tid, NsApplicationControlData* controlData, u64&
+     rc = nacpGetLanguageEntry(&controlData->nacp, &langEntry);
+     if (R_FAILED(rc)) return rc;
+ 
+-    if (!langEntry->name) return 200;
++    if (!langEntry->name[0]) return 200;
+ 
+     name = langEntry->name;
+ 
+diff --git a/source/exclude_page.cpp b/source/exclude_page.cpp
+index c38fbf6..66f9bcd 100644
+--- a/source/exclude_page.cpp
++++ b/source/exclude_page.cpp
+@@ -46,7 +46,7 @@ ExcludePage::ExcludePage() : AppletFrame(true, true)
+         if (R_FAILED(rc)) break;
+         rc = nacpGetLanguageEntry(&controlData.nacp, &langEntry);
+         if (R_FAILED(rc)) break;
+-        if (!langEntry->name) {
++        if (!langEntry->name[0]) {
+             i++;
+             continue;
+         }

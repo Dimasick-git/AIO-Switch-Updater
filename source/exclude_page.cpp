@@ -46,7 +46,7 @@ ExcludePage::ExcludePage() : AppletFrame(true, true)
         if (R_FAILED(rc)) break;
         rc = nacpGetLanguageEntry(&controlData.nacp, &langEntry);
         if (R_FAILED(rc)) break;
-        if (!langEntry->name) {
+        if (!langEntry->name[0]) {
             i++;
             continue;
         }
