@@ -294,7 +294,7 @@ namespace download {
         const char* out = output.c_str();
         CURL* curl = curl_easy_init();
         ntwrk_struct_t chunk = {0};
-        long status_code;
+        long status_code = 0;
         time_old = std::chrono::steady_clock::now();
         dlold = 0.0f;
         bool can_download = true;
@@ -408,7 +408,7 @@ namespace download {
         CURL* curl_handle;
         struct MemoryStruct chunk;
         struct curl_slist* list = NULL;
-        long status_code;
+        long status_code = 0;
 
         chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
         chunk.size = 0;                               /* no data at this point */

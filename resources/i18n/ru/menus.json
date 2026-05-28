@@ -26,6 +26,8 @@
     "status_tab": "Состояние",
     "status_header": "Состояние системы",
     "status_charts_unavailable": "Графики недоступны на этой прошивке",
+    "status_collecting": "Собираем первые показания…",
+    "net_diag_pending": "Проверяем…",
     "sysmodule_manager": "Управление sysmodules",
     "sysmodule_empty": "В /atmosphere/contents/ ничего не найдено",
     "sysmodule_on": "Вкл",

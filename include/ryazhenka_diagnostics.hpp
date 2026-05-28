@@ -12,6 +12,7 @@
  */
 
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -38,5 +39,12 @@ struct ProbeResult {
 /// HEAD requests to GitHub / raw / Telegram / pack repo / upstream. Sequential
 /// (the libcurl in libnx is built without async support on Switch).
 std::vector<ProbeResult> runNetworkProbe();
+
+/// Same probe set, run on a detached std::thread. The callback fires on the
+/// worker thread once all probes complete — callers must marshal back to the
+/// UI thread if they touch borealis views. Used by the Tools-tab "Network
+/// diagnostics" popup so the UI thread stays responsive and B-button closes
+/// the popup instantly instead of waiting on curl_easy_perform.
+void runNetworkProbeAsync(std::function<void(std::vector<ProbeResult>)> onDone);
 
 } // namespace ryazhenka::diagnostics

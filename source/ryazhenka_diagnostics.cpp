@@ -13,9 +13,12 @@
 #include <ctime>
 #include <deque>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <system_error>
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include "ryazhenka_config.hpp"
@@ -113,54 +116,76 @@ std::string writeDumpFile() {
     return path;
 }
 
+namespace {
+
+ProbeResult probeOne(const std::string& url) {
+    ProbeResult r;
+    r.host = url;
+
+    CURL* curl = curl_easy_init();
+    if (!curl) return r;
+
+    struct curl_slist* hdr = curl_slist_append(nullptr,
+                                               "User-Agent: RyazhenkaUpdater/1.0");
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    // Tight timeouts so a dead host cannot pin the UI thread; the original
+    // 10s+10s × 5 hosts could lock the popup for 50+ seconds and B did
+    // nothing while curl was inside the syscall.
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &curlDiscardBody);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, hdr);
+
+    const auto t0 = std::chrono::steady_clock::now();
+    const CURLcode rc = curl_easy_perform(curl);
+    const auto t1 = std::chrono::steady_clock::now();
+
+    r.latency_ms = static_cast<long>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &r.http_code);
+    r.ok = (rc == CURLE_OK && r.http_code > 0 && r.http_code < 400);
+
+    curl_slist_free_all(hdr);
+    curl_easy_cleanup(curl);
+    return r;
+}
+
+const std::vector<std::string> kProbeTargets = {
+    "https://api.github.com",
+    "https://raw.githubusercontent.com",
+    "https://github.com/Dimasick-git/Ryzhenka",
+    "https://github.com/HamletDuFromage/aio-switch-updater",
+    "https://t.me/Ryazhenkacfw",
+};
+
+} // anonymous
+
 std::vector<ProbeResult> runNetworkProbe() {
-    static const std::vector<std::string> targets = {
-        "https://api.github.com",
-        "https://raw.githubusercontent.com",
-        "https://github.com/Dimasick-git/Ryzhenka",
-        "https://github.com/HamletDuFromage/aio-switch-updater",
-        "https://t.me/Ryazhenkacfw",
-    };
-
     std::vector<ProbeResult> results;
-    results.reserve(targets.size());
-
-    for (const auto& url : targets) {
-        ProbeResult r;
-        r.host = url;
-
-        CURL* curl = curl_easy_init();
-        if (!curl) {
-            results.push_back(r);
-            continue;
-        }
-
-        struct curl_slist* hdr = curl_slist_append(nullptr,
-                                                   "User-Agent: RyazhenkaUpdater/1.0");
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, kCurlConnectTimeoutSec);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &curlDiscardBody);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, hdr);
-
-        const auto t0 = std::chrono::steady_clock::now();
-        const CURLcode rc = curl_easy_perform(curl);
-        const auto t1 = std::chrono::steady_clock::now();
-
-        r.latency_ms = static_cast<long>(
-            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count());
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &r.http_code);
-        r.ok = (rc == CURLE_OK && r.http_code > 0 && r.http_code < 400);
-
-        curl_slist_free_all(hdr);
-        curl_easy_cleanup(curl);
-
-        results.push_back(r);
+    results.reserve(kProbeTargets.size());
+    for (const auto& url : kProbeTargets) {
+        results.push_back(probeOne(url));
     }
-
     return results;
+}
+
+void runNetworkProbeAsync(std::function<void(std::vector<ProbeResult>)> onDone) {
+    std::thread([onDone = std::move(onDone)]() {
+        std::vector<ProbeResult> results;
+        results.reserve(kProbeTargets.size());
+        try {
+            for (const auto& url : kProbeTargets) {
+                results.push_back(probeOne(url));
+            }
+        } catch (const std::exception& e) {
+            ryazhenka::log::warn(std::string("net_diag thread: ") + e.what());
+        } catch (...) {
+            ryazhenka::log::warn("net_diag thread: unknown exception");
+        }
+        if (onDone) onDone(std::move(results));
+    }).detach();
 }
 
 } // namespace ryazhenka::diagnostics

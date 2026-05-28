@@ -85,12 +85,18 @@ void ListDownloadTab::createList(contentType type)
                 else if (type == contentType::payloads) {
                     fs::createTree(BOOTLOADER_PL_PATH);
                     std::string path = std::string(BOOTLOADER_PL_PATH) + title;
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
+                        long sc = download::downloadFile(url, path, OFF);
+                        ProgressEvent::instance().setStatusCode(sc);
+                    }));
                 }
                 else if (type == contentType::hekate_ipl) {
                     fs::createTree(BOOTLOADER_PATH);
                     std::string path = std::string(BOOTLOADER_PATH) + title;
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
+                        long sc = download::downloadFile(url, path, OFF);
+                        ProgressEvent::instance().setStatusCode(sc);
+                    }));
                 }
 
                 std::string doneMsg = "menus/common/all_done"_i18n;

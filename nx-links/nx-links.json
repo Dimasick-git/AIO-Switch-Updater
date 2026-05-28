@@ -1,0 +1,26 @@
+{
+  "_comment": "Aggregator for Ryazhenka Updater download tabs. All URLs use the GitHub releases/latest/download/<filename> alias so the JSON does not need to be re-edited on every upstream release. Asset filename must be stable across releases.",
+  "_schema_version": 1,
+  "cfws": {
+    "Atmosphere": {
+      "Ryazhenka pack (full)": "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/Ryazhenkabestcfw.zip",
+      "Atmosphere (vanilla, latest)": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/atmosphere.zip"
+    }
+  },
+  "bootloaders": {
+    "Hekate + Nyx (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+  },
+  "firmwares": {
+    "_TODO": "Add stable mirror URL for Nintendo firmware archives once chosen by maintainer."
+  },
+  "hekate": {
+    "Hekate + Nyx (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+  },
+  "payloads": {
+    "Hekate payload (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.bin",
+    "Fusee (Atmosphere)": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
+  },
+  "custom": {
+    "_TODO": "Populate with Ryazhenka-specific homebrew bundles once asset filenames are confirmed (Sys-clk, Ryazhahand-Overlay, FPSLocker, EdiZon, Fizeau, ovlSysmodules, Mission-Control, Ryazha-Status-Monitor, Ryazhenkabestcfw-Tuner)."
+  }
+}

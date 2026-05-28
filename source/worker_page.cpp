@@ -72,9 +72,14 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
         else if (ProgressEvent::instance().finished()) {
             appletEndBlockingHomeButton();
             appletSetMediaPlaybackState(false);
-            if (ProgressEvent::instance().getStatusCode() > 399) {
+            // statusCode == 0 means the worker either never wrote one (curl
+            // failure, callsite did not propagate) or genuine no-network.
+            // Treating it as failure surfaces an error instead of silently
+            // showing "all done" on a 0-byte file.
+            long sc = ProgressEvent::instance().getStatusCode();
+            if (sc == 0 || sc > 399) {
                 this->draw_page = false;
-                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode())));
+                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(sc)));
             }
             if (ProgressEvent::instance().getInterupt()) {
                 brls::Application::pushView(new MainFrame());

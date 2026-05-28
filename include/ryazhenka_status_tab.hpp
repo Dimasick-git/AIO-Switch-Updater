@@ -16,6 +16,11 @@ public:
 
     void willAppear(bool resetState) override;
     void willDisappear(bool resetState) override;
+    void frame(brls::FrameContext* ctx) override;
+
+private:
+    // Hidden as soon as the Sampler thread returns a first valid snapshot.
+    brls::Label* loadingLabel = nullptr;
 };
 
 } // namespace ryazhenka

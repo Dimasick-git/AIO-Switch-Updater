@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Ряженка (кремовый + красно-коричневый)",
+    "BODY": "F5E6C8",
+    "BTN": "8B3A2F"
+  },
+  {
+    "name": "Чёрный (стоковый)",
+    "BODY": "323232",
+    "BTN": "FFFFFF"
+  },
+  {
+    "name": "Mario Red",
+    "BODY": "E10F00",
+    "BTN": "280A0A"
+  },
+  {
+    "name": "Splatoon Neon",
+    "BODY": "FF3C28",
+    "BTN": "0AB9E6"
+  },
+  {
+    "name": "Pokémon Gold",
+    "BODY": "C88C32",
+    "BTN": "281900"
+  },
+  {
+    "name": "Зелёный",
+    "BODY": "1EA84B",
+    "BTN": "0A1E0F"
+  }
+]

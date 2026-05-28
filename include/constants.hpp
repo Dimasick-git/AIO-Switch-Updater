@@ -19,29 +19,25 @@ constexpr const char APP_URL[] = "https://github.com/Dimasick-git/AIO-Switch-Upd
 constexpr const char TAGS_INFO[] = "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest";
 constexpr const char APP_FILENAME[] = "/config/aio-switch-updater/app.zip";
 
-constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/nx-links.json";
+constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/nx-links.json";
 
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
 
-constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/firmwares.json";
+constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/firmwares.json";
 constexpr const char FIRMWARE_FILENAME[] = "/config/aio-switch-updater/firmware.zip";
 constexpr const char FIRMWARE_PATH[] = "/firmware/";
 
-constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/bootloaders.json";
+constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/bootloaders.json";
 constexpr const char BOOTLOADER_FILENAME[] = "/config/aio-switch-updater/bootloader.zip";
 
-constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/cfws.json";
-constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/sxos.json";
+constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/cfws.json";
+constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/sxos.json";
 constexpr const char AMS_FILENAME[] = "/config/aio-switch-updater/ams.zip";
 
-constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/hekate.json";
+constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/hekate.json";
 
-constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/payloads.json";
-
-constexpr const char DEEPSEA_META_JSON[] = "https://builder.teamneptune.net/meta.json";
-constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/build/";
-constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.json";
+constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/payloads.json";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 
@@ -75,9 +71,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
 constexpr const char TITLES_PATH[] = "titles/";
 
 constexpr const char COLOR_PICKER_URL[] = "https://git.io/jcpicker";
-constexpr const char JC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/jc_profiles.json";
+constexpr const char JC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/jc_profiles.json";
 constexpr const char JC_COLOR_PATH[] = "/config/aio-switch-updater/jc_profiles.json";
-constexpr const char PC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/pc_profiles.json";
+constexpr const char PC_COLOR_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/pc_profiles.json";
 constexpr const char PC_COLOR_PATH[] = "/config/aio-switch-updater/pc_profiles.json";
 
 constexpr const char PAYLOAD_PATH[] = "/payloads/";

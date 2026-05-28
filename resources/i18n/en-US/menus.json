@@ -26,6 +26,8 @@
     "status_tab": "Status",
     "status_header": "System health",
     "status_charts_unavailable": "Live charts unavailable on this firmware",
+    "status_collecting": "Collecting first samples…",
+    "net_diag_pending": "Probing…",
     "sysmodule_manager": "Sysmodule manager",
     "sysmodule_empty": "No sysmodules found under /atmosphere/contents/",
     "sysmodule_on": "On",

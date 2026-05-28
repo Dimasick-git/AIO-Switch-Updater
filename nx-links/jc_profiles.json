@@ -1,0 +1,51 @@
+[
+  {
+    "name": "Ряженка (кремовый + красно-коричневый)",
+    "L_JC": "F5E6C8",
+    "L_BTN": "8B3A2F",
+    "R_JC": "F5E6C8",
+    "R_BTN": "8B3A2F"
+  },
+  {
+    "name": "Animal Crossing",
+    "L_JC": "82FF96",
+    "L_BTN": "0A1E0A",
+    "R_JC": "FFE6B4",
+    "R_BTN": "0A1E0A"
+  },
+  {
+    "name": "Mario Red & Blue",
+    "L_JC": "E10F00",
+    "L_BTN": "280A0A",
+    "R_JC": "2D32B5",
+    "R_BTN": "0A0A2D"
+  },
+  {
+    "name": "Splatoon 2 Neon",
+    "L_JC": "FF3C28",
+    "L_BTN": "1E0A0A",
+    "R_JC": "0AB9E6",
+    "R_BTN": "001E1E"
+  },
+  {
+    "name": "Pokémon Lets Go Eevee",
+    "L_JC": "C88C32",
+    "L_BTN": "281900",
+    "R_JC": "FAF0C8",
+    "R_BTN": "322800"
+  },
+  {
+    "name": "Зелёный Joy-Con",
+    "L_JC": "1EA84B",
+    "L_BTN": "0A1E0F",
+    "R_JC": "1EA84B",
+    "R_BTN": "0A1E0F"
+  },
+  {
+    "name": "Серый (стоковый)",
+    "L_JC": "828282",
+    "L_BTN": "0F0F0F",
+    "R_JC": "828282",
+    "R_BTN": "0F0F0F"
+  }
+]
