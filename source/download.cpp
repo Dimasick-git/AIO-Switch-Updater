@@ -369,7 +369,6 @@ namespace download {
         chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
         chunk.size = 0;                               /* no data at this point */
 
-        curl_global_init(CURL_GLOBAL_ALL);
         curl_handle = curl_easy_init();
         curl_easy_setopt(curl_handle, CURLOPT_URL, url);
         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback2);
@@ -392,8 +391,6 @@ namespace download {
         curl_easy_cleanup(curl_handle);
         free(chunk.memory);
 
-        curl_global_cleanup();
-
         return ver;
     }
 
@@ -407,7 +404,6 @@ namespace download {
         chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
         chunk.size = 0;                               /* no data at this point */
 
-        curl_global_init(CURL_GLOBAL_ALL);
         curl_handle = curl_easy_init();
         curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
         if (!headers.empty()) {
@@ -431,7 +427,6 @@ namespace download {
         res = std::string(chunk.memory);
         free(chunk.memory);
 
-        curl_global_cleanup();
         return status_code;
     }
 
