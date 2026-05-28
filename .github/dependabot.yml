@@ -14,3 +14,12 @@ updates:
     commit-message:
       prefix: "ci"
       include: scope
+    # Skip major bumps for actions where breaking changes need manual
+    # validation. Patch + minor bumps still flow through automatically.
+    ignore:
+      - dependency-name: "actions/upload-artifact"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "actions/download-artifact"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "softprops/action-gh-release"
+        update-types: ["version-update:semver-major"]
