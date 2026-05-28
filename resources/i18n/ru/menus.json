@@ -3,7 +3,10 @@
     "ecosystem_title": "Экосистема Ряженки",
     "update_available": "Доступно обновление",
     "version_check_running": "Проверяем версии тулзов Ряженки…",
-    "version_check_done": "Проверка версий завершена"
+    "version_check_done": "Проверка версий завершена",
+    "install_pack": "Установить пак Ряженки",
+    "install_pack_confirm": "Скачать и установить актуальный пак Ряженки (Atmosphere, Hekate, sigpatches, тулзы)? Архив будет распакован в корень SD-карты, поверх существующих файлов.",
+    "system_info_title": "О системе"
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

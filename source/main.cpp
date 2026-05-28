@@ -10,7 +10,9 @@
 #include "main_frame.hpp"
 #include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_system_info.hpp"
 #include "ryazhenka_version_check.hpp"
 #include "warning_page.hpp"
 
@@ -23,6 +25,8 @@ CFW CurrentCfw::running_cfw;
 
 int main(int argc, char* argv[])
 {
+    ryazhenka::crash::install();
+
     // Init the app
     if (!brls::Application::init(APP_TITLE)) {
         brls::Logger::error("Unable to init Borealis application");
@@ -61,6 +65,7 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
     ryazhenka::log::init();
     ryazhenka::log::info("Ryazhenka Updater started");
+    ryazhenka::log::info("sysinfo: " + ryazhenka::sysinfo::formatOneLine(ryazhenka::sysinfo::collect()));
     ryazhenka::version_check::scheduleBackgroundCheck();
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {

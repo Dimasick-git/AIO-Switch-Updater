@@ -1,0 +1,48 @@
+diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
+index 43c91c1..18af08f 100644
+--- a/source/tools_tab.cpp
++++ b/source/tools_tab.cpp
+@@ -13,6 +13,8 @@
+ #include "hide_tabs_page.hpp"
+ #include "net_page.hpp"
+ #include "payload_page.hpp"
++#include "ryazhenka_config.hpp"
++#include "ryazhenka_logger.hpp"
+ #include "utils.hpp"
+ #include "worker_page.hpp"
+ 
+@@ -46,6 +48,26 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+         this->addView(updateApp);
+     }
+ 
++    brls::ListItem* installPack = new brls::ListItem("menus/ryazhenka/install_pack"_i18n);
++    installPack->getClickEvent()->subscribe([](brls::View* view) {
++        const std::string packUrl(ryazhenka::kPackUrl);
++        const std::string confirmText = std::string("menus/ryazhenka/install_pack_confirm"_i18n) + "\n\n" + packUrl;
++        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
++        stagedFrame->setTitle("menus/ryazhenka/install_pack"_i18n);
++        stagedFrame->addStage(new ConfirmPage(stagedFrame, confirmText));
++        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [packUrl]() {
++            ryazhenka::log::info("pack installer: downloading " + packUrl);
++            util::downloadArchive(packUrl, contentType::custom);
++        }));
++        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
++            ryazhenka::log::info("pack installer: extracting Ryazhenka_AIO.zip");
++            util::extractArchive(contentType::custom);
++        }));
++        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
++        brls::Application::pushView(stagedFrame);
++    });
++    installPack->setHeight(LISTITEM_HEIGHT);
++
+     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
+     cheats->getClickEvent()->subscribe([](brls::View* view) {
+         brls::PopupFrame::open("menus/cheats/menu"_i18n, new CheatsPage(), "", "");
+@@ -186,6 +208,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+     changelog->setHeight(LISTITEM_HEIGHT);
+ 
+     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
++    this->addView(installPack);
+     if (!util::getBoolValue(hideStatus, "outdatedtitles")) this->addView(outdatedTitles);
+     if (!util::getBoolValue(hideStatus, "jccolor")) this->addView(JCcolor);
+     if (!util::getBoolValue(hideStatus, "pccolor")) this->addView(PCcolor);

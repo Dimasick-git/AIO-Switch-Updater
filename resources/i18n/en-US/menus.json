@@ -3,7 +3,10 @@
     "ecosystem_title": "Ryazhenka ecosystem",
     "update_available": "Update available",
     "version_check_running": "Checking Ryazhenka tools versions…",
-    "version_check_done": "Version check complete"
+    "version_check_done": "Version check complete",
+    "install_pack": "Install Ryazhenka pack",
+    "install_pack_confirm": "Download and install the current Ryazhenka pack (Atmosphere, Hekate, sigpatches, tools)? The archive will be extracted into the SD root, overwriting existing files.",
+    "system_info_title": "System info"
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
