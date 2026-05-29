@@ -13,6 +13,7 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_background.hpp"
 #include "ryazhenka_crash_handler.hpp"
+#include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_theme.hpp"
 // system_info / version_check headers intentionally not included — see body
@@ -76,6 +77,7 @@ int main(int argc, char* argv[])
     brls::Logger::debug("Start");
     try { ryazhenka::log::init(); } catch (...) {}
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
+    try { ryazhenka::haptics::init(); } catch (...) {}
     // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
     // intentionally NOT called here. They each touch the filesystem and the
     // network respectively, and on Switch their failure modes (filesystem_
@@ -95,6 +97,7 @@ int main(int argc, char* argv[])
     while (brls::Application::mainLoop())
         ;
 
+    try { ryazhenka::haptics::exit(); } catch (...) {}
     romfsExit();
     splExit();
     pminfoExit();

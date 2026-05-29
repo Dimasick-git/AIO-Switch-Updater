@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
 
 namespace ryazhenka {
@@ -28,6 +29,10 @@ void WaveBackground::preFrame() {
     phase_ += delta * 0.0012f;
     if (phase_ > kTwoPi * 1024.0f)
         phase_ -= kTwoPi * 1024.0f;  // keep the float bounded over long sessions
+
+    // The background is the one view guaranteed to run every frame, so we drive
+    // the (non-blocking) haptics scheduler from here.
+    haptics::tick();
 }
 
 void WaveBackground::postFrame() {}

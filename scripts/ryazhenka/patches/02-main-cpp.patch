@@ -9,7 +9,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,13 @@
+@@ -8,6 +9,14 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -17,13 +17,14 @@ diff --git a/source/main.cpp b/source/main.cpp
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_background.hpp"
 +#include "ryazhenka_crash_handler.hpp"
++#include "ryazhenka_haptics.hpp"
 +#include "ryazhenka_logger.hpp"
 +#include "ryazhenka_theme.hpp"
 +// system_info / version_check headers intentionally not included — see body
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +27,26 @@
+@@ -19,17 +28,26 @@
  
  int main(int argc, char* argv[])
  {
@@ -53,7 +54,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +60,9 @@
+@@ -43,6 +61,9 @@
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -63,12 +64,13 @@ diff --git a/source/main.cpp b/source/main.cpp
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,6 +74,16 @@
+@@ -54,6 +75,17 @@
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
 +    try { ryazhenka::log::init(); } catch (...) {}
 +    try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
++    try { ryazhenka::haptics::init(); } catch (...) {}
 +    // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
 +    // intentionally NOT called here. They each touch the filesystem and the
 +    // network respectively, and on Switch their failure modes (filesystem_
@@ -80,7 +82,12 @@ diff --git a/source/main.cpp b/source/main.cpp
  
      if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
          brls::Application::pushView(new MainFrame());
-@@ -69,6 +99,7 @@
+@@ -65,10 +97,12 @@
+     while (brls::Application::mainLoop())
+         ;
+ 
++    try { ryazhenka::haptics::exit(); } catch (...) {}
+     romfsExit();
      splExit();
      pminfoExit();
      pmdmntExit();
