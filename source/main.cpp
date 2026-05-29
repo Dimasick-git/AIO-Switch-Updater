@@ -11,6 +11,7 @@
 #include "main_frame.hpp"
 #include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_background.hpp"
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_theme.hpp"
@@ -38,6 +39,8 @@ int main(int argc, char* argv[])
     try { ryazhenka::branding::applyBranding(); } catch (...) {}
     // Apply the persisted palette (defaults to Ryazhenka) before any view shows.
     try { ryazhenka::theme::loadAndApplyFromConfig(); } catch (...) {}
+    // Animated procedural background behind the whole UI.
+    try { brls::Application::setBackground(new ryazhenka::WaveBackground()); } catch (...) {}
 
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
     if (languageFile.find("language") != languageFile.end())
