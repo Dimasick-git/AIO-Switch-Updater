@@ -14,6 +14,7 @@
 #include "net_page.hpp"
 #include "payload_page.hpp"
 #include "ryazhenka_backup.hpp"
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_card.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_diagnostics.hpp"
@@ -359,6 +360,13 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     changelog->getClickEvent()->subscribe([](brls::View* view) {
         util::openWebBrowser(CHANGELOG_URL);
     });
+
+    // Per-release banner shown right above the install action so the user
+    // sees which Ryazhenka release they are about to install. Lazy-fetched.
+    if (brls::Image* banner = ryazhenka::banner::makeImage()) {
+        banner->setHeight(160);
+        this->addView(banner);
+    }
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);

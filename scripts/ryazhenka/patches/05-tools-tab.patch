@@ -1,11 +1,12 @@
 diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
 --- a/source/tools_tab.cpp
 +++ b/source/tools_tab.cpp
-@@ -13,6 +13,16 @@
+@@ -13,6 +13,17 @@
  #include "hide_tabs_page.hpp"
  #include "net_page.hpp"
  #include "payload_page.hpp"
 +#include "ryazhenka_backup.hpp"
++#include "ryazhenka_banner.hpp"
 +#include "ryazhenka_card.hpp"
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_diagnostics.hpp"
@@ -18,7 +19,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -27,7 +37,7 @@
+@@ -27,7 +38,7 @@
  ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
  {
      if (!tag.empty() && tag != AppVersion) {
@@ -27,7 +28,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
          std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
          updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
              brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-@@ -42,56 +52,226 @@
+@@ -42,56 +53,226 @@
                  new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
              brls::Application::pushView(stagedFrame);
          });
@@ -270,7 +271,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      move->getClickEvent()->subscribe([](brls::View* view) {
          chdir("/");
          std::string error = "";
-@@ -103,9 +283,8 @@
+@@ -103,9 +284,8 @@
          }
          util::showDialogBoxInfo(error);
      });
@@ -281,7 +282,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      cleanUp->getClickEvent()->subscribe([](brls::View* view) {
          std::filesystem::remove(AMS_FILENAME);
          std::filesystem::remove(APP_FILENAME);
-@@ -119,9 +298,8 @@
+@@ -119,9 +299,8 @@
          fs::removeDir(FW_DIRECTORY_PATH);
          util::showDialogBoxInfo("menus/common/all_done"_i18n);
      });
@@ -292,7 +293,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      language->getClickEvent()->subscribe([](brls::View* view) {
          std::vector<std::pair<std::string, std::string>> languages{
              std::make_pair("American English ({})", "en-US"),
-@@ -171,21 +349,26 @@
+@@ -171,21 +350,33 @@
          appView->setContentView(list);
          brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
      });
@@ -311,6 +312,13 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
          util::openWebBrowser(CHANGELOG_URL);
      });
 -    changelog->setHeight(LISTITEM_HEIGHT);
++
++    // Per-release banner shown right above the install action so the user
++    // sees which Ryazhenka release they are about to install. Lazy-fetched.
++    if (brls::Image* banner = ryazhenka::banner::makeImage()) {
++        banner->setHeight(160);
++        this->addView(banner);
++    }
  
      if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
 +    this->addView(installPack);

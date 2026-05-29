@@ -40,12 +40,14 @@ public:
 private:
     bool onClick();
     void animateGlow(float target);
+    void triggerClickBurst();
 
     std::string title;
     std::string subtitle;
     std::string icon;
     std::string value;
-    float glow = 0.0f;  // 0..1 focus glow, animated
+    float glow = 0.0f;        // 0..1 focus glow, animated
+    float clickBurst = 1.0f;  // 0->1 radial spark on click; hidden when ≥1
     brls::GenericEvent clickEvent;
 };
 
