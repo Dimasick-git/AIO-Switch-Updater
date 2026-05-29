@@ -1,12 +1,12 @@
 diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
-index 43c91c1..6123061 100644
 --- a/source/tools_tab.cpp
 +++ b/source/tools_tab.cpp
-@@ -13,6 +13,15 @@
+@@ -13,6 +13,16 @@
  #include "hide_tabs_page.hpp"
  #include "net_page.hpp"
  #include "payload_page.hpp"
 +#include "ryazhenka_backup.hpp"
++#include "ryazhenka_card.hpp"
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_diagnostics.hpp"
 +#include "ryazhenka_factory_restore.hpp"
@@ -18,11 +18,25 @@ index 43c91c1..6123061 100644
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -46,6 +55,192 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -27,7 +37,7 @@
+ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
+ {
+     if (!tag.empty() && tag != AppVersion) {
+-        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
++        auto* updateApp = new ryazhenka::RyazhenkaCard(fmt::format("menus/tools/update_app"_i18n, tag));
+         std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
+         updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
+             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+@@ -42,56 +52,226 @@
+                 new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
+             brls::Application::pushView(stagedFrame);
+         });
+-        updateApp->setHeight(LISTITEM_HEIGHT);
          this->addView(updateApp);
      }
  
-+    brls::ListItem* showLog = new brls::ListItem("menus/ryazhenka/show_log"_i18n);
+-    brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
++    auto* showLog = new ryazhenka::RyazhenkaCard("menus/ryazhenka/show_log"_i18n);
 +    showLog->getClickEvent()->subscribe([](brls::View* view) {
 +        const auto lines = ryazhenka::diagnostics::tailLog(200);
 +        if (lines.empty()) {
@@ -39,9 +53,8 @@ index 43c91c1..6123061 100644
 +        logView->setContentView(list);
 +        brls::PopupFrame::open("menus/ryazhenka/show_log"_i18n, logView, "", "");
 +    });
-+    showLog->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* diagDump = new brls::ListItem("menus/ryazhenka/diag_dump"_i18n);
++    auto* diagDump = new ryazhenka::RyazhenkaCard("menus/ryazhenka/diag_dump"_i18n);
 +    diagDump->getClickEvent()->subscribe([](brls::View* view) {
 +        const std::string path = ryazhenka::diagnostics::writeDumpFile();
 +        if (path.empty()) {
@@ -50,9 +63,8 @@ index 43c91c1..6123061 100644
 +            util::showDialogBoxInfo(std::string("menus/ryazhenka/diag_saved"_i18n) + "\n\n" + path);
 +        }
 +    });
-+    diagDump->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* netDiag = new brls::ListItem("menus/ryazhenka/net_diag"_i18n);
++    auto* netDiag = new ryazhenka::RyazhenkaCard("menus/ryazhenka/net_diag"_i18n);
 +    netDiag->getClickEvent()->subscribe([](brls::View* view) {
 +        const auto results = ryazhenka::diagnostics::runNetworkProbe();
 +        brls::List* list = new brls::List();
@@ -68,9 +80,8 @@ index 43c91c1..6123061 100644
 +        diagView->setContentView(list);
 +        brls::PopupFrame::open("menus/ryazhenka/net_diag"_i18n, diagView, "", "");
 +    });
-+    netDiag->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* installPack = new brls::ListItem("menus/ryazhenka/install_pack"_i18n);
++    auto* installPack = new ryazhenka::RyazhenkaCard("menus/ryazhenka/install_pack"_i18n);
 +    installPack->getClickEvent()->subscribe([](brls::View* view) {
 +        constexpr std::uint64_t kMinFreeBytes = 500ull * 1024ull * 1024ull;
 +        if (!ryazhenka::sysinfo::hasEnoughFreeSpace(kMinFreeBytes)) {
@@ -106,16 +117,14 @@ index 43c91c1..6123061 100644
 +        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
 +        brls::Application::pushView(stagedFrame);
 +    });
-+    installPack->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* cleanupBackups = new brls::ListItem("menus/ryazhenka/cleanup_backups"_i18n);
++    auto* cleanupBackups = new ryazhenka::RyazhenkaCard("menus/ryazhenka/cleanup_backups"_i18n);
 +    cleanupBackups->getClickEvent()->subscribe([](brls::View* view) {
 +        const std::size_t removed = ryazhenka::backup::pruneOlderThan(30);
 +        util::showDialogBoxInfo("menus/common/all_done"_i18n + std::string("\n") + std::to_string(removed));
 +    });
-+    cleanupBackups->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* sysmoduleManager = new brls::ListItem("menus/ryazhenka/sysmodule_manager"_i18n);
++    auto* sysmoduleManager = new ryazhenka::RyazhenkaCard("menus/ryazhenka/sysmodule_manager"_i18n);
 +    sysmoduleManager->getClickEvent()->subscribe([](brls::View* view) {
 +        const auto entries = ryazhenka::sysmodule::list();
 +        if (entries.empty()) {
@@ -155,15 +164,13 @@ index 43c91c1..6123061 100644
 +        sysView->setContentView(list);
 +        brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, sysView, "menus/ryazhenka/sysmodule_hint"_i18n, "");
 +    });
-+    sysmoduleManager->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* openDashboard = new brls::ListItem("menus/ryazhenka/open_dashboard"_i18n);
++    auto* openDashboard = new ryazhenka::RyazhenkaCard("menus/ryazhenka/open_dashboard"_i18n);
 +    openDashboard->getClickEvent()->subscribe([](brls::View* view) {
 +        brls::Application::pushView(new ryazhenka::StatusTab());
 +    });
-+    openDashboard->setHeight(LISTITEM_HEIGHT);
 +
-+    brls::ListItem* factoryRestore = new brls::ListItem("menus/ryazhenka/factory_restore"_i18n);
++    auto* factoryRestore = new ryazhenka::RyazhenkaCard("menus/ryazhenka/factory_restore"_i18n);
 +    factoryRestore->getClickEvent()->subscribe([](brls::View* view) {
 +        const auto backups = ryazhenka::restore::listBackups(50);
 +        if (backups.empty()) {
@@ -206,13 +213,104 @@ index 43c91c1..6123061 100644
 +        restoreView->setContentView(list);
 +        brls::PopupFrame::open("menus/ryazhenka/factory_restore"_i18n, restoreView, "menus/ryazhenka/restore_hint"_i18n, "");
 +    });
-+    factoryRestore->setHeight(LISTITEM_HEIGHT);
 +
-     brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
++    auto* cheats = new ryazhenka::RyazhenkaCard("menus/tools/cheats"_i18n);
      cheats->getClickEvent()->subscribe([](brls::View* view) {
          brls::PopupFrame::open("menus/cheats/menu"_i18n, new CheatsPage(), "", "");
-@@ -186,6 +381,14 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
-     changelog->setHeight(LISTITEM_HEIGHT);
+     });
+-    cheats->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* outdatedTitles = new brls::ListItem("menus/tools/outdated_titles"_i18n);
++    auto* outdatedTitles = new ryazhenka::RyazhenkaCard("menus/tools/outdated_titles"_i18n);
+     outdatedTitles->getClickEvent()->subscribe([](brls::View* view) {
+         brls::PopupFrame::open("menus/tools/outdated_titles"_i18n, new AppPage_OutdatedTitles(), "menus/tools/outdated_titles_desc"_i18n, "");
+     });
+-    outdatedTitles->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* JCcolor = new brls::ListItem("menus/tools/joy_cons"_i18n);
++    auto* JCcolor = new ryazhenka::RyazhenkaCard("menus/tools/joy_cons"_i18n);
+     JCcolor->getClickEvent()->subscribe([](brls::View* view) {
+         brls::Application::pushView(new JCPage());
+     });
+-    JCcolor->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* PCcolor = new brls::ListItem("menus/tools/pro_cons"_i18n);
++    auto* PCcolor = new ryazhenka::RyazhenkaCard("menus/tools/pro_cons"_i18n);
+     PCcolor->getClickEvent()->subscribe([](brls::View* view) {
+         brls::Application::pushView(new PCPage());
+     });
+-    PCcolor->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* rebootPayload = new brls::ListItem("menus/tools/inject_payloads"_i18n);
++    auto* rebootPayload = new ryazhenka::RyazhenkaCard("menus/tools/inject_payloads"_i18n);
+     rebootPayload->getClickEvent()->subscribe([](brls::View* view) {
+         brls::PopupFrame::open("menus/tools/inject_payloads"_i18n, new PayloadPage(), "", "");
+     });
+-    rebootPayload->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* netSettings = new brls::ListItem("menus/tools/internet_settings"_i18n);
++    auto* netSettings = new ryazhenka::RyazhenkaCard("menus/tools/internet_settings"_i18n);
+     netSettings->getClickEvent()->subscribe([](brls::View* view) {
+         brls::PopupFrame::open("menus/tools/internet_settings"_i18n, new NetPage(), "", "");
+     });
+-    netSettings->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* browser = new brls::ListItem("menus/tools/browser"_i18n);
++    auto* browser = new ryazhenka::RyazhenkaCard("menus/tools/browser"_i18n);
+     browser->getClickEvent()->subscribe([](brls::View* view) {
+         std::string url;
+         if (brls::Swkbd::openForText([&url](std::string text) { url = text; }, "cheatslips.com e-mail", "", 256, "https://duckduckgo.com", 0, "Submit", "https://website.tld")) {
+             util::openWebBrowser(url);
+         }
+     });
+-    browser->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* move = new brls::ListItem("menus/tools/batch_copy"_i18n);
++    auto* move = new ryazhenka::RyazhenkaCard("menus/tools/batch_copy"_i18n);
+     move->getClickEvent()->subscribe([](brls::View* view) {
+         chdir("/");
+         std::string error = "";
+@@ -103,9 +283,8 @@
+         }
+         util::showDialogBoxInfo(error);
+     });
+-    move->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* cleanUp = new brls::ListItem("menus/tools/clean_up"_i18n);
++    auto* cleanUp = new ryazhenka::RyazhenkaCard("menus/tools/clean_up"_i18n);
+     cleanUp->getClickEvent()->subscribe([](brls::View* view) {
+         std::filesystem::remove(AMS_FILENAME);
+         std::filesystem::remove(APP_FILENAME);
+@@ -119,9 +298,8 @@
+         fs::removeDir(FW_DIRECTORY_PATH);
+         util::showDialogBoxInfo("menus/common/all_done"_i18n);
+     });
+-    cleanUp->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* language = new brls::ListItem("menus/tools/language"_i18n);
++    auto* language = new ryazhenka::RyazhenkaCard("menus/tools/language"_i18n);
+     language->getClickEvent()->subscribe([](brls::View* view) {
+         std::vector<std::pair<std::string, std::string>> languages{
+             std::make_pair("American English ({})", "en-US"),
+@@ -171,21 +349,26 @@
+         appView->setContentView(list);
+         brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
+     });
+-    language->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* hideTabs = new brls::ListItem("menus/tools/hide_tabs"_i18n);
++    auto* hideTabs = new ryazhenka::RyazhenkaCard("menus/tools/hide_tabs"_i18n);
+     hideTabs->getClickEvent()->subscribe([](brls::View* view) {
+         brls::PopupFrame::open("menus/tools/hide_tabs"_i18n, new HideTabsPage(), "", "");
+     });
+-    hideTabs->setHeight(LISTITEM_HEIGHT);
+ 
+-    brls::ListItem* changelog = new brls::ListItem("menus/tools/changelog"_i18n);
++    auto* changelog = new ryazhenka::RyazhenkaCard("menus/tools/changelog"_i18n);
+     changelog->getClickEvent()->subscribe([](brls::View* view) {
+         util::openWebBrowser(CHANGELOG_URL);
+     });
+-    changelog->setHeight(LISTITEM_HEIGHT);
  
      if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
 +    this->addView(installPack);
