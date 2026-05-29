@@ -5,6 +5,7 @@
 
 #include "constants.hpp"
 #include "fs.hpp"
+#include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
@@ -105,6 +106,19 @@ SettingsScreen::SettingsScreen() {
         this->refreshBackground();
     });
     this->addView(this->backgroundToggle);
+
+    auto* audioToggle = new RyazhenkaCard("menus/ryazhenka/settings/audio_toggle"_i18n,
+                                          "menus/ryazhenka/settings/audio_hint"_i18n, "", "");
+    audioToggle->getClickEvent()->subscribe([audioToggle](brls::View*) {
+        bool next = !audio::isEnabled();
+        audio::setEnabled(next);
+        setConfigKey("ryazhenka_audio_enabled", next);
+        if (next)
+            audio::click();
+        audioToggle->setValue(onOff(next));
+    });
+    audioToggle->setValue(onOff(audio::isEnabled()));
+    this->addView(audioToggle);
 
     // --- Caches ---
     this->addView(new brls::Header("menus/ryazhenka/settings/cache_header"_i18n));

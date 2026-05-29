@@ -57,7 +57,9 @@
       "clear_sigpatches": "Clear sigpatches version cache",
       "clear_log": "Clear app log",
       "about_header": "About",
-      "author": "Author"
+      "author": "Author",
+      "audio_toggle": "UI sound effects",
+      "audio_hint": "Procedural beeps on focus / click. Off by default."
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

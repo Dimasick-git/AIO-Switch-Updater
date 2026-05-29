@@ -11,6 +11,7 @@
 #include "main_frame.hpp"
 #include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
 #include "ryazhenka_banner.hpp"
 #include "ryazhenka_crash_handler.hpp"
@@ -80,6 +81,7 @@ int main(int argc, char* argv[])
     try { ryazhenka::log::init(); } catch (...) {}
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
     try { ryazhenka::haptics::init(); } catch (...) {}
+    try { ryazhenka::audio::init(); } catch (...) {}
     // Fire off the per-release banner refresh in the background. First-ever
     // launch shows no banner (cache empty); next launch shows whatever was
     // current at the time of fetch.
@@ -115,6 +117,7 @@ int main(int argc, char* argv[])
     while (brls::Application::mainLoop())
         ;
 
+    try { ryazhenka::audio::exit(); } catch (...) {}
     try { ryazhenka::haptics::exit(); } catch (...) {}
     romfsExit();
     splExit();

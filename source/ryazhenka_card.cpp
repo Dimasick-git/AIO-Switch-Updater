@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ryazhenka_audio.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_nvg.hpp"
 #include "ryazhenka_theme.hpp"
@@ -41,6 +42,7 @@ void RyazhenkaCard::setSubtitle(const std::string& s) {
 
 bool RyazhenkaCard::onClick() {
     haptics::click();
+    audio::click();
     this->playClickAnimation();
     this->triggerClickBurst();
     return this->clickEvent.fire(this);
@@ -83,6 +85,7 @@ void RyazhenkaCard::onFocusGained() {
     brls::View::onFocusGained();
     this->animateGlow(1.0f);
     haptics::focus();
+    audio::focus();
 }
 
 void RyazhenkaCard::onFocusLost() {

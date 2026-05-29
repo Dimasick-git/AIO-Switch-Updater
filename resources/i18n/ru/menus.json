@@ -57,7 +57,9 @@
       "clear_sigpatches": "Очистить кеш версии sigpatches",
       "clear_log": "Очистить лог приложения",
       "about_header": "О приложении",
-      "author": "Автор"
+      "author": "Автор",
+      "audio_toggle": "Звуки интерфейса",
+      "audio_hint": "Тоны на фокус и нажатие. По умолчанию выключены."
     },
     "palette": {
       "ryazhenka": "Ряженка (кремовая)",
