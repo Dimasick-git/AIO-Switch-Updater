@@ -44,7 +44,7 @@ bool RyazhenkaCard::onClick() {
 }
 
 void RyazhenkaCard::animateGlow(float target) {
-    menu_animation_ctx_tag tag = (uintptr_t)&this->glow;
+    brls::menu_animation_ctx_tag tag = (uintptr_t)&this->glow;
     brls::menu_animation_kill_by_tag(&tag);
 
     brls::menu_animation_ctx_entry_t entry;
