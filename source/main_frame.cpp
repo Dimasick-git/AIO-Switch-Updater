@@ -22,7 +22,7 @@ namespace {
     constexpr const char AppVersion[] = APP_VERSION;
 }  // namespace
 
-MainFrame::MainFrame() : TabFrame()
+MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
 {
     this->setIcon("romfs:/gui_icon.png");
     this->setTitle(AppTitle);

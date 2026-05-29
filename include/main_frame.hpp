@@ -2,7 +2,9 @@
 
 #include <borealis.hpp>
 
-class MainFrame : public brls::TabFrame
+#include "ryazhenka_tab_frame.hpp"
+
+class MainFrame : public ryazhenka::RyazhenkaTabFrame
 {
 private:
     //RefreshTask *refreshTask;
