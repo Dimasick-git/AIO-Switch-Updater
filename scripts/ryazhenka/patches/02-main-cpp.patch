@@ -9,7 +9,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,14 @@
+@@ -8,6 +9,15 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -19,12 +19,13 @@ diff --git a/source/main.cpp b/source/main.cpp
 +#include "ryazhenka_crash_handler.hpp"
 +#include "ryazhenka_haptics.hpp"
 +#include "ryazhenka_logger.hpp"
++#include "ryazhenka_splash.hpp"
 +#include "ryazhenka_theme.hpp"
 +// system_info / version_check headers intentionally not included — see body
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +28,26 @@
+@@ -19,17 +29,26 @@
  
  int main(int argc, char* argv[])
  {
@@ -54,7 +55,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +61,9 @@
+@@ -43,6 +62,9 @@
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -64,7 +65,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,6 +75,17 @@
+@@ -54,9 +76,29 @@
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
@@ -81,8 +82,21 @@ diff --git a/source/main.cpp b/source/main.cpp
 +    // worst a single-tab problem, not an app-launch problem.
  
      if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
-         brls::Application::pushView(new MainFrame());
-@@ -65,10 +97,12 @@
+-        brls::Application::pushView(new MainFrame());
++        // Show the branded splash first; once the dwell elapses it builds the
++        // MainFrame (blocks briefly on the nx-links fetch) and swaps itself
++        // out. The wave background keeps moving the whole time.
++        brls::Application::pushView(new ryazhenka::Splash([] {
++            // popView is async (runs after the fade-out); push MainFrame from
++            // its callback so they don't overlap on the view stack.
++            brls::Application::popView(brls::ViewAnimation::FADE, [] {
++                brls::Application::pushView(new MainFrame());
++            });
++        }));
+     }
+     else {
+         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
+@@ -65,10 +107,12 @@
      while (brls::Application::mainLoop())
          ;
  

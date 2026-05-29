@@ -15,6 +15,7 @@
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_splash.hpp"
 #include "ryazhenka_theme.hpp"
 // system_info / version_check headers intentionally not included — see body
 #include "warning_page.hpp"
@@ -88,7 +89,16 @@ int main(int argc, char* argv[])
     // worst a single-tab problem, not an app-launch problem.
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
-        brls::Application::pushView(new MainFrame());
+        // Show the branded splash first; once the dwell elapses it builds the
+        // MainFrame (blocks briefly on the nx-links fetch) and swaps itself
+        // out. The wave background keeps moving the whole time.
+        brls::Application::pushView(new ryazhenka::Splash([] {
+            // popView is async (runs after the fade-out); push MainFrame from
+            // its callback so they don't overlap on the view stack.
+            brls::Application::popView(brls::ViewAnimation::FADE, [] {
+                brls::Application::pushView(new MainFrame());
+            });
+        }));
     }
     else {
         brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
