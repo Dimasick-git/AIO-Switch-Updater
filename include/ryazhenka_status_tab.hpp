@@ -8,6 +8,8 @@
 
 #include <borealis.hpp>
 
+#include "ryazhenka_card.hpp"
+
 namespace ryazhenka {
 
 class StatusTab : public brls::BoxLayout {
@@ -24,6 +26,10 @@ private:
     // report "ok") don't sit on the placeholder forever.
     brls::Label* loadingLabel = nullptr;
     int loading_frames_ = 0;
+
+    // CFW health summary, refreshed each time the tab becomes visible.
+    RyazhenkaCard* healthCard = nullptr;
+    void refreshHealth();
 };
 
 } // namespace ryazhenka

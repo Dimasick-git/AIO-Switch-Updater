@@ -9,6 +9,7 @@
 #include <string>
 
 #include "ryazhenka_chart_view.hpp"
+#include "ryazhenka_health.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_metrics.hpp"
 #include "ryazhenka_system_info.hpp"
@@ -46,6 +47,13 @@ StatusTab::StatusTab()
     auto* lbl = new brls::Label(brls::LabelStyle::REGULAR, header, true);
     lbl->setHorizontalAlign(NVG_ALIGN_LEFT);
     this->addView(lbl, false);
+
+    // CFW health summary card (filled in willAppear / refreshHealth so the
+    // filesystem checks don't run at MainFrame construction time).
+    this->healthCard = new RyazhenkaCard("menus/ryazhenka/health_title"_i18n,
+                                         "menus/ryazhenka/status_collecting"_i18n, "", "");
+    this->healthCard->getClickEvent()->subscribe([this](brls::View*) { this->refreshHealth(); });
+    this->addView(this->healthCard, false);
 
     // Visible while the Sampler thread hasn't returned its first snapshot yet.
     // Without this the screen stays empty for ~1 second on entry and users
@@ -87,9 +95,40 @@ StatusTab::StatusTab()
     });
 }
 
+void StatusTab::refreshHealth() {
+    if (!this->healthCard)
+        return;
+    try {
+        const auto issues = health::run();
+        const auto worst = health::worst(issues);
+        int warnings = 0, errors = 0;
+        for (const auto& i : issues) {
+            if (i.severity == health::Severity::error) ++errors;
+            else if (i.severity == health::Severity::warn) ++warnings;
+        }
+        switch (worst) {
+            case health::Severity::error:
+                this->healthCard->setValue("menus/ryazhenka/health_error"_i18n);
+                break;
+            case health::Severity::warn:
+                this->healthCard->setValue("menus/ryazhenka/health_warn"_i18n);
+                break;
+            default:
+                this->healthCard->setValue("menus/ryazhenka/health_ok"_i18n);
+                break;
+        }
+        this->healthCard->setSubtitle(
+            std::to_string(warnings) + " warn   " + std::to_string(errors) + " err");
+    } catch (...) {
+        this->healthCard->setValue("");
+        this->healthCard->setSubtitle("menus/ryazhenka/status_charts_unavailable"_i18n);
+    }
+}
+
 void StatusTab::willAppear(bool resetState) {
     brls::BoxLayout::willAppear(resetState);
     metrics::Sampler::instance().start();
+    this->refreshHealth();
     log::info("status_tab: visible — sampler started");
 }
 
