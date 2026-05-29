@@ -48,8 +48,16 @@ inline constexpr char kPcColorUrl[] =
 
 // Ryazhenka pack (full sd_card archive: Atmosphere + Hekate + sigpatches + tools)
 inline constexpr char kPackUrl[] =
-    "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/ryazhenka-pack.zip";
+    "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/Ryazhenkabestcfw.zip";
 inline constexpr char kPackFilename[] = "/config/aio-switch-updater/ryazhenka-pack.zip";
+
+// Per-release banner image (bbootlogo.png on the Ryzhenka GitHub release).
+// Downloaded lazily and cached to SD so we never block the UI on the network.
+inline constexpr char kBannerUrl[] =
+    "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/bbootlogo.png";
+inline constexpr char kBannerCachePath[] = "/config/aio-switch-updater/banner.png";
+// How long the cached banner is considered fresh before a background re-fetch.
+inline constexpr int kBannerCacheTtlHours = 6;
 
 // Sigpatches staleness check — points at the Ryazhenka pack release feed
 // because the pack bundles the freshest sigpatches we ship.

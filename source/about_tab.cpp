@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_card.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
@@ -11,6 +12,15 @@ using namespace i18n::literals;
 
 AboutTab::AboutTab()
 {
+    // Per-release banner (bbootlogo.png on the Ryzhenka GitHub release).
+    // Lazy-fetched and cached — first launch shows nothing, subsequent launches
+    // show the banner. A stale cache triggers an async re-fetch in the
+    // background so the next launch is fresh.
+    if (brls::Image* banner = ryazhenka::banner::makeImage()) {
+        banner->setHeight(180);
+        this->addView(banner);
+    }
+
     // Subtitle
     brls::Label* subTitle = new brls::Label(
         brls::LabelStyle::REGULAR,

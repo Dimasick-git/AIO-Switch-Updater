@@ -9,13 +9,14 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,15 @@
+@@ -8,6 +9,16 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
 +#include "ryazhenka_branding.hpp"
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_background.hpp"
++#include "ryazhenka_banner.hpp"
 +#include "ryazhenka_crash_handler.hpp"
 +#include "ryazhenka_haptics.hpp"
 +#include "ryazhenka_logger.hpp"
@@ -25,7 +26,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +29,26 @@
+@@ -19,17 +30,26 @@
  
  int main(int argc, char* argv[])
  {
@@ -55,7 +56,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +62,9 @@
+@@ -43,6 +63,9 @@
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -65,13 +66,20 @@ diff --git a/source/main.cpp b/source/main.cpp
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,9 +76,29 @@
+@@ -54,9 +77,36 @@
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
 +    try { ryazhenka::log::init(); } catch (...) {}
 +    try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
 +    try { ryazhenka::haptics::init(); } catch (...) {}
++    // Fire off the per-release banner refresh in the background. First-ever
++    // launch shows no banner (cache empty); next launch shows whatever was
++    // current at the time of fetch.
++    try {
++        if (!ryazhenka::banner::cacheIsFresh())
++            ryazhenka::banner::refreshAsync();
++    } catch (...) {}
 +    // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
 +    // intentionally NOT called here. They each touch the filesystem and the
 +    // network respectively, and on Switch their failure modes (filesystem_
@@ -96,7 +104,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      }
      else {
          brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
-@@ -65,10 +107,12 @@
+@@ -65,10 +115,12 @@
      while (brls::Application::mainLoop())
          ;
  

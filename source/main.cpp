@@ -12,6 +12,7 @@
 #include "ryazhenka_branding.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_background.hpp"
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
@@ -79,6 +80,13 @@ int main(int argc, char* argv[])
     try { ryazhenka::log::init(); } catch (...) {}
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
     try { ryazhenka::haptics::init(); } catch (...) {}
+    // Fire off the per-release banner refresh in the background. First-ever
+    // launch shows no banner (cache empty); next launch shows whatever was
+    // current at the time of fetch.
+    try {
+        if (!ryazhenka::banner::cacheIsFresh())
+            ryazhenka::banner::refreshAsync();
+    } catch (...) {}
     // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
     // intentionally NOT called here. They each touch the filesystem and the
     // network respectively, and on Switch their failure modes (filesystem_
