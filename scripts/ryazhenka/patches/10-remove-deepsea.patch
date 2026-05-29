@@ -1,8 +1,30 @@
 diff --git a/include/ams_tab.hpp b/include/ams_tab.hpp
-index 363a0a4..dff29e5 100644
 --- a/include/ams_tab.hpp
 +++ b/include/ams_tab.hpp
-@@ -28,9 +28,6 @@ class AmsTab_Regular : public AmsTab
+@@ -6,10 +6,12 @@
+ 
+ #include "constants.hpp"
+ 
++namespace ryazhenka { class RyazhenkaCard; }
++
+ class AmsTab : public brls::List
+ {
+ protected:
+-    brls::ListItem* listItem;
++    ryazhenka::RyazhenkaCard* listItem;
+     bool erista;
+     nlohmann::ordered_json nxlinks;
+     nlohmann::ordered_json hekate;
+@@ -17,7 +19,7 @@
+     void CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams = true, bool hekate = false, const std::string& text_hekate = "", const std::string& hekate_url = "");
+     bool CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate = true, bool ams = true);
+     void CreateNotFoundLabel();
+-    virtual void RegisterListItemAction(brls::ListItem* listItem);
++    virtual void RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem);
+ 
+ public:
+     AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista = true);
+@@ -28,9 +30,6 @@
  private:
      void CreateLists();
      bool CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate = true, bool ams = true);
@@ -12,11 +34,46 @@ index 363a0a4..dff29e5 100644
      std::string GetRepoName(const std::string& repo);
  
  public:
+@@ -42,7 +41,7 @@
+ private:
+     nlohmann::ordered_json custom_packs;
+     void CreateLists();
+-    void RegisterListItemAction(brls::ListItem* listItem) override;
++    void RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem) override;
+     void AddLinkCreator();
+ 
+ public:
 diff --git a/source/ams_tab.cpp b/source/ams_tab.cpp
-index f104c8d..c18891d 100644
 --- a/source/ams_tab.cpp
 +++ b/source/ams_tab.cpp
-@@ -107,19 +107,9 @@ void AmsTab_Regular::CreateLists()
+@@ -1,5 +1,7 @@
+ #include "ams_tab.hpp"
+ 
++#include "ryazhenka_card.hpp"
++
+ #include <filesystem>
+ #include <iostream>
+ #include <string>
+@@ -22,7 +24,7 @@
+     this->hekate = util::getValueFromKey(nxlinks, "hekate");
+ }
+ 
+-void AmsTab::RegisterListItemAction(brls::ListItem* listItem) {}
++void AmsTab::RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem) {}
+ 
+ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate, bool ams)
+ {
+@@ -37,8 +39,7 @@
+             bool pack = link.first.contains("[PACK]");
+             std::string url = link.second;
+             std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
+-            listItem = new brls::ListItem(link.first);
+-            listItem->setHeight(LISTITEM_HEIGHT);
++            listItem = new ryazhenka::RyazhenkaCard(link.first);
+             listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {
+                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
+                     brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
+@@ -107,19 +108,9 @@
      this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/main/ams_text"_i18n + (CurrentCfw::running_cfw == CFW::ams ? "\n" + "menus/ams_update/current_ams"_i18n + CurrentCfw::getAmsInfo() : "") + (erista ? "\n" + "menus/ams_update/erista_rev"_i18n : "\n" + "menus/ams_update/mariko_rev"_i18n), true));
      CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphere"));
  
@@ -39,7 +96,7 @@ index f104c8d..c18891d 100644
  }
  
  std::string AmsTab_Regular::GetRepoName(const std::string& repo)
-@@ -127,101 +117,6 @@ std::string AmsTab_Regular::GetRepoName(const std::string& repo)
+@@ -127,101 +118,6 @@
      return repo.substr(repo.find("/") + 1, repo.length());
  }
  
@@ -141,3 +198,22 @@ index f104c8d..c18891d 100644
  AmsTab_Custom::AmsTab_Custom(const nlohmann::ordered_json& nxlinks, const bool erista) : AmsTab(nxlinks, erista)
  {
      this->custom_packs = fs::parseJsonFile(CUSTOM_PACKS_PATH);
+@@ -255,8 +151,7 @@
+ void AmsTab_Custom::AddLinkCreator()
+ {
+     std::string category = this->type == contentType::ams_cfw ? "ams" : "misc";
+-    listItem = new brls::ListItem("menus/ams_update/add_custom_link"_i18n);
+-    listItem->setHeight(LISTITEM_HEIGHT);
++    listItem = new ryazhenka::RyazhenkaCard("menus/ams_update/add_custom_link"_i18n);
+     listItem->getClickEvent()->subscribe([this, category](brls::View* view) {
+         std::string title, link;
+         brls::Swkbd::openForText([&title](std::string text) { title = text; }, "Enter title", "", 256, "", 0, "Submit", "Title");
+@@ -270,7 +165,7 @@
+     this->addView(listItem);
+ }
+ 
+-void AmsTab_Custom::RegisterListItemAction(brls::ListItem* listItem)
++void AmsTab_Custom::RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem)
+ {
+     std::string label = listItem->getLabel();
+     std::string category = this->type == contentType::ams_cfw ? "ams" : "misc";

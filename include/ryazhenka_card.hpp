@@ -34,6 +34,9 @@ public:
     void setValue(const std::string& value);
     void setSubtitle(const std::string& subtitle);
 
+    /// Drop-in compatibility with brls::ListItem::getLabel() — returns the title.
+    const std::string& getLabel() const { return this->title; }
+
 private:
     bool onClick();
     void animateGlow(float target);

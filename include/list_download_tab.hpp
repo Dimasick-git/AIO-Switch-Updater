@@ -5,10 +5,14 @@
 
 #include "constants.hpp"
 
+namespace ryazhenka { class RyazhenkaCard; }
+
 class ListDownloadTab : public brls::List
 {
 private:
-    brls::ListItem* listItem;
+    // Migrated to RyazhenkaCard for the Ryazhenka visual language; the
+    // outer brls::List keeps owning vertical focus + scrolling.
+    ryazhenka::RyazhenkaCard* listItem;
     nlohmann::ordered_json nxlinks;
     std::string currentCheatsVer = "";
     std::string newCheatsVer = "";

@@ -1,5 +1,7 @@
 #include "ams_tab.hpp"
 
+#include "ryazhenka_card.hpp"
+
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -22,7 +24,7 @@ AmsTab::AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista) : brls:
     this->hekate = util::getValueFromKey(nxlinks, "hekate");
 }
 
-void AmsTab::RegisterListItemAction(brls::ListItem* listItem) {}
+void AmsTab::RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem) {}
 
 bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate, bool ams)
 {
@@ -37,8 +39,7 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             bool pack = link.first.contains("[PACK]");
             std::string url = link.second;
             std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
-            listItem = new brls::ListItem(link.first);
-            listItem->setHeight(LISTITEM_HEIGHT);
+            listItem = new ryazhenka::RyazhenkaCard(link.first);
             listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
@@ -150,8 +151,7 @@ void AmsTab_Custom::CreateLists()
 void AmsTab_Custom::AddLinkCreator()
 {
     std::string category = this->type == contentType::ams_cfw ? "ams" : "misc";
-    listItem = new brls::ListItem("menus/ams_update/add_custom_link"_i18n);
-    listItem->setHeight(LISTITEM_HEIGHT);
+    listItem = new ryazhenka::RyazhenkaCard("menus/ams_update/add_custom_link"_i18n);
     listItem->getClickEvent()->subscribe([this, category](brls::View* view) {
         std::string title, link;
         brls::Swkbd::openForText([&title](std::string text) { title = text; }, "Enter title", "", 256, "", 0, "Submit", "Title");
@@ -165,7 +165,7 @@ void AmsTab_Custom::AddLinkCreator()
     this->addView(listItem);
 }
 
-void AmsTab_Custom::RegisterListItemAction(brls::ListItem* listItem)
+void AmsTab_Custom::RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem)
 {
     std::string label = listItem->getLabel();
     std::string category = this->type == contentType::ams_cfw ? "ams" : "misc";

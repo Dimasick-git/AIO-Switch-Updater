@@ -1,5 +1,7 @@
 #include "list_download_tab.hpp"
 
+#include "ryazhenka_card.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -63,8 +65,7 @@ void ListDownloadTab::createList(contentType type)
             const std::string title = link.first;
             const std::string url = link.second;
             const std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
-            listItem = new brls::ListItem(link.first);
-            listItem->setHeight(LISTITEM_HEIGHT);
+            listItem = new ryazhenka::RyazhenkaCard(link.first);
             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
                 // Three URL markers are recognised in nx-links.json. They all
                 // resolve at click time (not at MainFrame ctor) so launch is
@@ -243,8 +244,7 @@ void ListDownloadTab::setDescription(contentType type)
 
 void ListDownloadTab::createCheatSlipItem()
 {
-    brls::ListItem* cheatslipsItem = new brls::ListItem("menus/cheats/get_cheatslips"_i18n);
-    cheatslipsItem->setHeight(LISTITEM_HEIGHT);
+    auto* cheatslipsItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_cheatslips"_i18n);
     cheatslipsItem->getClickEvent()->subscribe([](brls::View* view) {
         if (std::filesystem::exists(TOKEN_PATH)) {
             brls::Application::pushView(new AppPage_CheatSlips());
@@ -278,8 +278,7 @@ void ListDownloadTab::createCheatSlipItem()
 
 void ListDownloadTab::createGbatempItem()
 {
-    brls::ListItem* gbatempItem = new brls::ListItem("menus/cheats/get_gbatemp"_i18n);
-    gbatempItem->setHeight(LISTITEM_HEIGHT);
+    auto* gbatempItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gbatemp"_i18n);
     gbatempItem->getClickEvent()->subscribe([](brls::View* view) {
         brls::Application::pushView(new AppPage_Gbatemp());
         return true;
@@ -289,8 +288,7 @@ void ListDownloadTab::createGbatempItem()
 
 void ListDownloadTab::createGfxItem()
 {
-    brls::ListItem* gfxItem = new brls::ListItem("menus/cheats/get_gfx"_i18n);
-    gfxItem->setHeight(LISTITEM_HEIGHT);
+    auto* gfxItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gfx"_i18n);
     gfxItem->getClickEvent()->subscribe([](brls::View* view) {
         brls::Application::pushView(new AppPage_Gfx());
         return true;

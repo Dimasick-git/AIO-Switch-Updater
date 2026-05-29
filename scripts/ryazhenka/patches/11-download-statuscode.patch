@@ -1,8 +1,7 @@
 diff --git a/include/download.hpp b/include/download.hpp
-index 67ead7a..b1d4e49 100644
 --- a/include/download.hpp
 +++ b/include/download.hpp
-@@ -15,4 +15,11 @@ namespace download {
+@@ -15,4 +15,11 @@
      long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
      long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
  
@@ -16,10 +15,9 @@ index 67ead7a..b1d4e49 100644
  }  // namespace download
 \ No newline at end of file
 diff --git a/source/download.cpp b/source/download.cpp
-index 4f148e6..5178e85 100644
 --- a/source/download.cpp
 +++ b/source/download.cpp
-@@ -122,6 +122,8 @@ namespace download {
+@@ -122,6 +122,8 @@
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
              curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
@@ -28,7 +26,7 @@ index 4f148e6..5178e85 100644
              curl_easy_perform(curl);
              auto res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &dl);
              if (!res) {
-@@ -179,6 +181,8 @@ namespace download {
+@@ -179,6 +181,8 @@
              curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -37,7 +35,7 @@ index 4f148e6..5178e85 100644
              curl_easy_setopt(
                  curl,
                  CURLOPT_WRITEFUNCTION,
-@@ -290,7 +294,7 @@ namespace download {
+@@ -290,7 +294,7 @@
          const char* out = output.c_str();
          CURL* curl = curl_easy_init();
          ntwrk_struct_t chunk = {0};
@@ -46,7 +44,7 @@ index 4f148e6..5178e85 100644
          time_old = std::chrono::steady_clock::now();
          dlold = 0.0f;
          bool can_download = true;
-@@ -324,6 +328,9 @@ namespace download {
+@@ -324,6 +328,9 @@
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
                      curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
@@ -56,7 +54,7 @@ index 4f148e6..5178e85 100644
                      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
                      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
  
-@@ -369,12 +376,13 @@ namespace download {
+@@ -369,12 +376,13 @@
          chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
          chunk.size = 0;                               /* no data at this point */
  
@@ -71,7 +69,7 @@ index 4f148e6..5178e85 100644
  
          curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
          curl_easy_perform(curl_handle);
-@@ -392,8 +400,6 @@ namespace download {
+@@ -392,8 +400,6 @@
          curl_easy_cleanup(curl_handle);
          free(chunk.memory);
  
@@ -80,7 +78,7 @@ index 4f148e6..5178e85 100644
          return ver;
      }
  
-@@ -402,14 +408,15 @@ namespace download {
+@@ -402,14 +408,15 @@
          CURL* curl_handle;
          struct MemoryStruct chunk;
          struct curl_slist* list = NULL;
@@ -98,7 +96,7 @@ index 4f148e6..5178e85 100644
          if (!headers.empty()) {
              for (auto& h : headers) {
                  list = curl_slist_append(list, h.c_str());
-@@ -431,7 +438,6 @@ namespace download {
+@@ -431,7 +438,6 @@
          res = std::string(chunk.memory);
          free(chunk.memory);
  
@@ -106,7 +104,7 @@ index 4f148e6..5178e85 100644
          return status_code;
      }
  
-@@ -469,4 +475,34 @@ namespace download {
+@@ -469,4 +475,34 @@
          return res;
      }
  
@@ -143,10 +141,17 @@ index 4f148e6..5178e85 100644
  }  // namespace download
 \ No newline at end of file
 diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
-index 681f1f6..ce04bbb 100644
 --- a/source/list_download_tab.cpp
 +++ b/source/list_download_tab.cpp
-@@ -11,6 +11,7 @@
+@@ -1,5 +1,7 @@
+ #include "list_download_tab.hpp"
+ 
++#include "ryazhenka_card.hpp"
++
+ #include <filesystem>
+ #include <fstream>
+ #include <string>
+@@ -11,6 +13,7 @@
  #include "download.hpp"
  #include "extract.hpp"
  #include "fs.hpp"
@@ -154,9 +159,13 @@ index 681f1f6..ce04bbb 100644
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -65,6 +66,54 @@ void ListDownloadTab::createList(contentType type)
-             listItem = new brls::ListItem(link.first);
-             listItem->setHeight(LISTITEM_HEIGHT);
+@@ -62,9 +65,56 @@
+             const std::string title = link.first;
+             const std::string url = link.second;
+             const std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
+-            listItem = new brls::ListItem(link.first);
+-            listItem->setHeight(LISTITEM_HEIGHT);
++            listItem = new ryazhenka::RyazhenkaCard(link.first);
              listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
 +                // Three URL markers are recognised in nx-links.json. They all
 +                // resolve at click time (not at MainFrame ctor) so launch is
@@ -209,7 +218,7 @@ index 681f1f6..ce04bbb 100644
                  brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                  stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                  stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
-@@ -76,21 +125,56 @@ void ListDownloadTab::createList(contentType type)
+@@ -76,21 +126,56 @@
                          }
                      }
                  }
@@ -270,11 +279,40 @@ index 681f1f6..ce04bbb 100644
                  }
  
                  std::string doneMsg = "menus/common/all_done"_i18n;
+@@ -159,8 +244,7 @@
+ 
+ void ListDownloadTab::createCheatSlipItem()
+ {
+-    brls::ListItem* cheatslipsItem = new brls::ListItem("menus/cheats/get_cheatslips"_i18n);
+-    cheatslipsItem->setHeight(LISTITEM_HEIGHT);
++    auto* cheatslipsItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_cheatslips"_i18n);
+     cheatslipsItem->getClickEvent()->subscribe([](brls::View* view) {
+         if (std::filesystem::exists(TOKEN_PATH)) {
+             brls::Application::pushView(new AppPage_CheatSlips());
+@@ -194,8 +278,7 @@
+ 
+ void ListDownloadTab::createGbatempItem()
+ {
+-    brls::ListItem* gbatempItem = new brls::ListItem("menus/cheats/get_gbatemp"_i18n);
+-    gbatempItem->setHeight(LISTITEM_HEIGHT);
++    auto* gbatempItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gbatemp"_i18n);
+     gbatempItem->getClickEvent()->subscribe([](brls::View* view) {
+         brls::Application::pushView(new AppPage_Gbatemp());
+         return true;
+@@ -205,8 +288,7 @@
+ 
+ void ListDownloadTab::createGfxItem()
+ {
+-    brls::ListItem* gfxItem = new brls::ListItem("menus/cheats/get_gfx"_i18n);
+-    gfxItem->setHeight(LISTITEM_HEIGHT);
++    auto* gfxItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gfx"_i18n);
+     gfxItem->getClickEvent()->subscribe([](brls::View* view) {
+         brls::Application::pushView(new AppPage_Gfx());
+         return true;
 diff --git a/source/worker_page.cpp b/source/worker_page.cpp
-index 2a01e8f..2484322 100644
 --- a/source/worker_page.cpp
 +++ b/source/worker_page.cpp
-@@ -72,9 +72,14 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
+@@ -72,9 +72,14 @@
          else if (ProgressEvent::instance().finished()) {
              appletEndBlockingHomeButton();
              appletSetMediaPlaybackState(false);
