@@ -36,6 +36,4 @@ private:
     RyazhenkaCard* hapticsToggle = nullptr;
     RyazhenkaCard* hapticsStrength = nullptr;
     RyazhenkaCard* backgroundToggle = nullptr;
-};
-
-}  // namespace ryazhenka
+};}  // namespace ryazhenka

@@ -51,7 +51,13 @@
       "haptics_strength": "Сила вибрации",
       "background_toggle": "Анимированные волны",
       "on": "Вкл",
-      "off": "Выкл"
+      "off": "Выкл",
+      "cache_header": "Кеш",
+      "clear_banner": "Очистить кеш баннера",
+      "clear_sigpatches": "Очистить кеш версии sigpatches",
+      "clear_log": "Очистить лог приложения",
+      "about_header": "О приложении",
+      "author": "Автор"
     },
     "palette": {
       "ryazhenka": "Ряженка (кремовая)",

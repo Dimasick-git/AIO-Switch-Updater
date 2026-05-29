@@ -51,7 +51,13 @@
       "haptics_strength": "Vibration strength",
       "background_toggle": "Animated waves",
       "on": "On",
-      "off": "Off"
+      "off": "Off",
+      "cache_header": "Cache",
+      "clear_banner": "Clear banner cache",
+      "clear_sigpatches": "Clear sigpatches version cache",
+      "clear_log": "Clear app log",
+      "about_header": "About",
+      "author": "Author"
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

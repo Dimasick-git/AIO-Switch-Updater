@@ -1,10 +1,12 @@
 #include "ryazhenka_settings_screen.hpp"
 
 #include <algorithm>
+#include <filesystem>
 
 #include "constants.hpp"
 #include "fs.hpp"
 #include "ryazhenka_background.hpp"
+#include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
 
@@ -103,6 +105,41 @@ SettingsScreen::SettingsScreen() {
         this->refreshBackground();
     });
     this->addView(this->backgroundToggle);
+
+    // --- Caches ---
+    this->addView(new brls::Header("menus/ryazhenka/settings/cache_header"_i18n));
+
+    auto* clearBanner = new RyazhenkaCard("menus/ryazhenka/settings/clear_banner"_i18n);
+    clearBanner->getClickEvent()->subscribe([](brls::View*) {
+        std::error_code ec;
+        std::filesystem::remove(kBannerCachePath, ec);
+        haptics::success();
+    });
+    this->addView(clearBanner);
+
+    auto* clearSig = new RyazhenkaCard("menus/ryazhenka/settings/clear_sigpatches"_i18n);
+    clearSig->getClickEvent()->subscribe([](brls::View*) {
+        std::error_code ec;
+        std::filesystem::remove(kSigpatchesRemoteCachePath, ec);
+        haptics::success();
+    });
+    this->addView(clearSig);
+
+    auto* clearLog = new RyazhenkaCard("menus/ryazhenka/settings/clear_log"_i18n);
+    clearLog->getClickEvent()->subscribe([](brls::View*) {
+        std::error_code ec;
+        std::filesystem::remove(kLogFilePath, ec);
+        haptics::success();
+    });
+    this->addView(clearLog);
+
+    // --- About ---
+    this->addView(new brls::Header("menus/ryazhenka/settings/about_header"_i18n));
+    auto* version = new RyazhenkaCard(std::string(kAppTitleLocalized), "", "", APP_VERSION);
+    this->addView(version);
+    auto* author = new RyazhenkaCard("menus/ryazhenka/settings/author"_i18n, "",
+                                     "", std::string(kAppAuthor));
+    this->addView(author);
 
     this->refreshPaletteChecks();
     this->refreshHaptics();
