@@ -1,26 +1,57 @@
 {
-  "_comment": "Aggregator for Ryazhenka Updater download tabs. All URLs use the GitHub releases/latest/download/<filename> alias so the JSON does not need to be re-edited on every upstream release. Asset filename must be stable across releases.",
+  "_comment": "Ryazhenka Updater download catalogue. URLs use the GitHub releases/latest/download/<filename> alias so this file does NOT need to be edited on every upstream release — as long as the asset filename stays stable across releases. Verified asset filenames as of v7.2.1 (Ryzhenka pack), v2.2.5+ (Ryazhahand-Overlay), v3.3.3 (FPSLocker), latest-build (EdiZon), v1.5.1 (ovlSysmodules), v2.4.2 (Sys-clk), v2.9.2 (Fizeau), v15.1.1 (Mission-Control), v1.4.3 (Ryazha-Status-Monitor), v10.6 (Ryazhenkabestcfw-Tuner).",
   "_schema_version": 1,
   "cfws": {
     "Atmosphere": {
-      "Ryazhenka pack (full)": "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/Ryazhenkabestcfw.zip",
-      "Atmosphere (vanilla, latest)": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/atmosphere.zip"
+      "Ryazhenka pack (Ryazhenkabestcfw.zip)":
+        "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/Ryazhenkabestcfw.zip",
+      "Atmosphere (vanilla, upstream)":
+        "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/atmosphere.zip"
     }
   },
   "bootloaders": {
-    "Hekate + Nyx (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+    "Hekate + Nyx (CTCaer)":
+      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
   },
   "firmwares": {
-    "_TODO": "Add stable mirror URL for Nintendo firmware archives once chosen by maintainer."
+    "_TODO": "Mirror URL for Nintendo Switch firmware archives to be supplied by maintainer (ardent? archive.org? own mirror?)."
   },
   "hekate": {
-    "Hekate + Nyx (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+    "Hekate + Nyx (CTCaer)":
+      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
   },
   "payloads": {
-    "Hekate payload (CTCaer)": "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.bin",
-    "Fusee (Atmosphere)": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
+    "Hekate payload (CTCaer)":
+      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.bin",
+    "Fusee (Atmosphere)":
+      "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
   },
   "custom": {
-    "_TODO": "Populate with Ryazhenka-specific homebrew bundles once asset filenames are confirmed (Sys-clk, Ryazhahand-Overlay, FPSLocker, EdiZon, Fizeau, ovlSysmodules, Mission-Control, Ryazha-Status-Monitor, Ryazhenkabestcfw-Tuner)."
+    "Overlays Ряженка (.ovl → /switch/.overlays/)": {
+      "Ryazhahand — главный Tesla-меню":
+        "https://github.com/Dimasick-git/Ryazhahand-Overlay/releases/latest/download/ovlmenu.ovl",
+      "Ryazha Status Monitor — мониторинг CPU/GPU/FPS":
+        "https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
+      "FPSLocker — лок FPS / VRR":
+        "https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl",
+      "EdiZon Overlay — быстрый редактор сейвов":
+        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/ovlEdiZon.ovl",
+      "Sys-clk Overlay — управление частотами":
+        "https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.ovl"
+    },
+    "Sysmodules Ряженка (распаковать в корень SD)": {
+      "Ryazhahand bundle — overlay + конфиги":
+        "https://github.com/Dimasick-git/Ryazhahand-Overlay/releases/latest/download/Ryazhahand.zip",
+      "Sys-clk — overclock sysmodule":
+        "https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.zip",
+      "Fizeau — display tuner":
+        "https://github.com/Dimasick-git/Fizeau/releases/latest/download/Fizeau.zip",
+      "EdiZon — save editor (полный)":
+        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/EdiZon-Overlay-ci.zip"
+    },
+    "Тонкая настройка пака": {
+      "Ryazhenka Tuner — CLI настройщик":
+        "https://github.com/Dimasick-git/Ryazhenkabestcfw-Tuner/releases/latest/download/Ryazhenkabestcfw_Tuner.zip"
+    }
   }
 }
