@@ -74,10 +74,14 @@ StatusTab::StatusTab()
         this->addView(fallback, false);
     }
 
-    // B = back. Earlier `return true` without popView() consumed the event
-    // and trapped the user on this view — that is what the report
-    // "не могу выйти ни на какую кнопку" was about.
-    this->registerAction("brls/hints/back"_i18n, brls::Key::B, [] {
+    // B = back. When this view is a root view pushed from the Tools tab it has
+    // no parent, so we pop it ourselves (returning true consumes B). When it is
+    // the content of the dashboard *tab* it has a parent, so we return false and
+    // let the TabFrame's own B handler return focus to the sidebar — otherwise
+    // popView() would tear down the whole MainFrame.
+    this->registerAction("brls/hints/back"_i18n, brls::Key::B, [this] {
+        if (this->hasParent())
+            return false;
         brls::Application::popView();
         return true;
     });
