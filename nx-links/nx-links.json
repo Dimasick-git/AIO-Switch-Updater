@@ -40,9 +40,7 @@
     },
     "Overlays Ряженка (одиночный .ovl в /switch/.overlays/)": {
       "Ryazha Status Monitor": "@download_to:/switch/.overlays/Ryazha-Status-Monitor.ovl:https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
-      "FPSLocker overlay": "@download_to:/switch/.overlays/FPSLocker.ovl:https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl",
-      "EdiZon overlay (легкая версия)": "@download_to:/switch/.overlays/ovlEdiZon.ovl:https://github.com/Dimasick-git/EdiZon/releases/latest/download/ovlEdiZon.ovl",
-      "Sys-clk overlay (UI к sys-clk sysmodule)": "@download_to:/switch/.overlays/sys-clk-overlay.ovl:https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.ovl"
+      "FPSLocker overlay": "@download_to:/switch/.overlays/FPSLocker.ovl:https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl"
     },
     "Тонкая настройка пака": {
       "Ryazhenka Tuner — CLI настройщик": "@latest_asset:Dimasick-git/Ryazhenkabestcfw-Tuner"
