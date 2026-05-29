@@ -41,7 +41,24 @@
     "restore_confirm": "Это ЗАМЕНИТ текущий /atmosphere/ выбранным снимком. Перед заменой будет создан защитный бэкап текущего состояния.\nПродолжить?",
     "restore_progress": "Восстановление /atmosphere/ из снимка…",
     "restore_done": "Восстановление завершено. Перезагрузитесь через Hekate.",
-    "restore_hint": "Сверху — самые свежие. Перед заменой создаётся защитный бэкап."
+    "restore_hint": "Сверху — самые свежие. Перед заменой создаётся защитный бэкап.",
+    "settings_tab": "Настройки",
+    "settings": {
+      "palette_header": "Палитра темы",
+      "haptics_header": "Виброотклик",
+      "background_header": "Фон",
+      "haptics_toggle": "Вибрация",
+      "haptics_strength": "Сила вибрации",
+      "background_toggle": "Анимированные волны",
+      "on": "Вкл",
+      "off": "Выкл"
+    },
+    "palette": {
+      "ryazhenka": "Ряженка (кремовая)",
+      "cyberpunk": "Киберпанк",
+      "gold": "Золото",
+      "ocean": "Океан"
+    }
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

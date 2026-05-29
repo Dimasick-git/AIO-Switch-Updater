@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "constants.hpp"
+#include "fs.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
 
@@ -11,15 +13,33 @@ namespace {
 
 constexpr float kTwoPi = 6.28318530718f;
 
+bool g_enabled = true;
+
 NVGcolor col(const theme::Rgba& c, std::uint8_t a) {
     return nvgRGBA(c.r, c.g, c.b, a);
 }
 
 }  // namespace
 
+void WaveBackground::setEnabled(bool enabled) {
+    g_enabled = enabled;
+}
+
+bool WaveBackground::isEnabled() {
+    return g_enabled;
+}
+
 WaveBackground::WaveBackground() {
     // Backgrounds don't take focus and never need layout invalidation for their
-    // own sake; we repaint every frame regardless.
+    // own sake; we repaint every frame regardless. Honour the persisted toggle.
+    try {
+        nlohmann::ordered_json cfg = fs::parseJsonFile(CONFIG_FILE);
+        if (cfg.is_object() && cfg.contains("ryazhenka_background") &&
+            cfg["ryazhenka_background"].is_boolean())
+            g_enabled = cfg["ryazhenka_background"].get<bool>();
+    } catch (...) {
+        // keep default (enabled)
+    }
 }
 
 void WaveBackground::preFrame() {
@@ -55,6 +75,9 @@ void WaveBackground::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned
     nvgRect(vg, fx, fy, w, h);
     nvgFillPaint(vg, wash);
     nvgFill(vg);
+
+    if (!g_enabled)
+        return;  // flat palette wash only
 
     struct Layer {
         float amp;     // peak height in px

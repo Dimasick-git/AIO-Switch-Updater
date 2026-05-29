@@ -26,6 +26,11 @@ public:
               brls::Style* style, brls::FrameContext* ctx) override;
     void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override;
 
+    /// Runtime toggle for the animated waves (settings screen). When disabled
+    /// only the flat palette background remains. Persisted by the caller.
+    static void setEnabled(bool enabled);
+    static bool isEnabled();
+
 private:
     float phase_ = 0.0f;
 };

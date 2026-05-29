@@ -41,7 +41,24 @@
     "restore_confirm": "This will REPLACE the live /atmosphere/ with the chosen snapshot. The current state will be backed up first.\nProceed?",
     "restore_progress": "Restoring /atmosphere/ from snapshot…",
     "restore_done": "Restore complete. Reboot via Hekate to apply.",
-    "restore_hint": "Newest snapshots first. A defensive pre-snapshot is taken before the restore."
+    "restore_hint": "Newest snapshots first. A defensive pre-snapshot is taken before the restore.",
+    "settings_tab": "Settings",
+    "settings": {
+      "palette_header": "Theme palette",
+      "haptics_header": "Haptic feedback",
+      "background_header": "Background",
+      "haptics_toggle": "Vibration",
+      "haptics_strength": "Vibration strength",
+      "background_toggle": "Animated waves",
+      "on": "On",
+      "off": "Off"
+    },
+    "palette": {
+      "ryazhenka": "Ryazhenka (cream)",
+      "cyberpunk": "Cyberpunk",
+      "gold": "Gold",
+      "ocean": "Ocean"
+    }
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

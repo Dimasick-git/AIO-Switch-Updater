@@ -8,6 +8,7 @@
 #include "download.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
+#include "ryazhenka_settings_screen.hpp"
 #include "ryazhenka_status_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
@@ -65,6 +66,10 @@ MainFrame::MainFrame() : TabFrame()
     // if psm/ts never report (see ryazhenka_status_tab.cpp).
     if (!util::getBoolValue(hideStatus, "status"))
         this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
+
+    // Ryazhenka settings — live palette switch, haptics, animated background.
+    if (!util::getBoolValue(hideStatus, "settings"))
+        this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }
