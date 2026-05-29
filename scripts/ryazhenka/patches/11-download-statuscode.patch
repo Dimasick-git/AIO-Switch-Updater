@@ -143,21 +143,52 @@ index 4f148e6..5178e85 100644
  }  // namespace download
 \ No newline at end of file
 diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
-index 681f1f6..67343d8 100644
+index 681f1f6..7976b45 100644
 --- a/source/list_download_tab.cpp
 +++ b/source/list_download_tab.cpp
-@@ -65,6 +65,22 @@ void ListDownloadTab::createList(contentType type)
+@@ -65,6 +65,54 @@ void ListDownloadTab::createList(contentType type)
              listItem = new brls::ListItem(link.first);
              listItem->setHeight(LISTITEM_HEIGHT);
              listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
-+                // Lazy late-binding: if nx-links.json marked this entry as
-+                // "@latest_asset:OWNER/REPO" (because the asset filename
-+                // contains the version and the releases/latest/download/
-+                // alias can't be used), resolve via GitHub API now. We don't
-+                // do it at MainFrame ctor time because that would block the
-+                // first frame on every launch even when the user doesn't
-+                // open this tab.
++                // Three URL markers are recognised in nx-links.json. They all
++                // resolve at click time (not at MainFrame ctor) so launch is
++                // never blocked on a network call.
++                //
++                //   @latest_asset:OWNER/REPO
++                //     → query api.github.com/.../releases/latest, take the
++                //       first .zip asset (fallback assets[0]). Standard
++                //       extract-to-SD-root flow.
++                //
++                //   @download_to:<DEST_PATH>:<REST>
++                //     → REST may be another marker or a direct URL. Download
++                //       the resolved URL to DEST_PATH (parent dirs created
++                //       automatically), no extract. Used for single-file
++                //       drops like /switch/.overlays/foo.ovl or
++                //       /switch/RyazhaAI/ryazha-ai.nro.
++                //
++                //   @reorg_ppsspp:OWNER/REPO
++                //     → resolve like @latest_asset, do the standard extract,
++                //       then move /PPSSPP_GL.nro → /switch/PPSSPP_GL.nro and
++                //       /assets → /switch/ppsspp/assets so the emulator
++                //       lands where it expects.
 +                std::string resolved = url;
++                std::string download_to;    // non-empty → skip extract, single-file path
++                bool ppsspp_reorg = false;
++
++                if (resolved.compare(0, 13, "@download_to:") == 0) {
++                    const std::string rest = resolved.substr(13);
++                    const auto sep = rest.find(':');
++                    if (sep == std::string::npos) {
++                        util::showDialogBoxInfo("Malformed @download_to: marker in nx-links.json");
++                        return;
++                    }
++                    download_to = rest.substr(0, sep);
++                    resolved = rest.substr(sep + 1);
++                }
++                if (resolved.compare(0, 14, "@reorg_ppsspp:") == 0) {
++                    ppsspp_reorg = true;
++                    resolved = "@latest_asset:" + resolved.substr(14);
++                }
 +                if (resolved.compare(0, 14, "@latest_asset:") == 0) {
 +                    const std::string slug = resolved.substr(14);
 +                    resolved = download::resolveLatestAssetUrl(slug);
@@ -166,17 +197,50 @@ index 681f1f6..67343d8 100644
 +                        return;
 +                    }
 +                }
++
                  brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                  stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                  stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
-@@ -78,19 +94,25 @@ void ListDownloadTab::createList(contentType type)
+@@ -76,21 +124,56 @@ void ListDownloadTab::createList(contentType type)
+                         }
+                     }
                  }
-                 if (type != contentType::payloads && type != contentType::hekate_ipl) {
+-                if (type != contentType::payloads && type != contentType::hekate_ipl) {
++
++                if (!download_to.empty()) {
++                    // @download_to: single-file flow, no extract. Used for
++                    // .ovl drops into /switch/.overlays/ and for the
++                    // RyazhaAI .nro into /switch/RyazhaAI/.
++                    fs::createTree(std::filesystem::path(download_to).parent_path().string() + "/");
++                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, download_to]() {
++                        long sc = download::downloadFile(resolved, download_to, OFF);
++                        ProgressEvent::instance().setStatusCode(sc);
++                    }));
++                }
++                else if (type != contentType::payloads && type != contentType::hekate_ipl) {
                      if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
 -                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
 +                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, resolved]() { util::downloadArchive(resolved, type); }));
                      }
                      stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
++                    if (ppsspp_reorg) {
++                        // Upstream PPSSPP.zip extracts /PPSSPP_GL.nro and
++                        // /assets/* at SD root; the emulator expects them at
++                        // /switch/PPSSPP_GL.nro and /switch/ppsspp/assets/.
++                        // Move them after extract; create parents if missing.
++                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
++                            std::error_code ec;
++                            std::filesystem::create_directories("/switch", ec);
++                            std::filesystem::create_directories("/switch/ppsspp", ec);
++                            if (std::filesystem::exists("/PPSSPP_GL.nro", ec)) {
++                                std::filesystem::rename("/PPSSPP_GL.nro", "/switch/PPSSPP_GL.nro", ec);
++                            }
++                            if (std::filesystem::is_directory("/assets", ec)) {
++                                std::filesystem::rename("/assets", "/switch/ppsspp/assets", ec);
++                            }
++                            ProgressEvent::instance().setStatusCode(200);
++                        }));
++                    }
                  }
                  else if (type == contentType::payloads) {
                      fs::createTree(BOOTLOADER_PL_PATH);

@@ -1,10 +1,9 @@
 {
-  "_comment": "Ryazhenka Updater download catalogue. Two URL shapes are supported: (1) direct https URLs using GitHub's releases/latest/download/<filename> alias for repos with stable asset filenames; (2) the marker '@latest_asset:OWNER/REPO' for repos where the asset filename contains the version or commit SHA — the AIO downloader resolves these at click time via api.github.com (returns the first .zip asset of the latest release). The marker form keeps this file constant across upstream releases.",
-  "_schema_version": 1,
+  "_comment": "Ryazhenka Updater download catalogue. Three URL shapes are supported by source/list_download_tab.cpp click handler: (1) direct https URLs for repos with stable asset filenames; (2) '@latest_asset:OWNER/REPO' — resolved at click time via api.github.com, takes first .zip asset of latest release (fallback assets[0]); (3) '@download_to:<DEST>:<URL_or_marker>' — single-file download to DEST path, no extract, used for .ovl and standalone .nro; (4) '@reorg_ppsspp:OWNER/REPO' — like @latest_asset but reorganises after extract (moves PPSSPP_GL.nro to /switch/ and assets/ to /switch/ppsspp/).",
+  "_schema_version": 2,
   "cfws": {
     "Atmosphere": {
-      "Ryazhenka pack (Ryazhenkabestcfw.zip)":
-        "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/Ryazhenkabestcfw.zip",
+      "Ryazhenka pack (полный)": "@latest_asset:Dimasick-git/Ryzhenka",
       "Atmosphere (vanilla, upstream)":
         "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/atmosphere.zip"
     }
@@ -27,33 +26,30 @@
       "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
   },
   "custom": {
-    "Overlays Ряженка (.ovl → /switch/.overlays/)": {
-      "Ryazhahand — главный Tesla-меню":
-        "https://github.com/Dimasick-git/Ryazhahand-Overlay/releases/latest/download/ovlmenu.ovl",
-      "Ryazha Status Monitor — мониторинг CPU/GPU/FPS":
-        "https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
-      "FPSLocker — лок FPS / VRR":
-        "https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl",
-      "EdiZon Overlay — быстрый редактор сейвов":
-        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/ovlEdiZon.ovl",
-      "Sys-clk Overlay — управление частотами":
-        "https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.ovl"
-    },
-    "Sysmodules Ряженка (распаковать в корень SD)": {
-      "Ryazhahand bundle — overlay + конфиги":
-        "https://github.com/Dimasick-git/Ryazhahand-Overlay/releases/latest/download/Ryazhahand.zip",
-      "Sys-clk — overclock sysmodule":
-        "https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.zip",
-      "Fizeau — display tuner":
-        "https://github.com/Dimasick-git/Fizeau/releases/latest/download/Fizeau.zip",
-      "EdiZon — save editor (полный)":
-        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/EdiZon-Overlay-ci.zip",
+    "Sysmodules и хомбрю Ряженки (распаковываются в корень SD)": {
+      "Ryazhahand bundle (overlay + конфиги)": "@latest_asset:Dimasick-git/Ryazhahand-Overlay",
+      "Sys-clk — overclock sysmodule": "@latest_asset:Dimasick-git/Sys-clk",
+      "Fizeau — display tuner": "@latest_asset:Dimasick-git/Fizeau",
+      "EdiZon — save editor": "@latest_asset:Dimasick-git/EdiZon",
+      "SwitchWave — видеоплеер": "@latest_asset:Dimasick-git/SwitchWave",
+      "ReverseNX-RT — режим док/хэнд": "@latest_asset:Dimasick-git/ReverseNX-RT",
+      "RyazhaTune — настройка профилей": "@latest_asset:Dimasick-git/RyazhaTune",
       "ovlSysmodules — управление sysmodules": "@latest_asset:Dimasick-git/ovlSysmodules",
-      "Mission-Control — Bluetooth контроллеры": "@latest_asset:Dimasick-git/Mission-Control"
+      "Mission-Control — Bluetooth контроллеры": "@latest_asset:Dimasick-git/Mission-Control",
+      "Minecraft Online for Switch": "@latest_asset:Dimasick-git/Minecraft-Online-for-switch"
+    },
+    "Overlays Ряженка (одиночный .ovl в /switch/.overlays/)": {
+      "Ryazha Status Monitor": "@download_to:/switch/.overlays/Ryazha-Status-Monitor.ovl:https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
+      "FPSLocker overlay": "@download_to:/switch/.overlays/FPSLocker.ovl:https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl",
+      "EdiZon overlay (легкая версия)": "@download_to:/switch/.overlays/ovlEdiZon.ovl:https://github.com/Dimasick-git/EdiZon/releases/latest/download/ovlEdiZon.ovl",
+      "Sys-clk overlay (UI к sys-clk sysmodule)": "@download_to:/switch/.overlays/sys-clk-overlay.ovl:https://github.com/Dimasick-git/Sys-clk/releases/latest/download/sys-clk-overlay.ovl"
     },
     "Тонкая настройка пака": {
-      "Ryazhenka Tuner — CLI настройщик":
-        "https://github.com/Dimasick-git/Ryazhenkabestcfw-Tuner/releases/latest/download/Ryazhenkabestcfw_Tuner.zip"
+      "Ryazhenka Tuner — CLI настройщик": "@latest_asset:Dimasick-git/Ryazhenkabestcfw-Tuner"
+    },
+    "Эмуляторы и AI (особая установка)": {
+      "PPSSPP — эмулятор PSP": "@reorg_ppsspp:Dimasick-git/PPSSPP",
+      "RyazhaAI — ассистент CFW": "@download_to:/switch/RyazhaAI/ryazha-ai.nro:@latest_asset:Dimasick-git/RyazhaAI"
     }
   }
 }
