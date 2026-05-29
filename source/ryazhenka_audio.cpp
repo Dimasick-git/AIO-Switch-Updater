@@ -79,7 +79,9 @@ void fillChord(std::int16_t* dst, std::size_t samples,
 
 bool allocBuffersForEffect(Effect& e) {
     for (int i = 0; i < 2; ++i) {
-        void* p = std::aligned_alloc(kAlignment, kBufferBytes);
+        // C-style aligned_alloc — same call libultrahand uses for its DMA
+        // playback buffer, so we know it's available in devkitPro's newlib.
+        void* p = aligned_alloc(kAlignment, kBufferBytes);
         if (!p)
             return false;
         e.mem[i] = p;
@@ -94,7 +96,7 @@ bool allocBuffersForEffect(Effect& e) {
 
 void freeBuffersForEffect(Effect& e) {
     for (int i = 0; i < 2; ++i) {
-        std::free(e.mem[i]);
+        free(e.mem[i]);  // paired with aligned_alloc above
         e.mem[i] = nullptr;
     }
 }
