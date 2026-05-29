@@ -253,7 +253,11 @@
     "insufficient_storage": "There isn't enough space available on your SD card to perform this operation.",
     "error_message": "{}\nPlease try again in a little while. If the problem persists, open an issue on GitHub.",
     "mariko_payload_missing": "In order to update Atmosphère on patched Switches, your payload needs to be named \"payload.bin\" and should be at the root of your SD card.",
-    "no_internet_url": "Could not resolve the latest release URL for {}.\nCheck the internet connection and try again."
+    "no_internet_url": "Could not resolve the latest release URL for {}.\nCheck the internet connection and try again.",
+    "timeout_zero": "Server unreachable or the request timed out. Check your internet connection and try again.",
+    "http_not_found": "File not found on the server (HTTP 404). The release asset may have been moved or renamed.",
+    "http_forbidden": "Access denied by the server (HTTP {0}). You may be rate-limited — try again later.",
+    "http_generic": "Request failed (HTTP {0}). Try again in a little while."
   },
   "worker": {
     "of": "of",

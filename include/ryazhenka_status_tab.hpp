@@ -19,8 +19,11 @@ public:
     void frame(brls::FrameContext* ctx) override;
 
 private:
-    // Hidden as soon as the Sampler thread returns a first valid snapshot.
+    // Hidden as soon as the Sampler thread returns a first valid snapshot, or
+    // after a short grace period so retail/applet units (where psm/ts may never
+    // report "ok") don't sit on the placeholder forever.
     brls::Label* loadingLabel = nullptr;
+    int loading_frames_ = 0;
 };
 
 } // namespace ryazhenka

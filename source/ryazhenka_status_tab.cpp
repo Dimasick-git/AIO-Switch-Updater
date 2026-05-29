@@ -98,7 +98,10 @@ void StatusTab::willDisappear(bool resetState) {
 void StatusTab::frame(brls::FrameContext* ctx) {
     if (this->loadingLabel) {
         const auto snap = metrics::Sampler::instance().lastSnapshot();
-        if (snap.battery_ok || snap.thermal_ok || snap.storage_ok) {
+        // Hide the placeholder as soon as any service reports data, OR after a
+        // ~3 s grace period (≈180 frames @ 60 fps) so the dashboard always
+        // reveals its charts even when psm/ts never flip the "ok" flags.
+        if (snap.battery_ok || snap.thermal_ok || snap.storage_ok || ++this->loading_frames_ > 180) {
             this->loadingLabel->setText("");
             this->loadingLabel = nullptr;
         }

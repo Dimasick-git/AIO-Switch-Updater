@@ -1,3 +1,17 @@
+diff --git a/include/about_tab.hpp b/include/about_tab.hpp
+index 4bec166..92802cb 100644
+--- a/include/about_tab.hpp
++++ b/include/about_tab.hpp
+@@ -6,9 +6,4 @@ class AboutTab : public brls::List
+ {
+ public:
+     AboutTab();
+-
+-    View* getDefaultFocus() override
+-    {
+-        return nullptr;
+-    }
+ };
 diff --git a/source/about_tab.cpp b/source/about_tab.cpp
 index d6c4a74..58b180a 100644
 --- a/source/about_tab.cpp
