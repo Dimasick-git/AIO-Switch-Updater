@@ -15,4 +15,11 @@ namespace download {
     long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
     long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
 
+    /// Resolve "@latest_asset:OWNER/REPO" into a concrete browser_download_url
+    /// by querying api.github.com/repos/<slug>/releases/latest. Prefers the
+    /// first asset whose name ends in ".zip" (the user-facing artefact);
+    /// falls back to assets[0] if no .zip is present.
+    /// Returns empty string on any failure (network, parse, no assets).
+    std::string resolveLatestAssetUrl(const std::string& slug);
+
 }  // namespace download

@@ -65,6 +65,22 @@ void ListDownloadTab::createList(contentType type)
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
+                // Lazy late-binding: if nx-links.json marked this entry as
+                // "@latest_asset:OWNER/REPO" (because the asset filename
+                // contains the version and the releases/latest/download/
+                // alias can't be used), resolve via GitHub API now. We don't
+                // do it at MainFrame ctor time because that would block the
+                // first frame on every launch even when the user doesn't
+                // open this tab.
+                std::string resolved = url;
+                if (resolved.compare(0, 14, "@latest_asset:") == 0) {
+                    const std::string slug = resolved.substr(14);
+                    resolved = download::resolveLatestAssetUrl(slug);
+                    if (resolved.empty()) {
+                        util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, slug));
+                        return;
+                    }
+                }
                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
@@ -78,23 +94,23 @@ void ListDownloadTab::createList(contentType type)
                 }
                 if (type != contentType::payloads && type != contentType::hekate_ipl) {
                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, resolved]() { util::downloadArchive(resolved, type); }));
                     }
                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
                 }
                 else if (type == contentType::payloads) {
                     fs::createTree(BOOTLOADER_PL_PATH);
                     std::string path = std::string(BOOTLOADER_PL_PATH) + title;
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
-                        long sc = download::downloadFile(url, path, OFF);
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
+                        long sc = download::downloadFile(resolved, path, OFF);
                         ProgressEvent::instance().setStatusCode(sc);
                     }));
                 }
                 else if (type == contentType::hekate_ipl) {
                     fs::createTree(BOOTLOADER_PATH);
                     std::string path = std::string(BOOTLOADER_PATH) + title;
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
-                        long sc = download::downloadFile(url, path, OFF);
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
+                        long sc = download::downloadFile(resolved, path, OFF);
                         ProgressEvent::instance().setStatusCode(sc);
                     }));
                 }

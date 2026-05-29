@@ -1,5 +1,5 @@
 {
-  "_comment": "Ryazhenka Updater download catalogue. URLs use the GitHub releases/latest/download/<filename> alias so this file does NOT need to be edited on every upstream release — as long as the asset filename stays stable across releases. Verified asset filenames as of v7.2.1 (Ryzhenka pack), v2.2.5+ (Ryazhahand-Overlay), v3.3.3 (FPSLocker), latest-build (EdiZon), v1.5.1 (ovlSysmodules), v2.4.2 (Sys-clk), v2.9.2 (Fizeau), v15.1.1 (Mission-Control), v1.4.3 (Ryazha-Status-Monitor), v10.6 (Ryazhenkabestcfw-Tuner).",
+  "_comment": "Ryazhenka Updater download catalogue. Two URL shapes are supported: (1) direct https URLs using GitHub's releases/latest/download/<filename> alias for repos with stable asset filenames; (2) the marker '@latest_asset:OWNER/REPO' for repos where the asset filename contains the version or commit SHA — the AIO downloader resolves these at click time via api.github.com (returns the first .zip asset of the latest release). The marker form keeps this file constant across upstream releases.",
   "_schema_version": 1,
   "cfws": {
     "Atmosphere": {
@@ -14,7 +14,7 @@
       "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
   },
   "firmwares": {
-    "_TODO": "Mirror URL for Nintendo Switch firmware archives to be supplied by maintainer (ardent? archive.org? own mirror?)."
+    "Прошивка Switch (последняя, THZoria)": "@latest_asset:THZoria/NX_Firmware"
   },
   "hekate": {
     "Hekate + Nyx (CTCaer)":
@@ -47,7 +47,9 @@
       "Fizeau — display tuner":
         "https://github.com/Dimasick-git/Fizeau/releases/latest/download/Fizeau.zip",
       "EdiZon — save editor (полный)":
-        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/EdiZon-Overlay-ci.zip"
+        "https://github.com/Dimasick-git/EdiZon/releases/latest/download/EdiZon-Overlay-ci.zip",
+      "ovlSysmodules — управление sysmodules": "@latest_asset:Dimasick-git/ovlSysmodules",
+      "Mission-Control — Bluetooth контроллеры": "@latest_asset:Dimasick-git/Mission-Control"
     },
     "Тонкая настройка пака": {
       "Ryazhenka Tuner — CLI настройщик":

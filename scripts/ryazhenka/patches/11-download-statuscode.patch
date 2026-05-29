@@ -1,5 +1,22 @@
+diff --git a/include/download.hpp b/include/download.hpp
+index 67ead7a..b1d4e49 100644
+--- a/include/download.hpp
++++ b/include/download.hpp
+@@ -15,4 +15,11 @@ namespace download {
+     long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
+     long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
+ 
++    /// Resolve "@latest_asset:OWNER/REPO" into a concrete browser_download_url
++    /// by querying api.github.com/repos/<slug>/releases/latest. Prefers the
++    /// first asset whose name ends in ".zip" (the user-facing artefact);
++    /// falls back to assets[0] if no .zip is present.
++    /// Returns empty string on any failure (network, parse, no assets).
++    std::string resolveLatestAssetUrl(const std::string& slug);
++
+ }  // namespace download
+\ No newline at end of file
 diff --git a/source/download.cpp b/source/download.cpp
-index 4f148e6..bc9efb4 100644
+index 4f148e6..5178e85 100644
 --- a/source/download.cpp
 +++ b/source/download.cpp
 @@ -122,6 +122,8 @@ namespace download {
@@ -89,17 +106,84 @@ index 4f148e6..bc9efb4 100644
          return status_code;
      }
  
+@@ -469,4 +475,34 @@ namespace download {
+         return res;
+     }
+ 
++    std::string resolveLatestAssetUrl(const std::string& slug)
++    {
++        // GitHub /releases/latest returns the most recent non-draft,
++        // non-prerelease release with its full asset list. We prefer the
++        // first .zip asset because that is what the AIO downloader actually
++        // unpacks; if no .zip is present we fall back to assets[0]. This
++        // covers ovlSysmodules / Mission-Control / NX_Firmware where the
++        // asset filename embeds the version and breaks the
++        // releases/latest/download/<filename> alias.
++        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases/latest";
++        nlohmann::ordered_json payload;
++        const long http = getRequest(api_url, payload);
++        if (http != 200) return {};
++        if (!payload.contains("assets") || !payload["assets"].is_array()) return {};
++
++        std::string fallback;
++        for (const auto& asset : payload["assets"]) {
++            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string()) continue;
++            const std::string url = asset["browser_download_url"].get<std::string>();
++            if (fallback.empty()) fallback = url;
++            if (asset.contains("name") && asset["name"].is_string()) {
++                const std::string name = asset["name"].get<std::string>();
++                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0) {
++                    return url;
++                }
++            }
++        }
++        return fallback;
++    }
++
+ }  // namespace download
+\ No newline at end of file
 diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
-index 681f1f6..4e333f1 100644
+index 681f1f6..67343d8 100644
 --- a/source/list_download_tab.cpp
 +++ b/source/list_download_tab.cpp
-@@ -85,12 +85,18 @@ void ListDownloadTab::createList(contentType type)
+@@ -65,6 +65,22 @@ void ListDownloadTab::createList(contentType type)
+             listItem = new brls::ListItem(link.first);
+             listItem->setHeight(LISTITEM_HEIGHT);
+             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
++                // Lazy late-binding: if nx-links.json marked this entry as
++                // "@latest_asset:OWNER/REPO" (because the asset filename
++                // contains the version and the releases/latest/download/
++                // alias can't be used), resolve via GitHub API now. We don't
++                // do it at MainFrame ctor time because that would block the
++                // first frame on every launch even when the user doesn't
++                // open this tab.
++                std::string resolved = url;
++                if (resolved.compare(0, 14, "@latest_asset:") == 0) {
++                    const std::string slug = resolved.substr(14);
++                    resolved = download::resolveLatestAssetUrl(slug);
++                    if (resolved.empty()) {
++                        util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, slug));
++                        return;
++                    }
++                }
+                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
+                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
+@@ -78,19 +94,25 @@ void ListDownloadTab::createList(contentType type)
+                 }
+                 if (type != contentType::payloads && type != contentType::hekate_ipl) {
+                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
+-                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
++                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, resolved]() { util::downloadArchive(resolved, type); }));
+                     }
+                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
+                 }
                  else if (type == contentType::payloads) {
                      fs::createTree(BOOTLOADER_PL_PATH);
                      std::string path = std::string(BOOTLOADER_PL_PATH) + title;
 -                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
-+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
-+                        long sc = download::downloadFile(url, path, OFF);
++                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
++                        long sc = download::downloadFile(resolved, path, OFF);
 +                        ProgressEvent::instance().setStatusCode(sc);
 +                    }));
                  }
@@ -107,8 +191,8 @@ index 681f1f6..4e333f1 100644
                      fs::createTree(BOOTLOADER_PATH);
                      std::string path = std::string(BOOTLOADER_PATH) + title;
 -                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
-+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
-+                        long sc = download::downloadFile(url, path, OFF);
++                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
++                        long sc = download::downloadFile(resolved, path, OFF);
 +                        ProgressEvent::instance().setStatusCode(sc);
 +                    }));
                  }
