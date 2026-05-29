@@ -64,7 +64,9 @@
       "cyberpunk": "Киберпанк",
       "gold": "Золото",
       "ocean": "Океан"
-    }
+    },
+    "release_notes": "Что нового в релизе",
+    "release_notes_empty": "Описание релиза ещё не получено. Подключитесь к интернету и переоткройте вкладку."
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

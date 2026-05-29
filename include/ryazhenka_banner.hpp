@@ -40,4 +40,8 @@ brls::Image* makeImage();
 /// cached. Refreshed alongside the banner image — no separate network call.
 std::string cachedPackTag();
 
+/// Latest pack release notes (GitHub release `body`), or empty string if not
+/// yet cached. May be markdown; the UI renders it as plain text.
+std::string cachedPackNotes();
+
 }  // namespace ryazhenka::banner

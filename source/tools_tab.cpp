@@ -106,6 +106,41 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     // it cached — refreshed alongside the banner so no extra startup network.
     if (const std::string packTag = ryazhenka::banner::cachedPackTag(); !packTag.empty())
         installPack->setValue(packTag);
+
+    auto* releaseNotes = new ryazhenka::RyazhenkaCard("menus/ryazhenka/release_notes"_i18n);
+    if (const std::string packTag = ryazhenka::banner::cachedPackTag(); !packTag.empty())
+        releaseNotes->setValue(packTag);
+    releaseNotes->getClickEvent()->subscribe([](brls::View*) {
+        const std::string notes = ryazhenka::banner::cachedPackNotes();
+        if (notes.empty()) {
+            util::showDialogBoxInfo("menus/ryazhenka/release_notes_empty"_i18n);
+            return;
+        }
+        // Split the markdown body into lines so the PopupFrame's list scrolls
+        // naturally instead of one massive label that may not wrap.
+        brls::List* list = new brls::List();
+        std::size_t pos = 0;
+        while (pos <= notes.size()) {
+            std::size_t nl = notes.find('\n', pos);
+            const std::string raw =
+                notes.substr(pos, nl == std::string::npos ? notes.size() - pos : nl - pos);
+            // Trim trailing carriage returns (Windows line endings).
+            std::string line = raw;
+            while (!line.empty() && line.back() == '\r')
+                line.pop_back();
+            if (!line.empty()) {
+                brls::ListItem* item = new brls::ListItem(line);
+                item->setHeight(LISTITEM_HEIGHT);
+                list->addView(item);
+            }
+            if (nl == std::string::npos)
+                break;
+            pos = nl + 1;
+        }
+        brls::AppletFrame* notesView = new brls::AppletFrame(true, true);
+        notesView->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/release_notes"_i18n, notesView, "", "");
+    });
     installPack->getClickEvent()->subscribe([](brls::View* view) {
         constexpr std::uint64_t kMinFreeBytes = 500ull * 1024ull * 1024ull;
         if (!ryazhenka::sysinfo::hasEnoughFreeSpace(kMinFreeBytes)) {
@@ -374,6 +409,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);
+    this->addView(releaseNotes);
     this->addView(sysmoduleManager);
     this->addView(factoryRestore);
     this->addView(openDashboard);

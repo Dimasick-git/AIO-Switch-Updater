@@ -58,6 +58,8 @@ inline constexpr char kBannerUrl[] =
 inline constexpr char kBannerCachePath[] = "/config/aio-switch-updater/banner.png";
 // Latest pack release tag (e.g. "v7.2.1"), cached alongside the banner.
 inline constexpr char kPackTagCachePath[] = "/config/aio-switch-updater/.pack_tag";
+// Release notes (the GitHub release body), cached alongside the banner.
+inline constexpr char kPackNotesCachePath[] = "/config/aio-switch-updater/.pack_notes";
 // How long the cached banner is considered fresh before a background re-fetch.
 inline constexpr int kBannerCacheTtlHours = 6;
 

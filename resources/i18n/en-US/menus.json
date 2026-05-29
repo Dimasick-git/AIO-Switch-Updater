@@ -64,7 +64,9 @@
       "cyberpunk": "Cyberpunk",
       "gold": "Gold",
       "ocean": "Ocean"
-    }
+    },
+    "release_notes": "What's new in this release",
+    "release_notes_empty": "Release notes haven't been fetched yet. Connect to the internet and re-open this tab."
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
