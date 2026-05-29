@@ -13,6 +13,7 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_logger.hpp"
+#include "ryazhenka_theme.hpp"
 // system_info / version_check headers intentionally not included — see body
 #include "warning_page.hpp"
 
@@ -25,8 +26,9 @@ CFW CurrentCfw::running_cfw;
 
 int main(int argc, char* argv[])
 {
-    // Init the app
-    if (!brls::Application::init(APP_TITLE)) {
+    // Init the app with the Ryazhenka theme wrapper (custom palettes). The
+    // Application takes ownership of the wrapper.
+    if (!brls::Application::init(APP_TITLE, nullptr, ryazhenka::theme::makeWrapper())) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
@@ -34,6 +36,8 @@ int main(int argc, char* argv[])
     // Install crash handler AFTER borealis init so its logger is usable.
     try { ryazhenka::crash::install(); } catch (...) {}
     try { ryazhenka::branding::applyBranding(); } catch (...) {}
+    // Apply the persisted palette (defaults to Ryazhenka) before any view shows.
+    try { ryazhenka::theme::loadAndApplyFromConfig(); } catch (...) {}
 
     nlohmann::ordered_json languageFile = fs::parseJsonFile(LANGUAGE_JSON);
     if (languageFile.find("language") != languageFile.end())
