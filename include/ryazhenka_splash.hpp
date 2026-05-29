@@ -25,6 +25,8 @@ public:
     /// construction kicks in.
     explicit Splash(std::function<void()> next);
 
+    ~Splash();
+
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
               brls::Style* style, brls::FrameContext* ctx) override;
     void layout(NVGcontext* vg, brls::Style* style, brls::FontStash* stash) override;
@@ -37,6 +39,12 @@ private:
     bool handed_off_ = false;
     float in_alpha_ = 0.0f;
     float out_alpha_ = 1.0f;  // dims at the very end
+
+    // Lazily-created NanoVG texture for the cached release banner. -1 means
+    // "no texture yet" (first launch with empty cache, or load failed).
+    int bannerTexture_ = -1;
+    int bannerW_ = 0;
+    int bannerH_ = 0;
 };
 
 }  // namespace ryazhenka

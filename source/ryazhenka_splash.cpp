@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_nvg.hpp"
 #include "ryazhenka_theme.hpp"
@@ -23,6 +24,13 @@ NVGcolor col(const theme::Rgba& c, std::uint8_t a = 255) {
 Splash::Splash(std::function<void()> next) : next_(std::move(next)) {
     // The splash should cover the whole window. The Application sets our
     // boundaries to the content area when we are pushed onto the stack.
+}
+
+Splash::~Splash() {
+    if (this->bannerTexture_ != -1) {
+        if (auto* vg = brls::Application::getNVGContext())
+            nvgDeleteImage(vg, this->bannerTexture_);
+    }
 }
 
 void Splash::layout(NVGcontext* /*vg*/, brls::Style* /*style*/, brls::FontStash* /*stash*/) {}
@@ -57,9 +65,40 @@ void Splash::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
     const float cx = fx + w * 0.5f;
     const float cy = fy + h * 0.5f;
 
-    // Faint scrim over the wave background so the splash text reads cleanly,
-    // fading in with the rest of the content.
-    NVGcolor scrim = col(pal.bg, static_cast<std::uint8_t>(140.0f * this->in_alpha_));
+    // Lazy-load the cached release banner texture on the first frame that has
+    // a valid NanoVG context. If the cache is empty (first launch) the texture
+    // stays -1 and we just render the text-only splash.
+    if (this->bannerTexture_ == -1) {
+        const std::string path = banner::cachedPath();
+        if (!path.empty()) {
+            this->bannerTexture_ = nvgCreateImage(vg, path.c_str(), 0);
+            if (this->bannerTexture_ != -1)
+                nvgImageSize(vg, this->bannerTexture_, &this->bannerW_, &this->bannerH_);
+        }
+    }
+
+    // Banner backdrop — cover-fit (centred, scaled to fill, cropped to bounds).
+    // Faded by in_alpha_ so it ramps in with the rest of the splash.
+    if (this->bannerTexture_ != -1 && this->bannerW_ > 0 && this->bannerH_ > 0) {
+        const float scale = std::max(w / this->bannerW_, h / this->bannerH_);
+        const float iw = this->bannerW_ * scale;
+        const float ih = this->bannerH_ * scale;
+        const float ix = fx + (w - iw) * 0.5f;
+        const float iy = fy + (h - ih) * 0.5f;
+        NVGpaint paint = nvgImagePattern(vg, ix, iy, iw, ih, 0.0f,
+                                         this->bannerTexture_, this->in_alpha_);
+        nvgBeginPath(vg);
+        nvgRect(vg, fx, fy, w, h);
+        nvgFillPaint(vg, paint);
+        nvgFill(vg);
+    }
+
+    // Faint scrim over background + banner so the splash text reads cleanly,
+    // fading in with the rest of the content. Stronger when a banner is shown
+    // so the text isn't lost against complex imagery.
+    const std::uint8_t scrimAlpha = static_cast<std::uint8_t>(
+        (this->bannerTexture_ != -1 ? 175.0f : 140.0f) * this->in_alpha_);
+    NVGcolor scrim = col(pal.bg, scrimAlpha);
     nvgBeginPath(vg);
     nvgRect(vg, fx, fy, w, h);
     nvgFillColor(vg, scrim);
