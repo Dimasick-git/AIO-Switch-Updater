@@ -31,8 +31,10 @@ int g_pendingDur = 0;
 #ifdef __SWITCH__
 HidVibrationDeviceHandle g_handheld[2];
 HidVibrationDeviceHandle g_dual[2];
+HidVibrationDeviceHandle g_full[2];
 bool g_initHandheld = false;
 bool g_initDual = false;
+bool g_initFull = false;
 
 void sendAll(float amp) {
     HidVibrationValue v;
@@ -41,10 +43,13 @@ void sendAll(float amp) {
     v.amp_high  = amp;
     v.freq_high = 320.0f;
     HidVibrationValue values[2] = {v, v};
+    // Sending to a style that isn't currently connected is harmless.
     if (g_initHandheld)
         hidSendVibrationValues(g_handheld, values, 2);
     if (g_initDual)
         hidSendVibrationValues(g_dual, values, 2);
+    if (g_initFull)
+        hidSendVibrationValues(g_full, values, 2);
 }
 #else
 void sendAll(float /*amp*/) {}
@@ -74,16 +79,23 @@ void init() {
     }
 
 #ifdef __SWITCH__
+    // The style argument is a single HidNpadStyleTag in this libnx version, so
+    // each style needs its own init call into its own handle pair.
     Result rc1 = hidInitializeVibrationDevices(g_handheld, 2, HidNpadIdType_Handheld,
                                                HidNpadStyleTag_NpadHandheld);
     g_initHandheld = R_SUCCEEDED(rc1);
 
     Result rc2 = hidInitializeVibrationDevices(g_dual, 2, HidNpadIdType_No1,
-                                               HidNpadStyleTag_NpadJoyDual | HidNpadStyleTag_NpadFullKey);
+                                               HidNpadStyleTag_NpadJoyDual);
     g_initDual = R_SUCCEEDED(rc2);
+
+    Result rc3 = hidInitializeVibrationDevices(g_full, 2, HidNpadIdType_No1,
+                                               HidNpadStyleTag_NpadFullKey);
+    g_initFull = R_SUCCEEDED(rc3);
 
     log::info(std::string("haptics: handheld=") + (g_initHandheld ? "ok" : "no") +
               " dual=" + (g_initDual ? "ok" : "no") +
+              " full=" + (g_initFull ? "ok" : "no") +
               " enabled=" + (g_enabled ? "yes" : "no"));
 #else
     log::info("haptics: stub (non-switch build)");
