@@ -2,7 +2,9 @@
 
 #include <string>
 
+#include "ryazhenka_card.hpp"
 #include "ryazhenka_config.hpp"
+#include "ryazhenka_haptics.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -31,19 +33,15 @@ AboutTab::AboutTab()
     // sat in this ctor blocked the first frame on a curl HTTPS request to
     // GitHub, which is why the app appeared to crash on launch.)
     this->addView(new brls::Header("menus/ryazhenka/ecosystem_title"_i18n));
-    std::string ecosystem;
     for (const auto& link : ryazhenka::kEcosystemLinks) {
-        ecosystem.append("• ");
-        ecosystem.append(link.name);
-        ecosystem.append("  —  ");
-        ecosystem.append(link.url);
-        ecosystem.push_back('\n');
+        auto* card = new ryazhenka::RyazhenkaCard(std::string(link.name), std::string(link.url));
+        // No in-app browser — the URL is shown as the card subtitle; a click
+        // just gives confirming rumble feedback.
+        card->getClickEvent()->subscribe([](brls::View*) {
+            ryazhenka::haptics::success();
+        });
+        this->addView(card);
     }
-    brls::Label* ecoLabel = new brls::Label(
-        brls::LabelStyle::SMALL,
-        ecosystem,
-        true);
-    this->addView(ecoLabel);
 
     // Original disclaimers
     this->addView(new brls::Header("menus/about/disclaimers_title"_i18n));
