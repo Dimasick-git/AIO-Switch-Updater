@@ -11,6 +11,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
+#include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
