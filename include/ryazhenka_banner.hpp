@@ -36,4 +36,8 @@ bool refreshAsync();
 /// fresh image is on disk for next launch.
 brls::Image* makeImage();
 
+/// Latest pack release tag (e.g. "v7.2.1"), or empty string if not yet
+/// cached. Refreshed alongside the banner image — no separate network call.
+std::string cachedPackTag();
+
 }  // namespace ryazhenka::banner

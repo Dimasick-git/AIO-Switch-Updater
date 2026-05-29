@@ -8,6 +8,7 @@
 #include <thread>
 
 #include <curl/curl.h>
+#include <json.hpp>
 
 #include "constants.hpp"
 #include "fs.hpp"
@@ -27,6 +28,62 @@ std::mutex g_diskMutex;  // serialises writes to the cache file
 std::size_t writeToFile(void* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
     auto* f = static_cast<std::FILE*>(userdata);
     return std::fwrite(ptr, size, nmemb, f);
+}
+
+std::size_t writeToString(void* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
+    auto* s = static_cast<std::string*>(userdata);
+    s->append(static_cast<const char*>(ptr), size * nmemb);
+    return size * nmemb;
+}
+
+// Best-effort: parse "tag_name" from the GitHub release feed and write it next
+// to the banner cache. Silent on failure — the banner refresh succeeded either
+// way and a missing tag just means the install card shows no version.
+void fetchAndWritePackTag() {
+    CURL* curl = curl_easy_init();
+    if (!curl)
+        return;
+
+    std::string body;
+    body.reserve(4096);
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "User-Agent: RyazhenkaUpdater/1.0");
+    headers = curl_slist_append(headers, "Accept: application/vnd.github+json");
+
+    curl_easy_setopt(curl, CURLOPT_URL, kSigpatchesReleasesUrl);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, kCurlConnectTimeoutSec);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 20L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeToString);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
+
+    long http_code = 0;
+    const CURLcode rc = curl::performWithRetry(curl, &http_code);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    if (rc != CURLE_OK || http_code >= 400)
+        return;
+
+    try {
+        auto json = nlohmann::json::parse(body, nullptr, /*allow_exceptions=*/false);
+        if (!json.is_object() || !json.contains("tag_name") || !json["tag_name"].is_string())
+            return;
+        const std::string tag = json["tag_name"].get<std::string>();
+        if (tag.empty())
+            return;
+        if (std::FILE* f = std::fopen(kPackTagCachePath, "w")) {
+            std::fwrite(tag.data(), 1, tag.size(), f);
+            std::fclose(f);
+            log::info(std::string("banner: cached pack tag ") + tag);
+        }
+    } catch (...) {
+        // best effort
+    }
 }
 
 }  // namespace
@@ -98,6 +155,10 @@ bool fetchNow() {
         return false;
     }
     log::info("banner: cached fresh copy");
+
+    // Same release, so refresh the cached pack tag in the same pass — saves
+    // one round-trip when the install card needs to show the version.
+    fetchAndWritePackTag();
     return true;
 }
 
@@ -123,6 +184,24 @@ brls::Image* makeImage() {
     if (path.empty())
         return nullptr;
     return new brls::Image(path);
+}
+
+std::string cachedPackTag() {
+    std::error_code ec;
+    if (!fs_ns::exists(kPackTagCachePath, ec))
+        return "";
+    std::FILE* f = std::fopen(kPackTagCachePath, "r");
+    if (!f)
+        return "";
+    std::string out;
+    char buf[64];
+    while (std::size_t n = std::fread(buf, 1, sizeof(buf), f))
+        out.append(buf, n);
+    std::fclose(f);
+    // Strip stray whitespace / newlines.
+    while (!out.empty() && (out.back() == '\n' || out.back() == '\r' || out.back() == ' '))
+        out.pop_back();
+    return out;
 }
 
 }  // namespace ryazhenka::banner

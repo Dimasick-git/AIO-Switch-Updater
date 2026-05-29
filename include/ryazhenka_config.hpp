@@ -56,6 +56,8 @@ inline constexpr char kPackFilename[] = "/config/aio-switch-updater/ryazhenka-pa
 inline constexpr char kBannerUrl[] =
     "https://github.com/Dimasick-git/Ryzhenka/releases/latest/download/bbootlogo.png";
 inline constexpr char kBannerCachePath[] = "/config/aio-switch-updater/banner.png";
+// Latest pack release tag (e.g. "v7.2.1"), cached alongside the banner.
+inline constexpr char kPackTagCachePath[] = "/config/aio-switch-updater/.pack_tag";
 // How long the cached banner is considered fresh before a background re-fetch.
 inline constexpr int kBannerCacheTtlHours = 6;
 

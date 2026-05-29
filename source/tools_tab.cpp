@@ -102,6 +102,10 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     });
 
     auto* installPack = new ryazhenka::RyazhenkaCard("menus/ryazhenka/install_pack"_i18n);
+    // Show the latest pack release tag (e.g. "v7.2.1") on the right if we have
+    // it cached — refreshed alongside the banner so no extra startup network.
+    if (const std::string packTag = ryazhenka::banner::cachedPackTag(); !packTag.empty())
+        installPack->setValue(packTag);
     installPack->getClickEvent()->subscribe([](brls::View* view) {
         constexpr std::uint64_t kMinFreeBytes = 500ull * 1024ull * 1024ull;
         if (!ryazhenka::sysinfo::hasEnoughFreeSpace(kMinFreeBytes)) {
