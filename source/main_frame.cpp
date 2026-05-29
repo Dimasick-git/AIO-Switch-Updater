@@ -8,6 +8,7 @@
 #include "download.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
+#include "ryazhenka_status_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
 
@@ -58,9 +59,12 @@ MainFrame::MainFrame() : TabFrame()
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
 
-    // StatusTab is temporarily disabled — its willAppear() spawns the metrics
-    // Sampler std::thread which touches psm/ts/spl services. Until we have a
-    // confirmed-working baseline build, the Status tab is not registered.
+    // Live system dashboard. The metrics Sampler thread only starts in the
+    // tab's willAppear() and is joined in willDisappear(), so registering the
+    // tab is cheap; the placeholder now clears after a short grace period even
+    // if psm/ts never report (see ryazhenka_status_tab.cpp).
+    if (!util::getBoolValue(hideStatus, "status"))
+        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }
