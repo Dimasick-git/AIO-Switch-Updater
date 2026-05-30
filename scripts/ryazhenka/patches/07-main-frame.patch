@@ -41,10 +41,13 @@ diff --git a/source/main_frame.cpp b/source/main_frame.cpp
  
      bool erista = util::isErista();
  
-@@ -58,5 +72,16 @@
-     if (!util::getBoolValue(hideStatus, "tools"))
-         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
+@@ -56,7 +70,18 @@
+         this->addTab("menus/main/custom_downloads"_i18n, new AmsTab_Custom(nxlinks, erista));
  
+     if (!util::getBoolValue(hideStatus, "tools"))
+-        this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
++        this->addTab("menus/main/tools"_i18n, new ToolsTab("", util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
++
 +    // Ryazhenka settings — live palette switch, haptics, animated background.
 +    if (!util::getBoolValue(hideStatus, "settings"))
 +        this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
@@ -55,6 +58,6 @@ diff --git a/source/main_frame.cpp b/source/main_frame.cpp
 +    // init via metrics) only runs when the user explicitly navigates to it.
 +    if (!util::getBoolValue(hideStatus, "status"))
 +        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
-+
+ 
      this->registerAction("", brls::Key::B, [this] { return true; });
  }
