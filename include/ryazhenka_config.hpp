@@ -67,6 +67,15 @@ inline constexpr int kBannerCacheTtlHours = 6;
 // because the pack bundles the freshest sigpatches we ship.
 inline constexpr char kSigpatchesReleasesUrl[] =
     "https://api.github.com/repos/Dimasick-git/Ryzhenka/releases/latest";
+
+// Alternative cheats database (tomvita/NXCheatCode) — built from GBAtemp
+// posts and updated daily. The zip has a top-level `titles/<TID>/cheats/...`
+// layout that maps 1-to-1 onto Atmosphere's `/atmosphere/contents/<TID>/cheats/`,
+// so a download-extract-merge stage is enough to install.
+inline constexpr char kNxCheatCodeUrl[] =
+    "https://github.com/tomvita/NXCheatCode/releases/latest/download/titles.zip";
+inline constexpr char kNxCheatCodeVersionUrl[] =
+    "https://github.com/tomvita/NXCheatCode/releases/latest/download/version.txt";
 inline constexpr char kSigpatchesRemoteCachePath[] =
     "/config/aio-switch-updater/.sigpatches_remote.json";
 inline constexpr int  kSigpatchesStaleThresholdDays = 14;

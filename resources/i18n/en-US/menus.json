@@ -69,7 +69,9 @@
       "ocean": "Ocean"
     },
     "release_notes": "What's new in this release",
-    "release_notes_empty": "Release notes haven't been fetched yet. Connect to the internet and re-open this tab."
+    "release_notes_empty": "Release notes haven't been fetched yet. Connect to the internet and re-open this tab.",
+    "install_nxcheats": "Install NXCheatCode cheats (tomvita, daily)",
+    "install_nxcheats_confirm": "Download the latest tomvita/NXCheatCode titles.zip and merge it into /atmosphere/contents/. Existing cheat .txt files for each TID will be overwritten with the fresh ones."
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",
