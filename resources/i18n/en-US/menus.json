@@ -60,7 +60,11 @@
       "author": "Author",
       "audio_toggle": "UI sound effects",
       "audio_hint": "Procedural beeps on focus / click. Off by default.",
-      "refresh_banner": "Refresh banner now"
+      "refresh_banner": "Refresh banner now",
+      "reset_header": "Reset / recovery",
+      "reset_hidden_tabs": "Reset hidden tabs (show all)",
+      "reset_config": "Reset Ryazhenka config to defaults",
+      "reset_restart": "Done. Relaunch the app for the change to take effect."
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

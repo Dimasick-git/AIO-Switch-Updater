@@ -6,12 +6,10 @@
 
 #include "constants.hpp"
 
-namespace ryazhenka { class RyazhenkaCard; }
-
 class AmsTab : public brls::List
 {
 protected:
-    ryazhenka::RyazhenkaCard* listItem;
+    brls::ListItem* listItem;
     bool erista;
     nlohmann::ordered_json nxlinks;
     nlohmann::ordered_json hekate;
@@ -19,7 +17,7 @@ protected:
     void CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams = true, bool hekate = false, const std::string& text_hekate = "", const std::string& hekate_url = "");
     bool CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool hekate = true, bool ams = true);
     void CreateNotFoundLabel();
-    virtual void RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem);
+    virtual void RegisterListItemAction(brls::ListItem* listItem);
 
 public:
     AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista = true);
@@ -41,7 +39,7 @@ class AmsTab_Custom : public AmsTab
 private:
     nlohmann::ordered_json custom_packs;
     void CreateLists();
-    void RegisterListItemAction(ryazhenka::RyazhenkaCard* listItem) override;
+    void RegisterListItemAction(brls::ListItem* listItem) override;
     void AddLinkCreator();
 
 public:

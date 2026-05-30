@@ -3,7 +3,6 @@
 #include <string>
 
 #include "ryazhenka_banner.hpp"
-#include "ryazhenka_card.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
 
@@ -46,7 +45,8 @@ AboutTab::AboutTab()
     // GitHub, which is why the app appeared to crash on launch.)
     this->addView(new brls::Header("menus/ryazhenka/ecosystem_title"_i18n));
     for (const auto& link : ryazhenka::kEcosystemLinks) {
-        auto* card = new ryazhenka::RyazhenkaCard(std::string(link.name), std::string(link.url));
+        brls::ListItem* card = new brls::ListItem(std::string(link.name), std::string(link.url));
+        card->setHeight(LISTITEM_HEIGHT);
         // No in-app browser — the URL is shown as the card subtitle; a click
         // just gives confirming rumble feedback.
         card->getClickEvent()->subscribe([](brls::View*) {

@@ -73,8 +73,10 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
         this->addTab("menus/main/tools"_i18n, new ToolsTab("", util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
 
     // Ryazhenka settings — live palette switch, haptics, animated background.
-    if (!util::getBoolValue(hideStatus, "settings"))
-        this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
+    // ALWAYS shown (regardless of hide_tabs.json) so the user has a way out
+    // when every other tab has been hidden. The Settings screen offers a
+    // "Reset hidden tabs" card to undo the hide-tabs.json state.
+    this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
 
     // Live system dashboard — MUST stay last (rule from commit a5977a5).
     // borealis fires willAppear on the FIRST tab during addTab, so anything

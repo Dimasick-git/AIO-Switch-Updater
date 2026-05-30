@@ -12,6 +12,7 @@
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
+#include "utils.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -161,6 +162,32 @@ SettingsScreen::SettingsScreen() {
         haptics::success();
     });
     this->addView(clearLog);
+
+    // --- Reset / recovery ---
+    this->addView(new brls::Header("menus/ryazhenka/settings/reset_header"_i18n));
+
+    // Emergency: if the user hid every tab via Tools → Hide tabs, this is the
+    // only way back. Just delete hide_tabs.json — defaults are "everything
+    // visible". Effect on next launch (or after relaunch).
+    auto* resetHidden = new RyazhenkaCard("menus/ryazhenka/settings/reset_hidden_tabs"_i18n);
+    resetHidden->getClickEvent()->subscribe([](brls::View*) {
+        std::error_code ec;
+        std::filesystem::remove(HIDE_TABS_JSON, ec);
+        haptics::success();
+        util::showDialogBoxInfo("menus/ryazhenka/settings/reset_restart"_i18n);
+    });
+    this->addView(resetHidden);
+
+    // Nuclear option: wipe the whole Ryazhenka config.json (palette, haptics,
+    // audio, background). Defaults restored on next launch.
+    auto* resetConfig = new RyazhenkaCard("menus/ryazhenka/settings/reset_config"_i18n);
+    resetConfig->getClickEvent()->subscribe([](brls::View*) {
+        std::error_code ec;
+        std::filesystem::remove(CONFIG_FILE, ec);
+        haptics::success();
+        util::showDialogBoxInfo("menus/ryazhenka/settings/reset_restart"_i18n);
+    });
+    this->addView(resetConfig);
 
     // --- About ---
     this->addView(new brls::Header("menus/ryazhenka/settings/about_header"_i18n));

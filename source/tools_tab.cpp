@@ -15,7 +15,6 @@
 #include "payload_page.hpp"
 #include "ryazhenka_backup.hpp"
 #include "ryazhenka_banner.hpp"
-#include "ryazhenka_card.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_diagnostics.hpp"
 #include "ryazhenka_factory_restore.hpp"
@@ -38,7 +37,8 @@ namespace {
 ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
 {
     if (!tag.empty() && tag != AppVersion) {
-        auto* updateApp = new ryazhenka::RyazhenkaCard(fmt::format("menus/tools/update_app"_i18n, tag));
+        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
+        updateApp->setHeight(LISTITEM_HEIGHT);
         std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
         updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
@@ -56,7 +56,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         this->addView(updateApp);
     }
 
-    auto* showLog = new ryazhenka::RyazhenkaCard("menus/ryazhenka/show_log"_i18n);
+    brls::ListItem* showLog = new brls::ListItem("menus/ryazhenka/show_log"_i18n);
+    showLog->setHeight(LISTITEM_HEIGHT);
     showLog->getClickEvent()->subscribe([](brls::View* view) {
         const auto lines = ryazhenka::diagnostics::tailLog(200);
         if (lines.empty()) {
@@ -74,7 +75,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/ryazhenka/show_log"_i18n, logView, "", "");
     });
 
-    auto* diagDump = new ryazhenka::RyazhenkaCard("menus/ryazhenka/diag_dump"_i18n);
+    brls::ListItem* diagDump = new brls::ListItem("menus/ryazhenka/diag_dump"_i18n);
+    diagDump->setHeight(LISTITEM_HEIGHT);
     diagDump->getClickEvent()->subscribe([](brls::View* view) {
         const std::string path = ryazhenka::diagnostics::writeDumpFile();
         if (path.empty()) {
@@ -84,7 +86,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         }
     });
 
-    auto* netDiag = new ryazhenka::RyazhenkaCard("menus/ryazhenka/net_diag"_i18n);
+    brls::ListItem* netDiag = new brls::ListItem("menus/ryazhenka/net_diag"_i18n);
+    netDiag->setHeight(LISTITEM_HEIGHT);
     netDiag->getClickEvent()->subscribe([](brls::View* view) {
         const auto results = ryazhenka::diagnostics::runNetworkProbe();
         brls::List* list = new brls::List();
@@ -101,13 +104,15 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/ryazhenka/net_diag"_i18n, diagView, "", "");
     });
 
-    auto* installPack = new ryazhenka::RyazhenkaCard("menus/ryazhenka/install_pack"_i18n);
+    brls::ListItem* installPack = new brls::ListItem("menus/ryazhenka/install_pack"_i18n);
+    installPack->setHeight(LISTITEM_HEIGHT);
     // Show the latest pack release tag (e.g. "v7.2.1") on the right if we have
     // it cached — refreshed alongside the banner so no extra startup network.
     if (const std::string packTag = ryazhenka::banner::cachedPackTag(); !packTag.empty())
         installPack->setValue(packTag);
 
-    auto* releaseNotes = new ryazhenka::RyazhenkaCard("menus/ryazhenka/release_notes"_i18n);
+    brls::ListItem* releaseNotes = new brls::ListItem("menus/ryazhenka/release_notes"_i18n);
+    releaseNotes->setHeight(LISTITEM_HEIGHT);
     if (const std::string packTag = ryazhenka::banner::cachedPackTag(); !packTag.empty())
         releaseNotes->setValue(packTag);
     releaseNotes->getClickEvent()->subscribe([](brls::View*) {
@@ -183,7 +188,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     // /atmosphere/contents/ as a follow-up worker stage. Existing TIDs get
     // their cheat .txt files refreshed; foreign metadata files (game-name
     // labels) are copied alongside as harmless extras.
-    auto* installNxCheats = new ryazhenka::RyazhenkaCard("menus/ryazhenka/install_nxcheats"_i18n);
+    brls::ListItem* installNxCheats = new brls::ListItem("menus/ryazhenka/install_nxcheats"_i18n);
+    installNxCheats->setHeight(LISTITEM_HEIGHT);
     installNxCheats->getClickEvent()->subscribe([](brls::View*) {
         const std::string url(ryazhenka::kNxCheatCodeUrl);
         const std::string confirm =
@@ -240,13 +246,15 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::Application::pushView(stagedFrame);
     });
 
-    auto* cleanupBackups = new ryazhenka::RyazhenkaCard("menus/ryazhenka/cleanup_backups"_i18n);
+    brls::ListItem* cleanupBackups = new brls::ListItem("menus/ryazhenka/cleanup_backups"_i18n);
+    cleanupBackups->setHeight(LISTITEM_HEIGHT);
     cleanupBackups->getClickEvent()->subscribe([](brls::View* view) {
         const std::size_t removed = ryazhenka::backup::pruneOlderThan(30);
         util::showDialogBoxInfo("menus/common/all_done"_i18n + std::string("\n") + std::to_string(removed));
     });
 
-    auto* sysmoduleManager = new ryazhenka::RyazhenkaCard("menus/ryazhenka/sysmodule_manager"_i18n);
+    brls::ListItem* sysmoduleManager = new brls::ListItem("menus/ryazhenka/sysmodule_manager"_i18n);
+    sysmoduleManager->setHeight(LISTITEM_HEIGHT);
     sysmoduleManager->getClickEvent()->subscribe([](brls::View* view) {
         const auto entries = ryazhenka::sysmodule::list();
         if (entries.empty()) {
@@ -287,12 +295,14 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, sysView, "menus/ryazhenka/sysmodule_hint"_i18n, "");
     });
 
-    auto* openDashboard = new ryazhenka::RyazhenkaCard("menus/ryazhenka/open_dashboard"_i18n);
+    brls::ListItem* openDashboard = new brls::ListItem("menus/ryazhenka/open_dashboard"_i18n);
+    openDashboard->setHeight(LISTITEM_HEIGHT);
     openDashboard->getClickEvent()->subscribe([](brls::View* view) {
         brls::Application::pushView(new ryazhenka::StatusTab());
     });
 
-    auto* factoryRestore = new ryazhenka::RyazhenkaCard("menus/ryazhenka/factory_restore"_i18n);
+    brls::ListItem* factoryRestore = new brls::ListItem("menus/ryazhenka/factory_restore"_i18n);
+    factoryRestore->setHeight(LISTITEM_HEIGHT);
     factoryRestore->getClickEvent()->subscribe([](brls::View* view) {
         const auto backups = ryazhenka::restore::listBackups(50);
         if (backups.empty()) {
@@ -336,37 +346,44 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/ryazhenka/factory_restore"_i18n, restoreView, "menus/ryazhenka/restore_hint"_i18n, "");
     });
 
-    auto* cheats = new ryazhenka::RyazhenkaCard("menus/tools/cheats"_i18n);
+    brls::ListItem* cheats = new brls::ListItem("menus/tools/cheats"_i18n);
+    cheats->setHeight(LISTITEM_HEIGHT);
     cheats->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/cheats/menu"_i18n, new CheatsPage(), "", "");
     });
 
-    auto* outdatedTitles = new ryazhenka::RyazhenkaCard("menus/tools/outdated_titles"_i18n);
+    brls::ListItem* outdatedTitles = new brls::ListItem("menus/tools/outdated_titles"_i18n);
+    outdatedTitles->setHeight(LISTITEM_HEIGHT);
     outdatedTitles->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/outdated_titles"_i18n, new AppPage_OutdatedTitles(), "menus/tools/outdated_titles_desc"_i18n, "");
     });
 
-    auto* JCcolor = new ryazhenka::RyazhenkaCard("menus/tools/joy_cons"_i18n);
+    brls::ListItem* JCcolor = new brls::ListItem("menus/tools/joy_cons"_i18n);
+    JCcolor->setHeight(LISTITEM_HEIGHT);
     JCcolor->getClickEvent()->subscribe([](brls::View* view) {
         brls::Application::pushView(new JCPage());
     });
 
-    auto* PCcolor = new ryazhenka::RyazhenkaCard("menus/tools/pro_cons"_i18n);
+    brls::ListItem* PCcolor = new brls::ListItem("menus/tools/pro_cons"_i18n);
+    PCcolor->setHeight(LISTITEM_HEIGHT);
     PCcolor->getClickEvent()->subscribe([](brls::View* view) {
         brls::Application::pushView(new PCPage());
     });
 
-    auto* rebootPayload = new ryazhenka::RyazhenkaCard("menus/tools/inject_payloads"_i18n);
+    brls::ListItem* rebootPayload = new brls::ListItem("menus/tools/inject_payloads"_i18n);
+    rebootPayload->setHeight(LISTITEM_HEIGHT);
     rebootPayload->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/inject_payloads"_i18n, new PayloadPage(), "", "");
     });
 
-    auto* netSettings = new ryazhenka::RyazhenkaCard("menus/tools/internet_settings"_i18n);
+    brls::ListItem* netSettings = new brls::ListItem("menus/tools/internet_settings"_i18n);
+    netSettings->setHeight(LISTITEM_HEIGHT);
     netSettings->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/internet_settings"_i18n, new NetPage(), "", "");
     });
 
-    auto* browser = new ryazhenka::RyazhenkaCard("menus/tools/browser"_i18n);
+    brls::ListItem* browser = new brls::ListItem("menus/tools/browser"_i18n);
+    browser->setHeight(LISTITEM_HEIGHT);
     browser->getClickEvent()->subscribe([](brls::View* view) {
         std::string url;
         if (brls::Swkbd::openForText([&url](std::string text) { url = text; }, "cheatslips.com e-mail", "", 256, "https://duckduckgo.com", 0, "Submit", "https://website.tld")) {
@@ -374,7 +391,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         }
     });
 
-    auto* move = new ryazhenka::RyazhenkaCard("menus/tools/batch_copy"_i18n);
+    brls::ListItem* move = new brls::ListItem("menus/tools/batch_copy"_i18n);
+    move->setHeight(LISTITEM_HEIGHT);
     move->getClickEvent()->subscribe([](brls::View* view) {
         chdir("/");
         std::string error = "";
@@ -387,7 +405,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         util::showDialogBoxInfo(error);
     });
 
-    auto* cleanUp = new ryazhenka::RyazhenkaCard("menus/tools/clean_up"_i18n);
+    brls::ListItem* cleanUp = new brls::ListItem("menus/tools/clean_up"_i18n);
+    cleanUp->setHeight(LISTITEM_HEIGHT);
     cleanUp->getClickEvent()->subscribe([](brls::View* view) {
         std::filesystem::remove(AMS_FILENAME);
         std::filesystem::remove(APP_FILENAME);
@@ -402,7 +421,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         util::showDialogBoxInfo("menus/common/all_done"_i18n);
     });
 
-    auto* language = new ryazhenka::RyazhenkaCard("menus/tools/language"_i18n);
+    brls::ListItem* language = new brls::ListItem("menus/tools/language"_i18n);
+    language->setHeight(LISTITEM_HEIGHT);
     language->getClickEvent()->subscribe([](brls::View* view) {
         std::vector<std::pair<std::string, std::string>> languages{
             std::make_pair("American English ({})", "en-US"),
@@ -453,12 +473,14 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
     });
 
-    auto* hideTabs = new ryazhenka::RyazhenkaCard("menus/tools/hide_tabs"_i18n);
+    brls::ListItem* hideTabs = new brls::ListItem("menus/tools/hide_tabs"_i18n);
+    hideTabs->setHeight(LISTITEM_HEIGHT);
     hideTabs->getClickEvent()->subscribe([](brls::View* view) {
         brls::PopupFrame::open("menus/tools/hide_tabs"_i18n, new HideTabsPage(), "", "");
     });
 
-    auto* changelog = new ryazhenka::RyazhenkaCard("menus/tools/changelog"_i18n);
+    brls::ListItem* changelog = new brls::ListItem("menus/tools/changelog"_i18n);
+    changelog->setHeight(LISTITEM_HEIGHT);
     changelog->getClickEvent()->subscribe([](brls::View* view) {
         util::openWebBrowser(CHANGELOG_URL);
     });

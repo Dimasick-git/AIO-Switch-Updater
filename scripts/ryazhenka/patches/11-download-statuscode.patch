@@ -143,15 +143,14 @@ diff --git a/source/download.cpp b/source/download.cpp
 diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
 --- a/source/list_download_tab.cpp
 +++ b/source/list_download_tab.cpp
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,6 @@
  #include "list_download_tab.hpp"
  
-+#include "ryazhenka_card.hpp"
 +
  #include <filesystem>
  #include <fstream>
  #include <string>
-@@ -11,6 +13,7 @@
+@@ -11,6 +12,7 @@
  #include "download.hpp"
  #include "extract.hpp"
  #include "fs.hpp"
@@ -159,13 +158,9 @@ diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -62,9 +65,56 @@
-             const std::string title = link.first;
-             const std::string url = link.second;
-             const std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
--            listItem = new brls::ListItem(link.first);
--            listItem->setHeight(LISTITEM_HEIGHT);
-+            listItem = new ryazhenka::RyazhenkaCard(link.first);
+@@ -65,6 +67,54 @@
+             listItem = new brls::ListItem(link.first);
+             listItem->setHeight(LISTITEM_HEIGHT);
              listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
 +                // Three URL markers are recognised in nx-links.json. They all
 +                // resolve at click time (not at MainFrame ctor) so launch is
@@ -298,36 +293,6 @@ diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
              description->setText("menus/main/cheats_text"_i18n + this->currentCheatsVer);
              break;
          case contentType::payloads:
-@@ -159,8 +253,7 @@
- 
- void ListDownloadTab::createCheatSlipItem()
- {
--    brls::ListItem* cheatslipsItem = new brls::ListItem("menus/cheats/get_cheatslips"_i18n);
--    cheatslipsItem->setHeight(LISTITEM_HEIGHT);
-+    auto* cheatslipsItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_cheatslips"_i18n);
-     cheatslipsItem->getClickEvent()->subscribe([](brls::View* view) {
-         if (std::filesystem::exists(TOKEN_PATH)) {
-             brls::Application::pushView(new AppPage_CheatSlips());
-@@ -194,8 +287,7 @@
- 
- void ListDownloadTab::createGbatempItem()
- {
--    brls::ListItem* gbatempItem = new brls::ListItem("menus/cheats/get_gbatemp"_i18n);
--    gbatempItem->setHeight(LISTITEM_HEIGHT);
-+    auto* gbatempItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gbatemp"_i18n);
-     gbatempItem->getClickEvent()->subscribe([](brls::View* view) {
-         brls::Application::pushView(new AppPage_Gbatemp());
-         return true;
-@@ -205,8 +297,7 @@
- 
- void ListDownloadTab::createGfxItem()
- {
--    brls::ListItem* gfxItem = new brls::ListItem("menus/cheats/get_gfx"_i18n);
--    gfxItem->setHeight(LISTITEM_HEIGHT);
-+    auto* gfxItem = new ryazhenka::RyazhenkaCard("menus/cheats/get_gfx"_i18n);
-     gfxItem->getClickEvent()->subscribe([](brls::View* view) {
-         brls::Application::pushView(new AppPage_Gfx());
-         return true;
 diff --git a/source/worker_page.cpp b/source/worker_page.cpp
 --- a/source/worker_page.cpp
 +++ b/source/worker_page.cpp
