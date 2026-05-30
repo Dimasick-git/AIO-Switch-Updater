@@ -127,6 +127,15 @@ void init() {
         // keep default (off)
     }
 
+    // Don't touch audout at all when the user hasn't opted in. audoutInitialize
+    // can fail in applet mode (audio service is restricted there) and the
+    // previous-app crash report points at this kind of unconditional service
+    // init at startup. Lazy init on first setEnabled(true) is good enough.
+    if (!g_enabled) {
+        log::info("audio: disabled in config — skipping audoutInitialize");
+        return;
+    }
+
 #ifdef __SWITCH__
     Result rc = audoutInitialize();
     if (R_FAILED(rc)) {

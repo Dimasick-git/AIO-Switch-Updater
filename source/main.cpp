@@ -82,13 +82,13 @@ int main(int argc, char* argv[])
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
     try { ryazhenka::haptics::init(); } catch (...) {}
     try { ryazhenka::audio::init(); } catch (...) {}
-    // Fire off the per-release banner refresh in the background. First-ever
-    // launch shows no banner (cache empty); next launch shows whatever was
-    // current at the time of fetch.
-    try {
-        if (!ryazhenka::banner::cacheIsFresh())
-            ryazhenka::banner::refreshAsync();
-    } catch (...) {}
+    // Banner async refresh is intentionally NOT kicked off here. Spawning a
+    // detached std::thread that does curl at startup is exactly the pattern
+    // that crashed the app on launch and was ripped out in commit ca62519
+    // ("rip out every startup-time network/thread/service call"). The cache
+    // is now refreshed lazily — banner::makeImage() triggers refreshAsync()
+    // itself when the cache is stale, so the first user-visible "About" or
+    // "Tools" open does the fetch, never the startup path.
     // sysinfo::collect() and version_check::scheduleBackgroundCheck() are
     // intentionally NOT called here. They each touch the filesystem and the
     // network respectively, and on Switch their failure modes (filesystem_
