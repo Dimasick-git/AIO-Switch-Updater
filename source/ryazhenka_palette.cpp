@@ -98,6 +98,48 @@ const std::array<Palette, kPaletteCount * 2> kPalettes = {{
         /*cardBg*/    {18, 36, 54, 200},   /*cardBorder*/{46, 85, 119, 180},
         /*glow*/      {0, 217, 197},   /*waveA*/     {0, 217, 197},   /*waveB*/{46, 134, 197},
     },
+
+    // ---- Standard (Horizon-style, white) — LIGHT ----
+    {
+        /*bg*/        {251, 251, 251}, /*surface*/   {245, 245, 245},
+        /*text*/      {45, 45, 45},    /*textDim*/   {120, 120, 120},
+        /*accent*/    {0, 199, 161},   /*accentText*/{52, 41, 55},
+        /*highlight1*/{25, 138, 198},  /*highlight2*/{137, 241, 242},
+        /*separator*/ {220, 220, 220},
+        /*cardBg*/    {255, 255, 255, 200}, /*cardBorder*/{210, 210, 210, 220},
+        /*glow*/      {25, 138, 198},  /*waveA*/     {200, 220, 235}, /*waveB*/{137, 241, 242},
+    },
+    // ---- Standard — DARK (mirrors HorizonDarkTheme) ----
+    {
+        /*bg*/        {45, 45, 45},    /*surface*/   {50, 50, 50},
+        /*text*/      {255, 255, 255}, /*textDim*/   {163, 163, 163},
+        /*accent*/    {0, 255, 204},   /*accentText*/{52, 41, 55},
+        /*highlight1*/{25, 138, 198},  /*highlight2*/{137, 241, 242},
+        /*separator*/ {78, 78, 78},
+        /*cardBg*/    {57, 58, 60, 210}, /*cardBorder*/{81, 81, 81, 220},
+        /*glow*/      {25, 138, 198},  /*waveA*/     {31, 34, 39},    /*waveB*/{88, 195, 169},
+    },
+
+    // ---- Slate (neutral grey) — LIGHT ----
+    {
+        /*bg*/        {241, 243, 246}, /*surface*/   {230, 233, 238},
+        /*text*/      {32, 36, 42},    /*textDim*/   {110, 115, 122},
+        /*accent*/    {72, 90, 110},   /*accentText*/{255, 255, 255},
+        /*highlight1*/{96, 124, 150},  /*highlight2*/{160, 180, 200},
+        /*separator*/ {210, 213, 218},
+        /*cardBg*/    {255, 255, 255, 200}, /*cardBorder*/{200, 205, 212, 220},
+        /*glow*/      {110, 130, 150}, /*waveA*/     {180, 195, 210}, /*waveB*/{220, 225, 232},
+    },
+    // ---- Slate — DARK ----
+    {
+        /*bg*/        {28, 32, 38},    /*surface*/   {38, 44, 52},
+        /*text*/      {230, 234, 240}, /*textDim*/   {148, 156, 168},
+        /*accent*/    {158, 178, 200}, /*accentText*/{24, 28, 33},
+        /*highlight1*/{120, 140, 165}, /*highlight2*/{180, 200, 220},
+        /*separator*/ {58, 66, 78},
+        /*cardBg*/    {44, 50, 58, 210}, /*cardBorder*/{82, 92, 105, 220},
+        /*glow*/      {130, 150, 175}, /*waveA*/     {60, 72, 88},    /*waveB*/{120, 140, 165},
+    },
 }};
 // clang-format on
 
@@ -116,6 +158,8 @@ PaletteId paletteFromString(std::string_view name) {
     if (lower == "cyberpunk") return PaletteId::Cyberpunk;
     if (lower == "gold")      return PaletteId::Gold;
     if (lower == "ocean")     return PaletteId::Ocean;
+    if (lower == "standard")  return PaletteId::Standard;
+    if (lower == "slate")     return PaletteId::Slate;
     return PaletteId::Ryazhenka;
 }
 
@@ -124,6 +168,8 @@ const char* paletteToString(PaletteId id) {
         case PaletteId::Cyberpunk: return "cyberpunk";
         case PaletteId::Gold:      return "gold";
         case PaletteId::Ocean:     return "ocean";
+        case PaletteId::Standard:  return "standard";
+        case PaletteId::Slate:     return "slate";
         case PaletteId::Ryazhenka:
         default:                   return "ryazhenka";
     }
@@ -134,6 +180,8 @@ const char* paletteI18nKey(PaletteId id) {
         case PaletteId::Cyberpunk: return "menus/ryazhenka/palette/cyberpunk";
         case PaletteId::Gold:      return "menus/ryazhenka/palette/gold";
         case PaletteId::Ocean:     return "menus/ryazhenka/palette/ocean";
+        case PaletteId::Standard:  return "menus/ryazhenka/palette/standard";
+        case PaletteId::Slate:     return "menus/ryazhenka/palette/slate";
         case PaletteId::Ryazhenka:
         default:                   return "menus/ryazhenka/palette/ryazhenka";
     }

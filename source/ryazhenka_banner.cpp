@@ -11,6 +11,7 @@
 #include <json.hpp>
 
 #include "constants.hpp"
+#include "download.hpp"
 #include "fs.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_curl_retry.hpp"
@@ -29,11 +30,6 @@ std::atomic<bool> g_fetchInFlight{false};
 // startup-crash fix family (commit ca62519) required exactly this guarantee.
 std::atomic<bool> g_shuttingDown{false};
 std::mutex g_diskMutex;  // serialises writes to the cache file
-
-std::size_t writeToFile(void* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
-    auto* f = static_cast<std::FILE*>(userdata);
-    return std::fwrite(ptr, size, nmemb, f);
-}
 
 std::size_t writeToString(void* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
     auto* s = static_cast<std::string*>(userdata);
@@ -138,47 +134,43 @@ bool fetchNow() {
     if (g_shuttingDown.load()) return false;
 
     fs::createTree(CONFIG_PATH);
-    const std::string tmpPath = std::string(kBannerCachePath) + ".part";
 
-    std::FILE* f = std::fopen(tmpPath.c_str(), "wb");
-    if (!f) {
-        log::warn("banner: cannot open tmp file for write");
-        return false;
-    }
-
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        std::fclose(f);
-        return false;
-    }
-
-    curl_easy_setopt(curl, CURLOPT_URL, kBannerUrl);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, kCurlConnectTimeoutSec);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeToFile);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, f);
-
-    long http_code = 0;
-    const CURLcode rc = curl::performWithRetry(curl, &http_code);
-    curl_easy_cleanup(curl);
-    std::fclose(f);
-
-    if (rc != CURLE_OK || http_code >= 400) {
-        log::warn(std::string("banner: fetch failed (curl ") + std::to_string(rc) +
-                  ", http " + std::to_string(http_code) + ")");
+    // Use the upstream-tested download::downloadFile path instead of rolling
+    // our own curl_easy_init — that earlier custom path was where the user
+    // saw the banner silently not appear. downloadFile follows redirects,
+    // honours the project's timeouts, and returns an HTTP status we can act on.
+    const long http_code = download::downloadFile(kBannerUrl, kBannerCachePath, OFF);
+    if (http_code != 200 && http_code != 0) {
+        log::warn(std::string("banner: fetch failed http=") + std::to_string(http_code));
         std::error_code ec;
-        fs_ns::remove(tmpPath, ec);
+        fs_ns::remove(kBannerCachePath, ec);
         return false;
     }
 
+    // Sanity-check the cached file: an empty file or one without a PNG / JPG
+    // magic header means GitHub redirected us to an HTML 302 / 404 page that
+    // got saved as the "image". Drop it so brls::Image doesn't hand us a
+    // ghost icon next launch.
     std::error_code ec;
-    fs_ns::rename(tmpPath, kBannerCachePath, ec);
-    if (ec) {
-        log::warn("banner: rename failed");
+    const auto sz = fs_ns::file_size(kBannerCachePath, ec);
+    if (ec || sz < 32) {
+        log::warn("banner: cached file too small / unreadable; dropping");
+        fs_ns::remove(kBannerCachePath, ec);
         return false;
+    }
+    {
+        unsigned char magic[8] = {};
+        if (std::FILE* mf = std::fopen(kBannerCachePath, "rb")) {
+            std::fread(magic, 1, sizeof(magic), mf);
+            std::fclose(mf);
+        }
+        const bool png  = magic[0]==0x89 && magic[1]==0x50 && magic[2]==0x4E && magic[3]==0x47;
+        const bool jpg  = magic[0]==0xFF && magic[1]==0xD8 && magic[2]==0xFF;
+        if (!png && !jpg) {
+            log::warn("banner: cached file is not PNG/JPG; dropping");
+            fs_ns::remove(kBannerCachePath, ec);
+            return false;
+        }
     }
     log::info("banner: cached fresh copy");
 

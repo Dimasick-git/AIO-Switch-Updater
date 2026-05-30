@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 
+#include "confirm_page.hpp"
 #include "constants.hpp"
 #include "fs.hpp"
 #include "ryazhenka_audio.hpp"
@@ -11,8 +12,10 @@
 #include "ryazhenka_catalog.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
+#include "ryazhenka_logger.hpp"
 #include "ryazhenka_theme.hpp"
 #include "utils.hpp"
+#include "worker_page.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -47,6 +50,8 @@ SettingsScreen::SettingsScreen() {
 
     const theme::PaletteId ids[] = {
         theme::PaletteId::Ryazhenka,
+        theme::PaletteId::Standard,
+        theme::PaletteId::Slate,
         theme::PaletteId::Cyberpunk,
         theme::PaletteId::Gold,
         theme::PaletteId::Ocean,
@@ -136,16 +141,66 @@ SettingsScreen::SettingsScreen() {
 
     auto* refreshBanner = new RyazhenkaCard("menus/ryazhenka/settings/refresh_banner"_i18n);
     refreshBanner->getClickEvent()->subscribe([](brls::View*) {
-        // Safe to spawn the curl threads here: the user is already navigating
-        // the UI on the Settings tab, well past the first frame. The startup
-        // rule that ca62519 enforced only forbids this from main() / first-tab
-        // ctors. Refresh both the banner artwork and the on-SD nx-links cache
-        // so the next launch comes up instantly with current data.
-        ryazhenka::banner::refreshAsync();
-        ryazhenka::catalog::refreshAsync();
+        // Visible staged frame so the user can see the fetch actually happen
+        // (the previous fire-and-forget refreshAsync looked like a no-op when
+        // it failed — that was the "banner refresh выдаёт ошибку" report).
+        brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+        sf->setTitle("menus/ryazhenka/settings/refresh_banner"_i18n);
+        sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
+            const bool ok = ryazhenka::banner::fetchNow();
+            ryazhenka::catalog::refreshAsync();  // kick the catalogue too
+            if (!ok)
+                ryazhenka::log::warn("settings: banner fetchNow returned false");
+        }));
+        sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
+        brls::Application::pushView(sf);
         haptics::success();
     });
     this->addView(refreshBanner);
+
+    // Auto-update Ryazhenka pack — checks the current pack tag against the
+    // installed one when the toggle is enabled AND the user clicks "Check for
+    // updates now". Off by default to honour the "no startup network" rule.
+    auto* autoUpdateToggle = new RyazhenkaCard("menus/ryazhenka/settings/autoupdate_toggle"_i18n,
+                                               "menus/ryazhenka/settings/autoupdate_hint"_i18n, "", "");
+    autoUpdateToggle->getClickEvent()->subscribe([autoUpdateToggle](brls::View*) {
+        nlohmann::ordered_json cfg;
+        try {
+            cfg = fs::parseJsonFile(CONFIG_FILE);
+            if (!cfg.is_object()) cfg = nlohmann::ordered_json::object();
+        } catch (...) { cfg = nlohmann::ordered_json::object(); }
+        const bool now = cfg.contains("ryazhenka_autoupdate") && cfg["ryazhenka_autoupdate"].is_boolean()
+                             ? cfg["ryazhenka_autoupdate"].get<bool>() : false;
+        const bool next = !now;
+        cfg["ryazhenka_autoupdate"] = next;
+        fs::writeJsonToFile(cfg, CONFIG_FILE);
+        autoUpdateToggle->setValue(onOff(next));
+        haptics::click();
+    });
+    {
+        nlohmann::ordered_json cfg;
+        try { cfg = fs::parseJsonFile(CONFIG_FILE); } catch (...) {}
+        const bool on = cfg.is_object() && cfg.contains("ryazhenka_autoupdate")
+                        && cfg["ryazhenka_autoupdate"].is_boolean()
+                        && cfg["ryazhenka_autoupdate"].get<bool>();
+        autoUpdateToggle->setValue(onOff(on));
+    }
+    this->addView(autoUpdateToggle);
+
+    auto* checkUpdates = new RyazhenkaCard("menus/ryazhenka/settings/check_updates"_i18n);
+    checkUpdates->getClickEvent()->subscribe([](brls::View*) {
+        brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+        sf->setTitle("menus/ryazhenka/settings/check_updates"_i18n);
+        sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
+            // banner::fetchNow also refreshes .pack_tag — so the install_pack
+            // card on the Tools tab will now show the freshest tag.
+            ryazhenka::banner::fetchNow();
+        }));
+        sf->addStage(new ConfirmPage(sf, "menus/ryazhenka/settings/check_updates_done"_i18n));
+        brls::Application::pushView(sf);
+        haptics::success();
+    });
+    this->addView(checkUpdates);
 
     auto* clearSig = new RyazhenkaCard("menus/ryazhenka/settings/clear_sigpatches"_i18n);
     clearSig->getClickEvent()->subscribe([](brls::View*) {

@@ -20,6 +20,8 @@ enum class PaletteId {
     Cyberpunk,  // fuchsia + cyan
     Gold,       // black + amber
     Ocean,      // deep blue + teal
+    Standard,   // the original Horizon-style neutral palette (white + cyan)
+    Slate,      // muted grey, no warm tint — neutral / professional
 };
 
 enum class Variant {
@@ -27,7 +29,7 @@ enum class Variant {
     Dark,
 };
 
-constexpr int kPaletteCount = 4;
+constexpr int kPaletteCount = 6;
 
 /// 8-bit RGBA colour, constexpr-friendly.
 struct Rgba {

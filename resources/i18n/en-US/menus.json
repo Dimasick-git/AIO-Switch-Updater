@@ -64,13 +64,19 @@
       "reset_header": "Reset / recovery",
       "reset_hidden_tabs": "Reset hidden tabs (show all)",
       "reset_config": "Reset Ryazhenka config to defaults",
-      "reset_restart": "Done. Relaunch the app for the change to take effect."
+      "reset_restart": "Done. Relaunch the app for the change to take effect.",
+      "autoupdate_toggle": "Auto-update Ryazhenka pack",
+      "autoupdate_hint": "When ON, the Check button will offer to install a newer version. Off by default.",
+      "check_updates": "Check for updates now",
+      "check_updates_done": "Done. Open Tools → Install Ryazhenka pack — the version on the right shows the latest tag. If it differs from your installed pack, run the install."
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",
       "cyberpunk": "Cyberpunk",
       "gold": "Gold",
-      "ocean": "Ocean"
+      "ocean": "Ocean",
+      "standard": "Standard (white)",
+      "slate": "Slate (grey)"
     },
     "release_notes": "What's new in this release",
     "release_notes_empty": "Release notes haven't been fetched yet. Connect to the internet and re-open this tab.",
