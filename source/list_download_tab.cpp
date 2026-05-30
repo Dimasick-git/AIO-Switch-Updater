@@ -225,8 +225,17 @@ void ListDownloadTab::setDescription(contentType type)
                 "menus/main/bootloaders_text"_i18n);
             break;
         case contentType::cheats:
-            this->newCheatsVer = util::getCheatsVersion();
+            // Skip the blocking HTTPS GET to CHEATS_URL_VERSION at ctor time.
+            // HamletDuFromage's switch-cheats-db has gone stale (1.5+ months
+            // no updates) and the call can hang the whole UI for minutes on a
+            // flaky connection — that's the "бесконечная загрузка" the user
+            // saw on the splash. Show whatever's cached on SD and use a
+            // sentinel for newCheatsVer that satisfies the createList /
+            // download-stage guards (non-empty, not "offline", and not equal
+            // to currentCheatsVer) so clicking the cheats card still downloads
+            // a fresh archive.
             this->currentCheatsVer = util::readFile(CHEATS_VERSION);
+            this->newCheatsVer = "latest";
             description->setText("menus/main/cheats_text"_i18n + this->currentCheatsVer);
             break;
         case contentType::payloads:

@@ -83,13 +83,32 @@ def draw_frame(draw: ImageDraw.ImageDraw, color) -> None:
 
 
 def draw_glyph(draw: ImageDraw.ImageDraw, color) -> None:
+    """Render Latin R mirrored horizontally so it looks like the brand mark.
+
+    Drawing R + mirroring uses the Latin font's hinting / weight curves,
+    which matches the reference logo better than Cyrillic Я (whose glyph
+    differs from font to font and tends to be lighter)."""
     font = load_font(160)
-    glyph = "Я"
-    bbox = draw.textbbox((0, 0), glyph, font=font)
+    glyph = "R"
+    # Measure on a throwaway canvas (no `draw.textbbox` on an arbitrary ctx).
+    measure = Image.new("L", (1, 1))
+    md = ImageDraw.Draw(measure)
+    bbox = md.textbbox((0, 0), glyph, font=font)
     gw, gh = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    gx = (SIZE - gw) / 2 - bbox[0]
-    gy = (SIZE - gh) / 2 - bbox[1] - 4
-    draw.text((gx, gy), glyph, font=font, fill=color)
+
+    glyph_layer = Image.new("RGBA", (gw + 8, gh + 8), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glyph_layer)
+    gd.text((-bbox[0] + 4, -bbox[1] + 4), glyph, font=font, fill=color)
+    glyph_layer = glyph_layer.transpose(Image.FLIP_LEFT_RIGHT)
+
+    gx = int((SIZE - glyph_layer.width) / 2)
+    gy = int((SIZE - glyph_layer.height) / 2 - 4)
+
+    # The caller passes a `draw` bound to the target image. We need that
+    # image — pull it out of the draw object's private _image attribute,
+    # which Pillow exposes for exactly this kind of compositing.
+    target = draw._image
+    target.alpha_composite(glyph_layer, dest=(gx, gy))
 
 
 def generate(out_path: Path) -> None:
