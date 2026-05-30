@@ -45,7 +45,12 @@ bool RyazhenkaCard::onClick() {
     audio::click();
     this->playClickAnimation();
     this->triggerClickBurst();
-    return this->clickEvent.fire(this);
+    this->clickEvent.fire(this);
+    // brls::Event::fire returns !callbacks.empty(); subscribed cards return
+    // true, but display-only cards (e.g. the version / author rows in the
+    // Settings tab) have no subscriber and would return false here, letting
+    // the A press bubble up to ancestor actions. We always consume A.
+    return true;
 }
 
 void RyazhenkaCard::triggerClickBurst() {

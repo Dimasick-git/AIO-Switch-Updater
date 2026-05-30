@@ -28,8 +28,14 @@ bool fetchNow();
 
 /// Kicks off a detached background fetch (no callback). No-op if a fetch is
 /// already in flight; safe to call multiple times. Returns true if a fetch was
-/// scheduled.
+/// scheduled. MUST NOT be called from the startup path (commit ca62519 rule)
+/// — call this only after the first frame has rendered.
 bool refreshAsync();
+
+/// Tell any in-flight refreshAsync worker to bail out before its next curl
+/// step. Call this from main() right after the brls main loop exits and
+/// BEFORE curl_global_cleanup(). Idempotent; does not block.
+void signalShutdown();
 
 /// Convenience: returns a brls::Image* for the cached banner, or nullptr if
 /// the cache is missing. Triggers refreshAsync() when the cache is stale so a

@@ -111,23 +111,27 @@ void init() {
 void write(Level level, std::string_view message) {
     std::lock_guard lock(g_mutex);
 
+    // brls::Logger forwards to fmt::print, which uses {} format strings — not
+    // printf-style %.*s. The previous %.*s format was throwing inside
+    // fmt::vformat on every call and being silently swallowed by the try/catch
+    // in brls::Logger::log, so every ryazhenka log line disappeared from the
+    // borealis console (only the SD file mirror survived).
+    const std::string text(message);  // fmt's string_view formatter is OK, but
+                                       // building an owned string avoids any
+                                       // dangling-view surprise across the call.
     switch (level) {
         case Level::trace:
         case Level::debug:
-            brls::Logger::debug("[ryazhenka] %.*s",
-                                static_cast<int>(message.size()), message.data());
+            brls::Logger::debug("[ryazhenka] {}", text);
             break;
         case Level::info:
-            brls::Logger::info("[ryazhenka] %.*s",
-                               static_cast<int>(message.size()), message.data());
+            brls::Logger::info("[ryazhenka] {}", text);
             break;
         case Level::warn:
-            brls::Logger::warning("[ryazhenka] %.*s",
-                                  static_cast<int>(message.size()), message.data());
+            brls::Logger::warning("[ryazhenka] {}", text);
             break;
         case Level::error:
-            brls::Logger::error("[ryazhenka] %.*s",
-                                static_cast<int>(message.size()), message.data());
+            brls::Logger::error("[ryazhenka] {}", text);
             break;
     }
 

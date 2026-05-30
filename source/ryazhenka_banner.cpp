@@ -23,6 +23,11 @@ namespace ryazhenka::banner {
 namespace {
 
 std::atomic<bool> g_fetchInFlight{false};
+// Tripped by signalShutdown() right before main() calls curl_global_cleanup.
+// A running refresh thread checks this atomic between curl_easy_init's and
+// gives up if the host is about to tear curl down under it — the previous
+// startup-crash fix family (commit ca62519) required exactly this guarantee.
+std::atomic<bool> g_shuttingDown{false};
 std::mutex g_diskMutex;  // serialises writes to the cache file
 
 std::size_t writeToFile(void* ptr, std::size_t size, std::size_t nmemb, void* userdata) {
@@ -40,6 +45,7 @@ std::size_t writeToString(void* ptr, std::size_t size, std::size_t nmemb, void* 
 // write each to its own small cache file next to the banner. Silent on
 // failure — the banner refresh succeeded either way.
 void fetchAndWritePackTagAndNotes() {
+    if (g_shuttingDown.load()) return;
     CURL* curl = curl_easy_init();
     if (!curl)
         return;
@@ -127,7 +133,9 @@ bool cacheIsFresh() {
 }
 
 bool fetchNow() {
+    if (g_shuttingDown.load()) return false;
     std::lock_guard<std::mutex> lk(g_diskMutex);
+    if (g_shuttingDown.load()) return false;
 
     fs::createTree(CONFIG_PATH);
     const std::string tmpPath = std::string(kBannerCachePath) + ".part";
@@ -176,11 +184,13 @@ bool fetchNow() {
 
     // Same release, so refresh the cached pack tag + notes in the same pass —
     // one round-trip for everything the install/notes cards need.
-    fetchAndWritePackTagAndNotes();
+    if (!g_shuttingDown.load())
+        fetchAndWritePackTagAndNotes();
     return true;
 }
 
 bool refreshAsync() {
+    if (g_shuttingDown.load()) return false;
     bool expected = false;
     if (!g_fetchInFlight.compare_exchange_strong(expected, true))
         return false;
@@ -193,6 +203,10 @@ bool refreshAsync() {
         g_fetchInFlight.store(false);
     }).detach();
     return true;
+}
+
+void signalShutdown() {
+    g_shuttingDown.store(true);
 }
 
 brls::Image* makeImage() {

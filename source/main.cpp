@@ -119,6 +119,11 @@ int main(int argc, char* argv[])
 
     try { ryazhenka::audio::exit(); } catch (...) {}
     try { ryazhenka::haptics::exit(); } catch (...) {}
+    // Tell any in-flight banner refresh to stop touching curl before we tear
+    // it down. The worker is detached, so we don't join — we just signal and
+    // let curl_global_cleanup race-free because the thread will short-circuit
+    // before its next curl_easy_init / setopt / perform.
+    try { ryazhenka::banner::signalShutdown(); } catch (...) {}
     romfsExit();
     splExit();
     pminfoExit();
