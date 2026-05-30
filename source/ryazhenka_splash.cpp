@@ -133,22 +133,15 @@ void Splash::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
     nvgStrokeWidth(vg, 5.0f);
     nvgStroke(vg);
 
-    // Glowing brand mark — Latin "R" rendered with a horizontal mirror so it
-    // reads as the Ryazhenka logo, exactly like the icon. Using R + flip
-    // (rather than Cyrillic Я) keeps the glyph weight and curves matching the
-    // reference artwork, since R is what the fonts hint and kern for.
-    nvgSave(vg);
-    nvgTranslate(vg, cx, cy);
-    nvgScale(vg, -1.0f, 1.0f);
+    // Glowing brand mark — plain Latin R, matching the icon.
     nvgFontFaceId(vg, 0);  // FontStash::regular (id 0 is the default font slot).
     nvgFontSize(vg, 170.0f);
     nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
     // Two passes: a wider warm halo behind the glyph, then a sharp bright top.
     nvgFillColor(vg, withAlpha(kAccentDeep, 0.65f * this->in_alpha_));
-    nvgText(vg, 0.5f, 0.5f, "R", nullptr);
+    nvgText(vg, cx + 0.5f, cy + 0.5f, "R", nullptr);
     nvgFillColor(vg, withAlpha(kCream, this->in_alpha_));
-    nvgText(vg, 0.0f, 0.0f, "R", nullptr);
-    nvgRestore(vg);
+    nvgText(vg, cx, cy, "R", nullptr);
 
     // A small breathing pulse below the frame to prove the app is alive even
     // when MainFrame is busy constructing (e.g. fetching nx-links). No text.
