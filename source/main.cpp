@@ -100,15 +100,19 @@ int main(int argc, char* argv[])
     // worst a single-tab problem, not an app-launch problem.
 
     if (std::filesystem::exists(HIDDEN_AIO_FILE)) {
-        // Show the branded splash first; once the dwell elapses it builds the
-        // MainFrame (blocks briefly on the nx-links fetch) and swaps itself
-        // out. The wave background keeps moving the whole time.
+        // Show the branded splash first; once the dwell elapses it builds
+        // MainFrame and pushes it on top. MainFrame is opaque and its B
+        // action is a no-op, so the splash sits invisibly underneath and the
+        // user can never navigate back to it.
+        //
+        // We do NOT popView the splash. brls::Application::popView has a
+        // hard guard `if (viewStack.size() <= 1) return;` — it refuses to
+        // pop the root view — so calling popView while the splash is the
+        // only view on the stack silently no-ops, the callback never fires,
+        // and the splash sits there forever. That was the real source of
+        // the "бесконечная загрузка" the user reported.
         brls::Application::pushView(new ryazhenka::Splash([] {
-            // popView is async (runs after the fade-out); push MainFrame from
-            // its callback so they don't overlap on the view stack.
-            brls::Application::popView(brls::ViewAnimation::FADE, [] {
-                brls::Application::pushView(new MainFrame());
-            });
+            brls::Application::pushView(new MainFrame());
         }));
     }
     else {
