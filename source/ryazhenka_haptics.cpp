@@ -1,7 +1,9 @@
 #include "ryazhenka_haptics.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <thread>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -16,18 +18,17 @@ namespace ryazhenka::haptics {
 
 namespace {
 
-using clock = std::chrono::steady_clock;
+std::atomic<bool> g_enabled{true};
+std::atomic<float> g_strength{1.0f};
 
-bool g_enabled = true;
-float g_strength = 1.0f;
-
-bool g_active = false;
-clock::time_point g_stopAt;
-
-bool g_pending = false;
-clock::time_point g_pendingAt;
-float g_pendingAmp = 0.0f;
-int g_pendingDur = 0;
+// Each buzz spawns a tiny detached thread that handles its own
+// start → sleep → zero-amp cycle. This was rewritten from a tick()-driven
+// model because tick() needed the UI thread to keep running — and the user
+// reported that pressing "Проверить сеть" (which synchronously blocks the
+// UI on a sequence of curl_easy_perform calls for several seconds) made the
+// rumble continue the whole time. A detached thread sleeps on its own kernel
+// thread, so the buzz always ends on time regardless of what the UI is doing.
+std::atomic<bool> g_buzzInFlight{false};
 
 #ifdef __SWITCH__
 HidVibrationDeviceHandle g_handheld[2];
@@ -56,48 +57,45 @@ void sendAll(float amp) {
 void sendAll(float /*amp*/) {}
 #endif
 
-void startPulse(float intensity, int duration_ms) {
-    const float amp = std::clamp(intensity, 0.0f, 1.0f) * g_strength;
-    sendAll(amp);
-    g_active = true;
-    g_stopAt = clock::now() + std::chrono::milliseconds(duration_ms);
+void runBuzz(float amp, int duration_ms) {
+    bool expected = false;
+    if (!g_buzzInFlight.compare_exchange_strong(expected, true))
+        return;  // already buzzing — drop the new request rather than overlap
+    std::thread([amp, duration_ms]() {
+        sendAll(amp);
+        std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+        sendAll(0.0f);
+        g_buzzInFlight.store(false);
+    }).detach();
 }
 
 }  // namespace
 
 void init() {
-    // Read user preferences (defaults: enabled, full strength).
     try {
         nlohmann::ordered_json cfg = fs::parseJsonFile(CONFIG_FILE);
         if (cfg.is_object()) {
             if (cfg.contains("haptics_enabled") && cfg["haptics_enabled"].is_boolean())
-                g_enabled = cfg["haptics_enabled"].get<bool>();
+                g_enabled.store(cfg["haptics_enabled"].get<bool>());
             if (cfg.contains("haptics_strength") && cfg["haptics_strength"].is_number())
-                g_strength = std::clamp(cfg["haptics_strength"].get<float>(), 0.0f, 1.0f);
+                g_strength.store(std::clamp(cfg["haptics_strength"].get<float>(), 0.0f, 1.0f));
         }
     } catch (...) {
         // keep defaults
     }
 
 #ifdef __SWITCH__
-    // Belt-and-braces: applet mode often lacks the FS/SRV grants for niche
-    // HID sub-services. The previous startup crash (commit ca62519) was
-    // caused by exactly this kind of unconditional startup service init.
     if (util::isApplet()) {
         log::info("haptics: running as applet — skipping vibration init");
         return;
     }
 
-    // The style argument is a single HidNpadStyleTag in this libnx version, so
-    // each style needs its own init call into its own handle pair.
     Result rc1 = hidInitializeVibrationDevices(g_handheld, 2, HidNpadIdType_Handheld,
                                                HidNpadStyleTag_NpadHandheld);
     g_initHandheld = R_SUCCEEDED(rc1);
-
     Result rc2 = hidInitializeVibrationDevices(g_dual, 2, HidNpadIdType_No1,
                                                HidNpadStyleTag_NpadJoyDual);
     g_initDual = R_SUCCEEDED(rc2);
-
     Result rc3 = hidInitializeVibrationDevices(g_full, 2, HidNpadIdType_No1,
                                                HidNpadStyleTag_NpadFullKey);
     g_initFull = R_SUCCEEDED(rc3);
@@ -105,36 +103,27 @@ void init() {
     log::info(std::string("haptics: handheld=") + (g_initHandheld ? "ok" : "no") +
               " dual=" + (g_initDual ? "ok" : "no") +
               " full=" + (g_initFull ? "ok" : "no") +
-              " enabled=" + (g_enabled ? "yes" : "no"));
+              " enabled=" + (g_enabled.load() ? "yes" : "no"));
 #else
     log::info("haptics: stub (non-switch build)");
 #endif
 }
 
 void exit() {
-    g_active = false;
-    g_pending = false;
+    g_enabled.store(false);  // worker threads will short-circuit before sending
     sendAll(0.0f);
 }
 
-void tick() {
-    if (!g_enabled)
-        return;
-    const auto now = clock::now();
-    if (g_active && now >= g_stopAt) {
-        sendAll(0.0f);
-        g_active = false;
-    }
-    if (g_pending && now >= g_pendingAt) {
-        g_pending = false;
-        startPulse(g_pendingAmp, g_pendingDur);
-    }
-}
+// Frame-loop tick — no longer needed in the new model, but the symbol is
+// still referenced by ryazhenka_background.cpp::preFrame(). Keep as a no-op
+// so we don't need to regenerate that file just to drop the call.
+void tick() {}
 
 void pulse(float intensity, int duration_ms) {
-    if (!g_enabled)
+    if (!g_enabled.load())
         return;
-    startPulse(intensity, duration_ms);
+    const float amp = std::clamp(intensity, 0.0f, 1.0f) * g_strength.load();
+    runBuzz(amp, duration_ms);
 }
 
 void focus()   { pulse(0.30f, 30); }
@@ -142,24 +131,23 @@ void click()   { pulse(0.60f, 50); }
 void success() { pulse(0.85f, 100); }
 
 void error() {
-    if (!g_enabled)
-        return;
-    startPulse(0.55f, 50);
-    // Queue a second buzz after a short gap for a distinct "error" pattern.
-    g_pending = true;
-    g_pendingAt = clock::now() + std::chrono::milliseconds(110);
-    g_pendingAmp = 0.55f;
-    g_pendingDur = 40;
+    pulse(0.55f, 50);
+    // Schedule the second buzz on its own thread so we keep the "not blocking
+    // the UI" guarantee even for compound patterns.
+    std::thread([]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(110));
+        pulse(0.55f, 40);
+    }).detach();
 }
 
 void setEnabled(bool enabled) {
-    g_enabled = enabled;
+    g_enabled.store(enabled);
     if (!enabled)
-        exit();
+        sendAll(0.0f);
 }
 
-bool isEnabled() { return g_enabled; }
+bool isEnabled() { return g_enabled.load(); }
 
-void setStrength(float strength) { g_strength = std::clamp(strength, 0.0f, 1.0f); }
+void setStrength(float strength) { g_strength.store(std::clamp(strength, 0.0f, 1.0f)); }
 
 }  // namespace ryazhenka::haptics

@@ -1,7 +1,7 @@
 diff --git a/include/download.hpp b/include/download.hpp
 --- a/include/download.hpp
 +++ b/include/download.hpp
-@@ -15,4 +15,11 @@
+@@ -15,4 +15,17 @@
      long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
      long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
  
@@ -11,6 +11,12 @@ diff --git a/include/download.hpp b/include/download.hpp
 +    /// falls back to assets[0] if no .zip is present.
 +    /// Returns empty string on any failure (network, parse, no assets).
 +    std::string resolveLatestAssetUrl(const std::string& slug);
++
++    /// Returns up to ~50 releases for `<slug>` as (tag_name, zip_url) pairs,
++    /// freshest first. Each release's URL is picked the same way
++    /// resolveLatestAssetUrl picks (.zip preferred, else assets[0]). Empty
++    /// vector on any failure (network, parse, no releases).
++    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug);
 +
  }  // namespace download
 \ No newline at end of file
@@ -104,10 +110,54 @@ diff --git a/source/download.cpp b/source/download.cpp
          return status_code;
      }
  
-@@ -469,4 +475,34 @@
+@@ -469,4 +475,78 @@
          return res;
      }
  
++    // Picks the preferred download URL from a single release JSON node:
++    // first .zip asset, falling back to assets[0]. Returns "" if neither.
++    static std::string pickReleaseAssetUrl(const nlohmann::ordered_json& rel)
++    {
++        if (!rel.is_object() || !rel.contains("assets") || !rel["assets"].is_array())
++            return {};
++        std::string fallback;
++        for (const auto& asset : rel["assets"]) {
++            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string())
++                continue;
++            const std::string url = asset["browser_download_url"].get<std::string>();
++            if (fallback.empty()) fallback = url;
++            if (asset.contains("name") && asset["name"].is_string()) {
++                const std::string name = asset["name"].get<std::string>();
++                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0)
++                    return url;
++            }
++        }
++        return fallback;
++    }
++
++    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug)
++    {
++        // GitHub /releases (no /latest) returns the freshest 30 by default; we
++        // ask for 50 to give the user a long pick list. Same asset-selection
++        // rules as resolveLatestAssetUrl — prefer .zip, fall back to assets[0].
++        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases?per_page=50";
++        nlohmann::ordered_json payload;
++        const long http = getRequest(api_url, payload);
++        if (http != 200 || !payload.is_array()) return {};
++
++        std::vector<std::pair<std::string, std::string>> out;
++        out.reserve(payload.size());
++        for (const auto& rel : payload) {
++            if (!rel.is_object()) continue;
++            if (!rel.contains("tag_name") || !rel["tag_name"].is_string()) continue;
++            const std::string tag = rel["tag_name"].get<std::string>();
++            const std::string url = pickReleaseAssetUrl(rel);
++            if (!tag.empty() && !url.empty())
++                out.emplace_back(tag, url);
++        }
++        return out;
++    }
++
 +    std::string resolveLatestAssetUrl(const std::string& slug)
 +    {
 +        // GitHub /releases/latest returns the most recent non-draft,
@@ -158,7 +208,55 @@ diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -65,6 +67,54 @@
+@@ -40,6 +42,47 @@
+         this->setDescription(contentType::payloads);
+         this->createList(contentType::payloads);
+     }
++
++    // Firmware: append a "pick any release" entry that fetches the full
++    // THZoria release history on click and lists every tag as its own
++    // download item — the user can install any version, not just latest.
++    if (this->type == contentType::fw) {
++        brls::ListItem* allVersions = new brls::ListItem(
++            "menus/ryazhenka/firmware_all_versions"_i18n);
++        allVersions->setHeight(LISTITEM_HEIGHT);
++        allVersions->getClickEvent()->subscribe([](brls::View*) {
++            const auto releases = download::resolveAllReleases("THZoria/NX_Firmware");
++            if (releases.empty()) {
++                util::showDialogBoxInfo("menus/ryazhenka/firmware_no_releases"_i18n);
++                return;
++            }
++            brls::List* picker = new brls::List();
++            for (const auto& [tag, url] : releases) {
++                const std::string capturedTag = tag;
++                const std::string capturedUrl = url;
++                brls::ListItem* item = new brls::ListItem(capturedTag);
++                item->setHeight(LISTITEM_HEIGHT);
++                item->getClickEvent()->subscribe([capturedTag, capturedUrl](brls::View*) {
++                    brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
++                    sf->setTitle(std::string("menus/main/download_firmware"_i18n) + " — " + capturedTag);
++                    sf->addStage(new ConfirmPage(sf,
++                        std::string("menus/common/download"_i18n) + capturedTag + "\n" + capturedUrl));
++                    sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
++                        [capturedUrl]() { util::downloadArchive(capturedUrl, contentType::fw); }));
++                    sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
++                        []() { util::extractArchive(contentType::fw); }));
++                    sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
++                    brls::Application::pushView(sf);
++                });
++                picker->addView(item);
++            }
++            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
++            frame->setContentView(picker);
++            brls::PopupFrame::open("menus/ryazhenka/firmware_all_versions"_i18n,
++                                   frame, "", "");
++        });
++        this->addView(allVersions);
++    }
+ }
+ 
+ void ListDownloadTab::createList()
+@@ -65,6 +108,54 @@
              listItem = new brls::ListItem(link.first);
              listItem->setHeight(LISTITEM_HEIGHT);
              listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
@@ -213,7 +311,7 @@ diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
                  brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
                  stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
                  stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
-@@ -76,21 +126,56 @@
+@@ -76,21 +167,56 @@
                          }
                      }
                  }
@@ -274,7 +372,7 @@ diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
                  }
  
                  std::string doneMsg = "menus/common/all_done"_i18n;
-@@ -140,8 +225,17 @@
+@@ -140,8 +266,17 @@
                  "menus/main/bootloaders_text"_i18n);
              break;
          case contentType::cheats:

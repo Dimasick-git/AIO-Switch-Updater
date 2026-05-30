@@ -42,7 +42,7 @@ diff --git a/source/about_tab.cpp b/source/about_tab.cpp
      // Subtitle
      brls::Label* subTitle = new brls::Label(
          brls::LabelStyle::REGULAR,
-@@ -16,12 +33,29 @@
+@@ -16,16 +33,33 @@
      // Copyright
      brls::Label* copyright = new brls::Label(
          brls::LabelStyle::DESCRIPTION,
@@ -70,7 +70,13 @@ diff --git a/source/about_tab.cpp b/source/about_tab.cpp
 +        this->addView(card);
 +    }
 +
-+    // Original disclaimers
++    // Disclaimers (donate link removed at user's request).
      this->addView(new brls::Header("menus/about/disclaimers_title"_i18n));
      brls::Label* links = new brls::Label(
          brls::LabelStyle::SMALL,
+-        "menus/about/disclaimers"_i18n + "\n" + "menus/about/donate"_i18n,
++        "menus/about/disclaimers"_i18n,
+         true);
+     this->addView(links);
+ }
+\ No newline at end of file

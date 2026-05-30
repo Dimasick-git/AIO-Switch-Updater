@@ -42,6 +42,47 @@ ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered
         this->setDescription(contentType::payloads);
         this->createList(contentType::payloads);
     }
+
+    // Firmware: append a "pick any release" entry that fetches the full
+    // THZoria release history on click and lists every tag as its own
+    // download item — the user can install any version, not just latest.
+    if (this->type == contentType::fw) {
+        brls::ListItem* allVersions = new brls::ListItem(
+            "menus/ryazhenka/firmware_all_versions"_i18n);
+        allVersions->setHeight(LISTITEM_HEIGHT);
+        allVersions->getClickEvent()->subscribe([](brls::View*) {
+            const auto releases = download::resolveAllReleases("THZoria/NX_Firmware");
+            if (releases.empty()) {
+                util::showDialogBoxInfo("menus/ryazhenka/firmware_no_releases"_i18n);
+                return;
+            }
+            brls::List* picker = new brls::List();
+            for (const auto& [tag, url] : releases) {
+                const std::string capturedTag = tag;
+                const std::string capturedUrl = url;
+                brls::ListItem* item = new brls::ListItem(capturedTag);
+                item->setHeight(LISTITEM_HEIGHT);
+                item->getClickEvent()->subscribe([capturedTag, capturedUrl](brls::View*) {
+                    brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+                    sf->setTitle(std::string("menus/main/download_firmware"_i18n) + " — " + capturedTag);
+                    sf->addStage(new ConfirmPage(sf,
+                        std::string("menus/common/download"_i18n) + capturedTag + "\n" + capturedUrl));
+                    sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
+                        [capturedUrl]() { util::downloadArchive(capturedUrl, contentType::fw); }));
+                    sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
+                        []() { util::extractArchive(contentType::fw); }));
+                    sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
+                    brls::Application::pushView(sf);
+                });
+                picker->addView(item);
+            }
+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+            frame->setContentView(picker);
+            brls::PopupFrame::open("menus/ryazhenka/firmware_all_versions"_i18n,
+                                   frame, "", "");
+        });
+        this->addView(allVersions);
+    }
 }
 
 void ListDownloadTab::createList()

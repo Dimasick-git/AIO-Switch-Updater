@@ -22,4 +22,10 @@ namespace download {
     /// Returns empty string on any failure (network, parse, no assets).
     std::string resolveLatestAssetUrl(const std::string& slug);
 
+    /// Returns up to ~50 releases for `<slug>` as (tag_name, zip_url) pairs,
+    /// freshest first. Each release's URL is picked the same way
+    /// resolveLatestAssetUrl picks (.zip preferred, else assets[0]). Empty
+    /// vector on any failure (network, parse, no releases).
+    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug);
+
 }  // namespace download

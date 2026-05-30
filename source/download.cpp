@@ -475,6 +475,50 @@ namespace download {
         return res;
     }
 
+    // Picks the preferred download URL from a single release JSON node:
+    // first .zip asset, falling back to assets[0]. Returns "" if neither.
+    static std::string pickReleaseAssetUrl(const nlohmann::ordered_json& rel)
+    {
+        if (!rel.is_object() || !rel.contains("assets") || !rel["assets"].is_array())
+            return {};
+        std::string fallback;
+        for (const auto& asset : rel["assets"]) {
+            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string())
+                continue;
+            const std::string url = asset["browser_download_url"].get<std::string>();
+            if (fallback.empty()) fallback = url;
+            if (asset.contains("name") && asset["name"].is_string()) {
+                const std::string name = asset["name"].get<std::string>();
+                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0)
+                    return url;
+            }
+        }
+        return fallback;
+    }
+
+    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug)
+    {
+        // GitHub /releases (no /latest) returns the freshest 30 by default; we
+        // ask for 50 to give the user a long pick list. Same asset-selection
+        // rules as resolveLatestAssetUrl — prefer .zip, fall back to assets[0].
+        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases?per_page=50";
+        nlohmann::ordered_json payload;
+        const long http = getRequest(api_url, payload);
+        if (http != 200 || !payload.is_array()) return {};
+
+        std::vector<std::pair<std::string, std::string>> out;
+        out.reserve(payload.size());
+        for (const auto& rel : payload) {
+            if (!rel.is_object()) continue;
+            if (!rel.contains("tag_name") || !rel["tag_name"].is_string()) continue;
+            const std::string tag = rel["tag_name"].get<std::string>();
+            const std::string url = pickReleaseAssetUrl(rel);
+            if (!tag.empty() && !url.empty())
+                out.emplace_back(tag, url);
+        }
+        return out;
+    }
+
     std::string resolveLatestAssetUrl(const std::string& slug)
     {
         // GitHub /releases/latest returns the most recent non-draft,

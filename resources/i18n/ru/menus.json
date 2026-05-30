@@ -75,7 +75,9 @@
     "release_notes": "Что нового в релизе",
     "release_notes_empty": "Описание релиза ещё не получено. Подключитесь к интернету и переоткройте вкладку.",
     "install_nxcheats": "Установить читы NXCheatCode (tomvita, ежедневно)",
-    "install_nxcheats_confirm": "Скачать актуальный titles.zip от tomvita/NXCheatCode и распаковать его поверх /atmosphere/contents/. Существующие .txt файлы читов для каждого TID будут заменены свежими."
+    "install_nxcheats_confirm": "Скачать актуальный titles.zip от tomvita/NXCheatCode и распаковать его поверх /atmosphere/contents/. Существующие .txt файлы читов для каждого TID будут заменены свежими.",
+    "firmware_all_versions": "Все версии прошивки (THZoria) — выбрать любую",
+    "firmware_no_releases": "Релизов прошивки не найдено. Проверьте интернет и попробуйте снова."
   },
   "about": {
     "title": "All-in-One Nintendo Switch Updater",

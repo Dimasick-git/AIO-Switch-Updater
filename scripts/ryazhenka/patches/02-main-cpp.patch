@@ -9,7 +9,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,18 @@
+@@ -8,6 +9,19 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -23,20 +23,21 @@ diff --git a/source/main.cpp b/source/main.cpp
 +#include "ryazhenka_haptics.hpp"
 +#include "ryazhenka_logger.hpp"
 +#include "ryazhenka_splash.hpp"
++#include "ryazhenka_style.hpp"
 +#include "ryazhenka_theme.hpp"
 +// system_info / version_check headers intentionally not included — see body
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +32,26 @@
+@@ -19,17 +33,26 @@
  
  int main(int argc, char* argv[])
  {
 -    // Init the app
 -    if (!brls::Application::init(APP_TITLE)) {
-+    // Init the app with the Ryazhenka theme wrapper (custom palettes). The
-+    // Application takes ownership of the wrapper.
-+    if (!brls::Application::init(APP_TITLE, nullptr, ryazhenka::theme::makeWrapper())) {
++    // Init the app with the Ryazhenka style + theme wrapper (custom palettes
++    // + narrower sidebar). Application takes ownership of both.
++    if (!brls::Application::init(APP_TITLE, new ryazhenka::RyazhenkaStyle(), ryazhenka::theme::makeWrapper())) {
          brls::Logger::error("Unable to init Borealis application");
          return EXIT_FAILURE;
      }
@@ -58,7 +59,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +65,9 @@
+@@ -43,6 +66,9 @@
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -68,7 +69,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,9 +79,41 @@
+@@ -54,9 +80,41 @@
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
@@ -111,7 +112,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      }
      else {
          brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
-@@ -65,10 +122,19 @@
+@@ -65,10 +123,19 @@
      while (brls::Application::mainLoop())
          ;
  

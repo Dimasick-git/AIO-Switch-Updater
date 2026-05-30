@@ -19,6 +19,7 @@
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_splash.hpp"
+#include "ryazhenka_style.hpp"
 #include "ryazhenka_theme.hpp"
 // system_info / version_check headers intentionally not included — see body
 #include "warning_page.hpp"
@@ -32,9 +33,9 @@ CFW CurrentCfw::running_cfw;
 
 int main(int argc, char* argv[])
 {
-    // Init the app with the Ryazhenka theme wrapper (custom palettes). The
-    // Application takes ownership of the wrapper.
-    if (!brls::Application::init(APP_TITLE, nullptr, ryazhenka::theme::makeWrapper())) {
+    // Init the app with the Ryazhenka style + theme wrapper (custom palettes
+    // + narrower sidebar). Application takes ownership of both.
+    if (!brls::Application::init(APP_TITLE, new ryazhenka::RyazhenkaStyle(), ryazhenka::theme::makeWrapper())) {
         brls::Logger::error("Unable to init Borealis application");
         return EXIT_FAILURE;
     }
