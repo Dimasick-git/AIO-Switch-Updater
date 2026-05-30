@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Procedurally generate the Ryazhenka Updater app icon.
 
-Produces a 256x256 JPEG matching the default "Ryazhenka" palette: a warm
-radial chocolate-to-cream background, a red-brown ring, a large cream "Я"
-glyph with a soft shadow, and a cream sine wave along the bottom — echoing
-the in-app animated background.
+Produces a 256x256 JPEG matching the latest brand: a glowing orange Я set
+inside a rounded square frame on a near-black background. No text — just
+the mark.
 
 Usage:
     pip3 install Pillow
@@ -22,13 +21,13 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 SIZE = 256
 
-# Ryazhenka dark palette (matches source/ryazhenka_palette.cpp).
-BG_DEEP = (26, 14, 8)      # #1A0E08 chocolate
-BG_WARM = (74, 50, 37)     # #4A3225 separator-ish, for the radial edge
-CREAM = (245, 230, 200)    # #F5E6C8 text
-ACCENT = (212, 165, 116)   # #D4A574 cream-gold accent
-REDBROWN = (232, 74, 47)   # #E84A2F highlight
-RING = (139, 58, 47)       # #8B3A2F red-brown
+# Near-black background with a faint warm gradient.
+BG_DEEP  = (8, 6, 4)
+BG_WARM  = (28, 18, 12)
+# Glow + glyph colour ramp (light yellow → orange → red).
+GLOW_OUT = (255, 64, 0)
+GLOW_MID = (255, 140, 40)
+GLOW_IN  = (255, 220, 140)
 
 
 def radial_background(img: Image.Image) -> None:
@@ -38,8 +37,10 @@ def radial_background(img: Image.Image) -> None:
     for y in range(SIZE):
         for x in range(SIZE):
             t = min(1.0, math.hypot(x - cx, y - cy) / max_r)
+            # bright at centre, dark at the corners — emphasises the glyph.
+            mix = t ** 1.2
             px[x, y] = tuple(
-                int(BG_DEEP[i] + (BG_WARM[i] - BG_DEEP[i]) * (t ** 1.3))
+                int(BG_WARM[i] + (BG_DEEP[i] - BG_WARM[i]) * mix)
                 for i in range(3)
             )
 
@@ -56,48 +57,58 @@ def load_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def draw_wave(draw: ImageDraw.ImageDraw, color, base_y: float, amp: float,
-              wavelength: float, phase: float, width: int) -> None:
-    pts = []
-    for x in range(0, SIZE + 1, 2):
-        y = base_y + math.sin((x / wavelength) * 2 * math.pi + phase) * amp
-        pts.append((x, y))
-    draw.line(pts, fill=color, width=width, joint="curve")
+def glow_layer(make_path) -> Image.Image:
+    """Composite a multi-pass blur to create a soft outer glow."""
+    canvas = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    for radius, color, alpha in (
+        (28, GLOW_OUT, 90),
+        (16, GLOW_OUT, 140),
+        (8,  GLOW_MID, 200),
+    ):
+        layer = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(layer)
+        make_path(draw, color + (alpha,))
+        layer = layer.filter(ImageFilter.GaussianBlur(radius))
+        canvas = Image.alpha_composite(canvas, layer)
+    return canvas
 
 
-def generate(out_path: Path) -> None:
-    img = Image.new("RGB", (SIZE, SIZE), BG_DEEP)
-    radial_background(img)
-    draw = ImageDraw.Draw(img)
+def draw_frame(draw: ImageDraw.ImageDraw, color) -> None:
+    # Rounded-square frame, stroked.
+    inset = 38
+    draw.rounded_rectangle(
+        [inset, inset, SIZE - inset, SIZE - inset],
+        radius=44, outline=color, width=6,
+    )
 
-    # Outer red-brown ring.
-    margin = 14
-    draw.ellipse([margin, margin, SIZE - margin, SIZE - margin],
-                 outline=RING, width=8)
-    draw.ellipse([margin + 10, margin + 10, SIZE - margin - 10, SIZE - margin - 10],
-                 outline=ACCENT, width=2)
 
-    # Bottom sine waves (echo the animated UI background).
-    draw_wave(draw, ACCENT, SIZE * 0.80, 9, 150, 0.0, 4)
-    draw_wave(draw, REDBROWN, SIZE * 0.86, 6, 110, 1.3, 3)
-
-    # Central "Я" glyph with a soft shadow.
-    font = load_font(170)
-    glyph = "Я"  # Cyrillic capital YA
+def draw_glyph(draw: ImageDraw.ImageDraw, color) -> None:
+    font = load_font(160)
+    glyph = "Я"
     bbox = draw.textbbox((0, 0), glyph, font=font)
     gw, gh = bbox[2] - bbox[0], bbox[3] - bbox[1]
     gx = (SIZE - gw) / 2 - bbox[0]
-    gy = (SIZE - gh) / 2 - bbox[1] - 12
+    gy = (SIZE - gh) / 2 - bbox[1] - 4
+    draw.text((gx, gy), glyph, font=font, fill=color)
 
-    shadow = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(shadow)
-    sdraw.text((gx + 6, gy + 8), glyph, font=font, fill=(0, 0, 0, 150))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(5))
-    img.paste(shadow, (0, 0), shadow)
 
-    draw.text((gx, gy), glyph, font=font, fill=CREAM)
+def generate(out_path: Path) -> None:
+    base = Image.new("RGB", (SIZE, SIZE), BG_DEEP)
+    radial_background(base)
+    base = base.convert("RGBA")
 
-    img.save(out_path, "JPEG", quality=92)
+    # Soft glow underneath the frame + glyph.
+    base = Image.alpha_composite(base, glow_layer(draw_frame))
+    base = Image.alpha_composite(base, glow_layer(draw_glyph))
+
+    # Sharp top layer.
+    sharp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(sharp)
+    draw_frame(sdraw, GLOW_MID + (255,))
+    draw_glyph(sdraw, GLOW_IN + (255,))
+    base = Image.alpha_composite(base, sharp)
+
+    base.convert("RGB").save(out_path, "JPEG", quality=92)
     print(f"wrote {out_path} ({out_path.stat().st_size} bytes, {SIZE}x{SIZE})")
 
 

@@ -14,6 +14,7 @@
 #include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
 #include "ryazhenka_banner.hpp"
+#include "ryazhenka_catalog.hpp"
 #include "ryazhenka_crash_handler.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
@@ -124,6 +125,7 @@ int main(int argc, char* argv[])
     // let curl_global_cleanup race-free because the thread will short-circuit
     // before its next curl_easy_init / setopt / perform.
     try { ryazhenka::banner::signalShutdown(); } catch (...) {}
+    try { ryazhenka::catalog::signalShutdown(); } catch (...) {}
     romfsExit();
     splExit();
     pminfoExit();

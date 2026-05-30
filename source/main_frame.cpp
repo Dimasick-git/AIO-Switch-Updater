@@ -8,6 +8,7 @@
 #include "download.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
+#include "ryazhenka_catalog.hpp"
 #include "ryazhenka_settings_screen.hpp"
 #include "ryazhenka_status_tab.hpp"
 #include "tools_tab.hpp"
@@ -28,14 +29,25 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
     this->setTitle(AppTitle);
 
     s64 freeStorage;
-    std::string tag = util::getLatestTag(TAGS_INFO);
+    // Skip the GitHub "latest release" tag fetch at ctor time. It used to
+    // block the UI thread for up to ~30 s on a flaky network and gave the
+    // splash its "бесконечная загрузка" feel. The "update available" cue
+    // moves to the Settings tab; the footer just shows the running version
+    // and free SD storage.
     this->setFooterText(fmt::format("menus/main/footer_text"_i18n,
-                                    (!tag.empty() && tag != AppVersion) ? AppVersion + "menus/main/new_update"_i18n : AppVersion,
+                                    AppVersion,
                                     R_SUCCEEDED(fs::getFreeStorageSD(freeStorage)) ? (float)freeStorage / 0x40000000 : -1));
 
     json hideStatus = fs::parseJsonFile(HIDE_TABS_JSON);
-    nlohmann::ordered_json nxlinks;
-    download::getRequest(NXLINKS_URL, nxlinks);
+    // Try the on-SD nx-links cache first — pure file read, instant. Only
+    // fall back to the blocking HTTPS GET when we have nothing cached
+    // (typically first-ever launch).
+    nlohmann::ordered_json nxlinks = ryazhenka::catalog::cachedNxLinks();
+    if (nxlinks.empty()) {
+        download::getRequest(NXLINKS_URL, nxlinks);
+        if (!nxlinks.empty())
+            ryazhenka::catalog::writeNxLinksCache(nxlinks);
+    }
 
     bool erista = util::isErista();
 

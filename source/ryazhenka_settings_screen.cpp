@@ -8,6 +8,7 @@
 #include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
 #include "ryazhenka_banner.hpp"
+#include "ryazhenka_catalog.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
@@ -134,11 +135,13 @@ SettingsScreen::SettingsScreen() {
 
     auto* refreshBanner = new RyazhenkaCard("menus/ryazhenka/settings/refresh_banner"_i18n);
     refreshBanner->getClickEvent()->subscribe([](brls::View*) {
-        // Safe to spawn the curl thread here: the user is already navigating
+        // Safe to spawn the curl threads here: the user is already navigating
         // the UI on the Settings tab, well past the first frame. The startup
         // rule that ca62519 enforced only forbids this from main() / first-tab
-        // ctors.
+        // ctors. Refresh both the banner artwork and the on-SD nx-links cache
+        // so the next launch comes up instantly with current data.
         ryazhenka::banner::refreshAsync();
+        ryazhenka::catalog::refreshAsync();
         haptics::success();
     });
     this->addView(refreshBanner);
