@@ -30,6 +30,13 @@ private:
     // CFW health summary, refreshed each time the tab becomes visible.
     RyazhenkaCard* healthCard = nullptr;
     void refreshHealth();
+
+    // Header label (sysinfo one-liner). sysinfo::collect() iterates
+    // /atmosphere/contents and /atmosphere/exefs_patches which can be slow on
+    // a packed SD card; we keep the pointer so willAppear() can update the
+    // text the first time the tab actually opens.
+    brls::Label* headerLabel = nullptr;
+    void refreshHeader();
 };
 
 } // namespace ryazhenka

@@ -37,16 +37,16 @@ StatusTab::StatusTab()
     this->setSpacing(12);
     this->setMargins(16, 16, 16, 16);
 
-    std::string header = "menus/ryazhenka/status_header"_i18n;
-    try {
-        const auto snap = sysinfo::collect();
-        header += "  —  " + sysinfo::formatOneLine(snap);
-    } catch (...) {
-        header += "  —  (sysinfo unavailable)";
-    }
-    auto* lbl = new brls::Label(brls::LabelStyle::REGULAR, header, true);
-    lbl->setHorizontalAlign(NVG_ALIGN_LEFT);
-    this->addView(lbl, false);
+    // Deferred sysinfo: collect() does two directory_iterator scans of
+    // /atmosphere/contents and /atmosphere/exefs_patches which can take
+    // seconds on a packed SD. Build the header label with a placeholder so
+    // ctor stays cheap; refreshHeader() fills it in from willAppear().
+    this->headerLabel = new brls::Label(
+        brls::LabelStyle::REGULAR,
+        std::string("menus/ryazhenka/status_header"_i18n) + "  —  …",
+        true);
+    this->headerLabel->setHorizontalAlign(NVG_ALIGN_LEFT);
+    this->addView(this->headerLabel, false);
 
     // CFW health summary card (filled in willAppear / refreshHealth so the
     // filesystem checks don't run at MainFrame construction time).
@@ -95,6 +95,19 @@ StatusTab::StatusTab()
     });
 }
 
+void StatusTab::refreshHeader() {
+    if (!this->headerLabel)
+        return;
+    std::string header = "menus/ryazhenka/status_header"_i18n;
+    try {
+        const auto snap = sysinfo::collect();
+        header += "  —  " + sysinfo::formatOneLine(snap);
+    } catch (...) {
+        header += "  —  (sysinfo unavailable)";
+    }
+    this->headerLabel->setText(header);
+}
+
 void StatusTab::refreshHealth() {
     if (!this->healthCard)
         return;
@@ -128,6 +141,7 @@ void StatusTab::refreshHealth() {
 void StatusTab::willAppear(bool resetState) {
     brls::BoxLayout::willAppear(resetState);
     metrics::Sampler::instance().start();
+    this->refreshHeader();   // deferred sysinfo::collect — see ctor
     this->refreshHealth();
     log::info("status_tab: visible — sampler started");
 }
