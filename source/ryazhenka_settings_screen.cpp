@@ -7,6 +7,7 @@
 #include "fs.hpp"
 #include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
@@ -130,6 +131,17 @@ SettingsScreen::SettingsScreen() {
         haptics::success();
     });
     this->addView(clearBanner);
+
+    auto* refreshBanner = new RyazhenkaCard("menus/ryazhenka/settings/refresh_banner"_i18n);
+    refreshBanner->getClickEvent()->subscribe([](brls::View*) {
+        // Safe to spawn the curl thread here: the user is already navigating
+        // the UI on the Settings tab, well past the first frame. The startup
+        // rule that ca62519 enforced only forbids this from main() / first-tab
+        // ctors.
+        ryazhenka::banner::refreshAsync();
+        haptics::success();
+    });
+    this->addView(refreshBanner);
 
     auto* clearSig = new RyazhenkaCard("menus/ryazhenka/settings/clear_sigpatches"_i18n);
     clearSig->getClickEvent()->subscribe([](brls::View*) {

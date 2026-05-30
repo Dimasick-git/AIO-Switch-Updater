@@ -332,7 +332,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      language->getClickEvent()->subscribe([](brls::View* view) {
          std::vector<std::pair<std::string, std::string>> languages{
              std::make_pair("American English ({})", "en-US"),
-@@ -171,21 +389,34 @@
+@@ -171,21 +389,37 @@
          appView->setContentView(list);
          brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
      });
@@ -353,8 +353,11 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
 -    changelog->setHeight(LISTITEM_HEIGHT);
 +
 +    // Per-release banner shown right above the install action so the user
-+    // sees which Ryazhenka release they are about to install. Lazy-fetched.
-+    if (brls::Image* banner = ryazhenka::banner::makeImage()) {
++    // sees which Ryazhenka release they are about to install. Cached-only:
++    // ToolsTab is constructed inside MainFrame ctor, so spawning a curl
++    // thread here would reintroduce the startup-crash regression. Refresh
++    // is a manual action elsewhere; here we render whatever is on disk.
++    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
 +        banner->setHeight(160);
 +        this->addView(banner);
 +    }

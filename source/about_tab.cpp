@@ -13,10 +13,12 @@ using namespace i18n::literals;
 AboutTab::AboutTab()
 {
     // Per-release banner (bbootlogo.png on the Ryzhenka GitHub release).
-    // Lazy-fetched and cached — first launch shows nothing, subsequent launches
-    // show the banner. A stale cache triggers an async re-fetch in the
-    // background so the next launch is fresh.
-    if (brls::Image* banner = ryazhenka::banner::makeImage()) {
+    // Cached-only: AboutTab is the FIRST tab MainFrame addTabs (its
+    // willAppear fires during construction), so a detached-thread refresh
+    // here would reintroduce the startup-crash regression that ca62519
+    // ripped out. The banner is refreshed elsewhere (Settings "refresh
+    // banner" action) — here we only show whatever is already on disk.
+    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
         banner->setHeight(180);
         this->addView(banner);
     }

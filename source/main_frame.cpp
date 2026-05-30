@@ -60,16 +60,16 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
     if (!util::getBoolValue(hideStatus, "tools"))
         this->addTab("menus/main/tools"_i18n, new ToolsTab(tag, util::getValueFromKey(nxlinks, "payloads"), erista, hideStatus));
 
-    // Live system dashboard. The metrics Sampler thread only starts in the
-    // tab's willAppear() and is joined in willDisappear(), so registering the
-    // tab is cheap; the placeholder now clears after a short grace period even
-    // if psm/ts never report (see ryazhenka_status_tab.cpp).
-    if (!util::getBoolValue(hideStatus, "status"))
-        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
-
     // Ryazhenka settings — live palette switch, haptics, animated background.
     if (!util::getBoolValue(hideStatus, "settings"))
         this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
+
+    // Live system dashboard — MUST stay last (rule from commit a5977a5).
+    // borealis fires willAppear on the FIRST tab during addTab, so anything
+    // expensive in StatusTab's willAppear (Sampler thread, psm/ts service
+    // init via metrics) only runs when the user explicitly navigates to it.
+    if (!util::getBoolValue(hideStatus, "status"))
+        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }

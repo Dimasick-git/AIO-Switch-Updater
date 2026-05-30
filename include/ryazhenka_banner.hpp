@@ -36,6 +36,13 @@ bool refreshAsync();
 /// fresh image is on disk for next launch.
 brls::Image* makeImage();
 
+/// Same as makeImage() but NEVER spawns a refresh thread. Safe to call from a
+/// view constructor that runs as part of MainFrame construction (and therefore
+/// before the first frame) — the startup-crash rule from commit ca62519
+/// forbids any detached-thread + curl pattern from the launch path. Returns
+/// nullptr when the cache is missing.
+brls::Image* makeCachedOnlyImage();
+
 /// Latest pack release tag (e.g. "v7.2.1"), or empty string if not yet
 /// cached. Refreshed alongside the banner image — no separate network call.
 std::string cachedPackTag();

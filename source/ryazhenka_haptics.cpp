@@ -10,6 +10,7 @@
 #include "constants.hpp"
 #include "fs.hpp"
 #include "ryazhenka_logger.hpp"
+#include "utils.hpp"
 
 namespace ryazhenka::haptics {
 
@@ -79,6 +80,14 @@ void init() {
     }
 
 #ifdef __SWITCH__
+    // Belt-and-braces: applet mode often lacks the FS/SRV grants for niche
+    // HID sub-services. The previous startup crash (commit ca62519) was
+    // caused by exactly this kind of unconditional startup service init.
+    if (util::isApplet()) {
+        log::info("haptics: running as applet — skipping vibration init");
+        return;
+    }
+
     // The style argument is a single HidNpadStyleTag in this libnx version, so
     // each style needs its own init call into its own handle pair.
     Result rc1 = hidInitializeVibrationDevices(g_handheld, 2, HidNpadIdType_Handheld,

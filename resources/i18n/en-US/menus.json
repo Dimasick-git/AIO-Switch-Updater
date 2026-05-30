@@ -59,7 +59,8 @@
       "about_header": "About",
       "author": "Author",
       "audio_toggle": "UI sound effects",
-      "audio_hint": "Procedural beeps on focus / click. Off by default."
+      "audio_hint": "Procedural beeps on focus / click. Off by default.",
+      "refresh_banner": "Refresh banner now"
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

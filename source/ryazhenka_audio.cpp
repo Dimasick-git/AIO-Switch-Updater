@@ -13,6 +13,7 @@
 #include "constants.hpp"
 #include "fs.hpp"
 #include "ryazhenka_logger.hpp"
+#include "utils.hpp"
 
 namespace ryazhenka::audio {
 
@@ -133,6 +134,14 @@ void init() {
     // init at startup. Lazy init on first setEnabled(true) is good enough.
     if (!g_enabled) {
         log::info("audio: disabled in config — skipping audoutInitialize");
+        return;
+    }
+
+    // audout:u is unavailable in applet mode on modern HOS. Trying to init
+    // there returns a Result we'd just log, plus aligned_alloc(0x1000,…)x8
+    // bites into the already-tight applet heap (0x100D family). Skip cleanly.
+    if (util::isApplet()) {
+        log::info("audio: running as applet — skipping audoutInitialize");
         return;
     }
 

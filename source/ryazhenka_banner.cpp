@@ -204,6 +204,13 @@ brls::Image* makeImage() {
     return new brls::Image(path);
 }
 
+brls::Image* makeCachedOnlyImage() {
+    const std::string path = cachedPath();
+    if (path.empty())
+        return nullptr;
+    return new brls::Image(path);
+}
+
 namespace {
 
 std::string slurp(const char* path) {
