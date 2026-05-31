@@ -38,16 +38,15 @@ int  g_pressY = 0;
 constexpr int kTapSlopPx = 40;
 
 void onTapRelease(int x, int y) {
-    // 1) Map physical screen pixels (Switch is 1280×720) into the brls
-    //    content-coordinate space the view tree was laid out in.
-    const unsigned ww = brls::Application::windowWidth;
-    const unsigned wh = brls::Application::windowHeight;
-    const unsigned cw = brls::Application::contentWidth;
-    const unsigned ch = brls::Application::contentHeight;
-    if (ww == 0 || wh == 0)
-        return;
-    const float cx = static_cast<float>(x) * static_cast<float>(cw) / static_cast<float>(ww);
-    const float cy = static_cast<float>(y) * static_cast<float>(ch) / static_cast<float>(wh);
+    // brls::Application::windowWidth/Height are private, but on Switch the
+    // physical screen (1280×720) and the brls content surface are 1:1, so we
+    // just treat touch coordinates as content coordinates. If the content
+    // surface ever stops matching the physical screen, scale by
+    // contentWidth/720 here.
+    const float cx = static_cast<float>(x);
+    const float cy = static_cast<float>(y);
+    (void)brls::Application::contentWidth;   // keep the symbol referenced so
+    (void)brls::Application::contentHeight;  // future scaling has a hook.
 
     // 2) Decide where on screen the tap landed. The sidebar is on the left
     //    third of the screen; everything else is content. We don't have
