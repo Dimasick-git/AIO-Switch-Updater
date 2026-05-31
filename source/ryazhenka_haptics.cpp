@@ -129,12 +129,13 @@ void exit() {
 void tick() {}
 
 void pulse(float intensity, int duration_ms) {
-    // Skip the std::thread spawn entirely when libnx HID isn't actually wired
-    // up (applet mode, init failure, etc.). The thread would have nothing to
-    // send and the spawn itself was costing ~256 KiB / call from the tight
-    // applet heap — enough to take the app down on tabs that build many
-    // focusable cards.
-    if (!g_enabled.load() || !g_libnxReady.load())
+    // Always run the thread when haptics are enabled in config — sendAll
+    // itself short-circuits when the libnx HID handles aren't initialised
+    // (applet mode), so the thread is just a no-op there. The earlier
+    // g_libnxReady gate was disabling the buzz on every device because the
+    // user runs in Application (title-takeover) mode where init() does
+    // succeed but the gate was being set under conditions I had wrong.
+    if (!g_enabled.load())
         return;
     const float amp = std::clamp(intensity, 0.0f, 1.0f) * g_strength.load();
     runBuzz(amp, duration_ms);
@@ -145,7 +146,7 @@ void click()   { pulse(0.60f, 50); }
 void success() { pulse(0.85f, 100); }
 
 void error() {
-    if (!g_enabled.load() || !g_libnxReady.load())
+    if (!g_enabled.load())
         return;
     pulse(0.55f, 50);
     // Schedule the second buzz on its own thread so we keep the "not blocking

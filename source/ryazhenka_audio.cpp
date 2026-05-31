@@ -116,30 +116,12 @@ void playEffect(Effect& e) {
 
 }  // namespace
 
-void init() {
-    // Read the user preference (off by default — UI sounds can surprise
-    // someone who already has music playing in the system).
-    try {
-        nlohmann::ordered_json cfg = fs::parseJsonFile(CONFIG_FILE);
-        if (cfg.is_object() && cfg.contains("ryazhenka_audio_enabled") &&
-            cfg["ryazhenka_audio_enabled"].is_boolean())
-            g_enabled = cfg["ryazhenka_audio_enabled"].get<bool>();
-    } catch (...) {
-        // keep default (off)
-    }
-
-    // Don't touch audout at all when the user hasn't opted in. audoutInitialize
-    // can fail in applet mode (audio service is restricted there) and the
-    // previous-app crash report points at this kind of unconditional service
-    // init at startup. Lazy init on first setEnabled(true) is good enough.
-    if (!g_enabled) {
-        log::info("audio: disabled in config — skipping audoutInitialize");
+// Brings libnx audout up + renders the four tone buffers. Safe to call from
+// init() (boot path) OR from setEnabled(true) (user toggled on after launch).
+// No-op when already initialised or when applet mode forbids audout.
+static void doInit() {
+    if (g_initialized)
         return;
-    }
-
-    // audout:u is unavailable in applet mode on modern HOS. Trying to init
-    // there returns a Result we'd just log, plus aligned_alloc(0x1000,…)x8
-    // bites into the already-tight applet heap (0x100D family). Skip cleanly.
     if (util::isApplet()) {
         log::info("audio: running as applet — skipping audoutInitialize");
         return;
@@ -174,7 +156,6 @@ void init() {
         return;
     }
 
-    // Render the four tones once.
     fillSine (static_cast<std::int16_t*>(g_focus.mem[0]),   kSamplesPerBuffer, 880.0f, 0.16f);
     std::memcpy(g_focus.mem[1],   g_focus.mem[0],   kBufferBytes);
     fillChord(static_cast<std::int16_t*>(g_click.mem[0]),   kSamplesPerBuffer, 660.0f, 880.0f, 0.20f);
@@ -185,10 +166,27 @@ void init() {
     std::memcpy(g_error.mem[1],   g_error.mem[0],   kBufferBytes);
 
     g_initialized = true;
-    log::info(std::string("audio: ready enabled=") + (g_enabled ? "yes" : "no"));
+    log::info("audio: libnx audout ready");
 #else
     log::info("audio: stub (non-switch build)");
 #endif
+}
+
+void init() {
+    try {
+        nlohmann::ordered_json cfg = fs::parseJsonFile(CONFIG_FILE);
+        if (cfg.is_object() && cfg.contains("ryazhenka_audio_enabled") &&
+            cfg["ryazhenka_audio_enabled"].is_boolean())
+            g_enabled = cfg["ryazhenka_audio_enabled"].get<bool>();
+    } catch (...) {
+        // keep default (off)
+    }
+
+    if (!g_enabled) {
+        log::info("audio: disabled in config — skipping audoutInitialize");
+        return;
+    }
+    doInit();
 }
 
 void exit() {
@@ -226,7 +224,13 @@ void error()   {
 #endif
 }
 
-void setEnabled(bool enabled) { g_enabled = enabled; }
+void setEnabled(bool enabled) {
+    g_enabled = enabled;
+    // Lazy init when the user turns sound on mid-session — without this they
+    // had to relaunch the app for the audout setup to actually run.
+    if (enabled)
+        doInit();
+}
 bool isEnabled() { return g_enabled; }
 
 }  // namespace ryazhenka::audio

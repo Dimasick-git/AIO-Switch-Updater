@@ -145,9 +145,21 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(this->backgroundToggle);
 
-    // Audio toggle removed at the user's request — the procedural audout
-    // tones don't work reliably on hardware. The module is still compiled
-    // (audio::init / pulse stubs are kept) so a future fix can re-expose it.
+    // Audio toggle restored — pulse() now lazy-inits libnx audout the first
+    // time setEnabled(true) is called, so flipping this on no longer needs an
+    // app restart to take effect.
+    brls::ListItem* audioToggle = new brls::ListItem("menus/ryazhenka/settings/audio_toggle"_i18n);
+    audioToggle->setHeight(LISTITEM_HEIGHT);
+    audioToggle->setSubLabel("menus/ryazhenka/settings/audio_hint"_i18n);
+    audioToggle->getClickEvent()->subscribe([audioToggle](brls::View*) {
+        bool next = !audio::isEnabled();
+        audio::setEnabled(next);
+        setConfigKey("ryazhenka_audio_enabled", next);
+        if (next) audio::click();  // preview the new "on" state
+        audioToggle->setValue(onOff(next));
+    });
+    audioToggle->setValue(onOff(audio::isEnabled()));
+    this->addView(audioToggle);
 
     // Touchscreen input — tap the screen to "press A" on the focused item;
     // tap the sidebar area to hop focus there. Default ON.
