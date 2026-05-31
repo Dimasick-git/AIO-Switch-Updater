@@ -116,17 +116,14 @@ int main(int argc, char* argv[])
         // the "бесконечная загрузка" the user reported.
         brls::Application::pushView(new ryazhenka::Splash([] {
             brls::Application::pushView(new MainFrame());
-            // The splash hands off ~2 s in, long after the first frame has
-            // rendered, so this is the safe post-startup point the banner
-            // module's ca62519 rule allows for kicking the detached fetch.
-            // Without this nothing ever populated the cache that AboutTab and
-            // the splash read from (both are cached-only by design), so the
-            // banner never appeared. Honour the TTL so we don't refetch on
-            // every launch.
-            try {
-                if (!ryazhenka::banner::cacheIsFresh())
-                    ryazhenka::banner::refreshAsync();
-            } catch (...) {}
+            // NOTE: do NOT kick banner::refreshAsync() (or any detached
+            // curl/thread) from here. Even though the splash hands off ~2 s in,
+            // this is still the launch path and a detached curl thread here
+            // reintroduced the "Программа закрыта при запуске" crash (the exact
+            // class of bug ca62519 fixed by ripping every startup-time
+            // network/thread/service call out). The banner is instead fetched
+            // synchronously, on the main thread, from the MainFrame ctor's
+            // existing first-launch network section — safe and crash-free.
         }));
     }
     else {

@@ -1,16 +1,25 @@
 diff --git a/source/main_frame.cpp b/source/main_frame.cpp
+index 2bfe9e3..47b4a1b 100644
 --- a/source/main_frame.cpp
 +++ b/source/main_frame.cpp
-@@ -8,6 +8,8 @@
+@@ -8,6 +8,9 @@
  #include "download.hpp"
  #include "fs.hpp"
  #include "list_download_tab.hpp"
++#include "ryazhenka_banner.hpp"
 +#include "ryazhenka_catalog.hpp"
 +#include "ryazhenka_settings_screen.hpp"
  #include "tools_tab.hpp"
  #include "utils.hpp"
  
-@@ -26,14 +28,25 @@
+@@ -20,20 +23,45 @@ namespace {
+     constexpr const char AppVersion[] = APP_VERSION;
+ }  // namespace
+ 
+-MainFrame::MainFrame() : TabFrame()
++MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
+ {
+     this->setIcon("romfs:/gui_icon.png");
      this->setTitle(AppTitle);
  
      s64 freeStorage;
@@ -37,10 +46,24 @@ diff --git a/source/main_frame.cpp b/source/main_frame.cpp
 +        if (!nxlinks.empty())
 +            ryazhenka::catalog::writeNxLinksCache(nxlinks);
 +    }
++
++    // Per-release banner: fetch SYNCHRONOUSLY on this (main) thread, exactly
++    // like the nx-links GET above, and only when nothing is cached yet. This is
++    // the crash-safe way to auto-populate the banner — a detached fetch thread
++    // on the launch path is what crashed the app ("Программа закрыта при
++    // запуске"), so it is deliberately avoided. Per-release refreshes are done
++    // from Settings → "Обновить баннер". Runs before AboutTab is built so the
++    // freshly cached image shows on this very launch.
++    try {
++        if (ryazhenka::banner::cachedPath().empty())
++            ryazhenka::banner::fetchNow();
++    } catch (...) {
++        // best effort — never let a banner hiccup take MainFrame down
++    }
  
      bool erista = util::isErista();
  
-@@ -56,7 +69,17 @@
+@@ -56,7 +84,17 @@ MainFrame::MainFrame() : TabFrame()
          this->addTab("menus/main/custom_downloads"_i18n, new AmsTab_Custom(nxlinks, erista));
  
      if (!util::getBoolValue(hideStatus, "tools"))

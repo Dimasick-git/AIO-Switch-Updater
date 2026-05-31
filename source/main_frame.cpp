@@ -8,6 +8,7 @@
 #include "download.hpp"
 #include "fs.hpp"
 #include "list_download_tab.hpp"
+#include "ryazhenka_banner.hpp"
 #include "ryazhenka_catalog.hpp"
 #include "ryazhenka_settings_screen.hpp"
 #include "tools_tab.hpp"
@@ -46,6 +47,20 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
         download::getRequest(NXLINKS_URL, nxlinks);
         if (!nxlinks.empty())
             ryazhenka::catalog::writeNxLinksCache(nxlinks);
+    }
+
+    // Per-release banner: fetch SYNCHRONOUSLY on this (main) thread, exactly
+    // like the nx-links GET above, and only when nothing is cached yet. This is
+    // the crash-safe way to auto-populate the banner — a detached fetch thread
+    // on the launch path is what crashed the app ("Программа закрыта при
+    // запуске"), so it is deliberately avoided. Per-release refreshes are done
+    // from Settings → "Обновить баннер". Runs before AboutTab is built so the
+    // freshly cached image shows on this very launch.
+    try {
+        if (ryazhenka::banner::cachedPath().empty())
+            ryazhenka::banner::fetchNow();
+    } catch (...) {
+        // best effort — never let a banner hiccup take MainFrame down
     }
 
     bool erista = util::isErista();
