@@ -20,7 +20,6 @@
 #include "ryazhenka_factory_restore.hpp"
 #include "ryazhenka_health.hpp"
 #include "ryazhenka_logger.hpp"
-#include "ryazhenka_status_tab.hpp"
 #include "ryazhenka_sysmodule_manager.hpp"
 #include "ryazhenka_system_info.hpp"
 #include "utils.hpp"
@@ -182,69 +181,8 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::Application::pushView(stagedFrame);
     });
 
-    // Alternative cheats source: tomvita/NXCheatCode. The release archive's
-    // titles/<TID>/cheats/<BID>.txt layout maps 1-to-1 onto Atmosphere's
-    // /atmosphere/contents/, so we extract to SD root and merge titles/* into
-    // /atmosphere/contents/ as a follow-up worker stage. Existing TIDs get
-    // their cheat .txt files refreshed; foreign metadata files (game-name
-    // labels) are copied alongside as harmless extras.
-    brls::ListItem* installNxCheats = new brls::ListItem("menus/ryazhenka/install_nxcheats"_i18n);
-    installNxCheats->setHeight(LISTITEM_HEIGHT);
-    installNxCheats->getClickEvent()->subscribe([](brls::View*) {
-        const std::string url(ryazhenka::kNxCheatCodeUrl);
-        const std::string confirm =
-            std::string("menus/ryazhenka/install_nxcheats_confirm"_i18n) + "\n\n" + url;
-        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-        stagedFrame->setTitle("menus/ryazhenka/install_nxcheats"_i18n);
-        stagedFrame->addStage(new ConfirmPage(stagedFrame, confirm));
-        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() {
-            ryazhenka::log::info("nxcheats: downloading " + url);
-            util::downloadArchive(url, contentType::custom);
-        }));
-        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
-            ryazhenka::log::info("nxcheats: extracting titles.zip");
-            util::extractArchive(contentType::custom);
-            // After extract, /titles/<TID>/... exists at SD root. Merge each
-            // child of /titles/ into /atmosphere/contents/. Non-fatal on a
-            // per-file basis: we want to install as much as we can even when
-            // some titles are already there.
-            namespace fs_ns = std::filesystem;
-            std::error_code ec;
-            const fs_ns::path src = "/titles";
-            const fs_ns::path dst = "/atmosphere/contents";
-            if (!fs_ns::is_directory(src, ec)) {
-                ryazhenka::log::warn("nxcheats: /titles not found after extract");
-                return;
-            }
-            fs_ns::create_directories(dst, ec);
-
-            int copied = 0;
-            for (const auto& tidEntry : fs_ns::directory_iterator(src, ec)) {
-                if (!tidEntry.is_directory(ec)) continue;
-                const fs_ns::path target = dst / tidEntry.path().filename();
-                fs_ns::create_directories(target, ec);
-                for (auto it = fs_ns::recursive_directory_iterator(tidEntry.path(), ec);
-                     it != fs_ns::recursive_directory_iterator(); ++it) {
-                    const auto rel = fs_ns::relative(it->path(), tidEntry.path(), ec);
-                    const fs_ns::path out = target / rel;
-                    if (it->is_directory(ec)) {
-                        fs_ns::create_directories(out, ec);
-                    } else if (it->is_regular_file(ec)) {
-                        fs_ns::create_directories(out.parent_path(), ec);
-                        fs_ns::copy_file(it->path(), out,
-                                         fs_ns::copy_options::overwrite_existing, ec);
-                        if (!ec) ++copied;
-                    }
-                }
-            }
-            // Clean up the staging dir; best-effort.
-            fs_ns::remove_all(src, ec);
-            ryazhenka::log::info(std::string("nxcheats: merged ") +
-                                 std::to_string(copied) + " cheat files into /atmosphere/contents/");
-        }));
-        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
-        brls::Application::pushView(stagedFrame);
-    });
+    // NXCheatCode card moved to the Cheats tab (list_download_tab) at the
+    // user's request. The Tools tab no longer ships an in-place install.
 
     brls::ListItem* cleanupBackups = new brls::ListItem("menus/ryazhenka/cleanup_backups"_i18n);
     cleanupBackups->setHeight(LISTITEM_HEIGHT);
@@ -295,11 +233,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
         brls::PopupFrame::open("menus/ryazhenka/sysmodule_manager"_i18n, sysView, "menus/ryazhenka/sysmodule_hint"_i18n, "");
     });
 
-    brls::ListItem* openDashboard = new brls::ListItem("menus/ryazhenka/open_dashboard"_i18n);
-    openDashboard->setHeight(LISTITEM_HEIGHT);
-    openDashboard->getClickEvent()->subscribe([](brls::View* view) {
-        brls::Application::pushView(new ryazhenka::StatusTab());
-    });
+    // openDashboard removed at the user's request (the Status tab is gone).
 
     brls::ListItem* factoryRestore = new brls::ListItem("menus/ryazhenka/factory_restore"_i18n);
     factoryRestore->setHeight(LISTITEM_HEIGHT);
@@ -497,11 +431,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
 
     if (!util::getBoolValue(hideStatus, "cheats")) this->addView(cheats);
     this->addView(installPack);
-    this->addView(installNxCheats);
     this->addView(releaseNotes);
     this->addView(sysmoduleManager);
     this->addView(factoryRestore);
-    this->addView(openDashboard);
     this->addView(cleanupBackups);
     this->addView(showLog);
     this->addView(diagDump);

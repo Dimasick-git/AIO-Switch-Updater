@@ -10,7 +10,6 @@
 #include "list_download_tab.hpp"
 #include "ryazhenka_catalog.hpp"
 #include "ryazhenka_settings_screen.hpp"
-#include "ryazhenka_status_tab.hpp"
 #include "tools_tab.hpp"
 #include "utils.hpp"
 
@@ -78,12 +77,9 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
     // "Reset hidden tabs" card to undo the hide-tabs.json state.
     this->addTab("menus/ryazhenka/settings_tab"_i18n, new ryazhenka::SettingsScreen());
 
-    // Live system dashboard — MUST stay last (rule from commit a5977a5).
-    // borealis fires willAppear on the FIRST tab during addTab, so anything
-    // expensive in StatusTab's willAppear (Sampler thread, psm/ts service
-    // init via metrics) only runs when the user explicitly navigates to it.
-    if (!util::getBoolValue(hideStatus, "status"))
-        this->addTab("menus/ryazhenka/status_tab"_i18n, new ryazhenka::StatusTab());
+    // Status / dashboard tab removed at the user's request — the metrics
+    // sampler never worked reliably on hardware and the tab kept crashing
+    // on focus. The StatusTab class is left in the tree (unused) for now.
 
     this->registerAction("", brls::Key::B, [this] { return true; });
 }

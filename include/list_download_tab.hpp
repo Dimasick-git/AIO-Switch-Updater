@@ -18,6 +18,7 @@ private:
     void createCheatSlipItem();
     void createGbatempItem();
     void createGfxItem();
+    void createNxCheatCodeItem();
     void setDescription();
     void setDescription(contentType type);
     void displayNotFound();

@@ -73,7 +73,8 @@
       "ecosystem_hint": "Click any repo to install its latest release. Non-GitHub links open in the system browser.",
       "ecosystem_confirm": "Install latest release from this repo? The .zip will be downloaded and extracted into the SD root, overwriting any existing files.",
       "touch_toggle": "Touchscreen input",
-      "touch_hint": "Tap the screen to press A on the focused item. Tap the sidebar area to hop focus there."
+      "touch_hint": "Tap the screen to press A on the focused item. Tap the sidebar area to hop focus there.",
+      "selected": "selected"
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

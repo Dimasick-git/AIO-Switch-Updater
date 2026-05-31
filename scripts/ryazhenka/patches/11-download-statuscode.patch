@@ -1,413 +1,98 @@
-diff --git a/include/download.hpp b/include/download.hpp
---- a/include/download.hpp
-+++ b/include/download.hpp
-@@ -15,4 +15,17 @@
-     long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
-     long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
- 
-+    /// Resolve "@latest_asset:OWNER/REPO" into a concrete browser_download_url
-+    /// by querying api.github.com/repos/<slug>/releases/latest. Prefers the
-+    /// first asset whose name ends in ".zip" (the user-facing artefact);
-+    /// falls back to assets[0] if no .zip is present.
-+    /// Returns empty string on any failure (network, parse, no assets).
-+    std::string resolveLatestAssetUrl(const std::string& slug);
-+
-+    /// Returns up to ~50 releases for `<slug>` as (tag_name, zip_url) pairs,
-+    /// freshest first. Each release's URL is picked the same way
-+    /// resolveLatestAssetUrl picks (.zip preferred, else assets[0]). Empty
-+    /// vector on any failure (network, parse, no releases).
-+    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug);
-+
- }  // namespace download
-\ No newline at end of file
-diff --git a/source/download.cpp b/source/download.cpp
---- a/source/download.cpp
-+++ b/source/download.cpp
-@@ -122,6 +122,8 @@
-             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-             curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
-+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
-             curl_easy_perform(curl);
-             auto res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &dl);
-             if (!res) {
-@@ -179,6 +181,8 @@
-             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-+            curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
-             curl_easy_setopt(
-                 curl,
-                 CURLOPT_WRITEFUNCTION,
-@@ -290,7 +294,7 @@
-         const char* out = output.c_str();
-         CURL* curl = curl_easy_init();
-         ntwrk_struct_t chunk = {0};
--        long status_code;
-+        long status_code = 0;
-         time_old = std::chrono::steady_clock::now();
-         dlold = 0.0f;
-         bool can_download = true;
-@@ -324,6 +328,9 @@
-                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-                     curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
-+                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
-+                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
-+                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
-                     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-                     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
- 
-@@ -369,12 +376,13 @@
-         chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
-         chunk.size = 0;                               /* no data at this point */
- 
--        curl_global_init(CURL_GLOBAL_ALL);
-         curl_handle = curl_easy_init();
-         curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-         curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback2);
-         curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void*)&chunk);
-         curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, API_AGENT);
-+        curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 5L);
-+        curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 15L);
- 
-         curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
-         curl_easy_perform(curl_handle);
-@@ -392,8 +400,6 @@
-         curl_easy_cleanup(curl_handle);
-         free(chunk.memory);
- 
--        curl_global_cleanup();
--
-         return ver;
-     }
- 
-@@ -402,14 +408,15 @@
-         CURL* curl_handle;
-         struct MemoryStruct chunk;
-         struct curl_slist* list = NULL;
--        long status_code;
-+        long status_code = 0;
- 
-         chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
-         chunk.size = 0;                               /* no data at this point */
- 
--        curl_global_init(CURL_GLOBAL_ALL);
-         curl_handle = curl_easy_init();
-         curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
-+        curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 5L);
-+        curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 15L);
-         if (!headers.empty()) {
-             for (auto& h : headers) {
-                 list = curl_slist_append(list, h.c_str());
-@@ -431,7 +438,6 @@
-         res = std::string(chunk.memory);
-         free(chunk.memory);
- 
--        curl_global_cleanup();
-         return status_code;
-     }
- 
-@@ -469,4 +475,78 @@
-         return res;
-     }
- 
-+    // Picks the preferred download URL from a single release JSON node:
-+    // first .zip asset, falling back to assets[0]. Returns "" if neither.
-+    static std::string pickReleaseAssetUrl(const nlohmann::ordered_json& rel)
-+    {
-+        if (!rel.is_object() || !rel.contains("assets") || !rel["assets"].is_array())
-+            return {};
-+        std::string fallback;
-+        for (const auto& asset : rel["assets"]) {
-+            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string())
-+                continue;
-+            const std::string url = asset["browser_download_url"].get<std::string>();
-+            if (fallback.empty()) fallback = url;
-+            if (asset.contains("name") && asset["name"].is_string()) {
-+                const std::string name = asset["name"].get<std::string>();
-+                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0)
-+                    return url;
-+            }
-+        }
-+        return fallback;
-+    }
-+
-+    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug)
-+    {
-+        // GitHub /releases (no /latest) returns the freshest 30 by default; we
-+        // ask for 50 to give the user a long pick list. Same asset-selection
-+        // rules as resolveLatestAssetUrl — prefer .zip, fall back to assets[0].
-+        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases?per_page=50";
-+        nlohmann::ordered_json payload;
-+        const long http = getRequest(api_url, payload);
-+        if (http != 200 || !payload.is_array()) return {};
-+
-+        std::vector<std::pair<std::string, std::string>> out;
-+        out.reserve(payload.size());
-+        for (const auto& rel : payload) {
-+            if (!rel.is_object()) continue;
-+            if (!rel.contains("tag_name") || !rel["tag_name"].is_string()) continue;
-+            const std::string tag = rel["tag_name"].get<std::string>();
-+            const std::string url = pickReleaseAssetUrl(rel);
-+            if (!tag.empty() && !url.empty())
-+                out.emplace_back(tag, url);
-+        }
-+        return out;
-+    }
-+
-+    std::string resolveLatestAssetUrl(const std::string& slug)
-+    {
-+        // GitHub /releases/latest returns the most recent non-draft,
-+        // non-prerelease release with its full asset list. We prefer the
-+        // first .zip asset because that is what the AIO downloader actually
-+        // unpacks; if no .zip is present we fall back to assets[0]. This
-+        // covers ovlSysmodules / Mission-Control / NX_Firmware where the
-+        // asset filename embeds the version and breaks the
-+        // releases/latest/download/<filename> alias.
-+        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases/latest";
-+        nlohmann::ordered_json payload;
-+        const long http = getRequest(api_url, payload);
-+        if (http != 200) return {};
-+        if (!payload.contains("assets") || !payload["assets"].is_array()) return {};
-+
-+        std::string fallback;
-+        for (const auto& asset : payload["assets"]) {
-+            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string()) continue;
-+            const std::string url = asset["browser_download_url"].get<std::string>();
-+            if (fallback.empty()) fallback = url;
-+            if (asset.contains("name") && asset["name"].is_string()) {
-+                const std::string name = asset["name"].get<std::string>();
-+                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0) {
-+                    return url;
-+                }
-+            }
-+        }
-+        return fallback;
-+    }
-+
- }  // namespace download
-\ No newline at end of file
+diff --git a/include/list_download_tab.hpp b/include/list_download_tab.hpp
+--- a/include/list_download_tab.hpp
++++ b/include/list_download_tab.hpp
+@@ -18,6 +18,7 @@
+     void createCheatSlipItem();
+     void createGbatempItem();
+     void createGfxItem();
++    void createNxCheatCodeItem();
+     void setDescription();
+     void setDescription(contentType type);
+     void displayNotFound();
 diff --git a/source/list_download_tab.cpp b/source/list_download_tab.cpp
 --- a/source/list_download_tab.cpp
 +++ b/source/list_download_tab.cpp
-@@ -1,5 +1,6 @@
- #include "list_download_tab.hpp"
- 
-+
- #include <filesystem>
- #include <fstream>
- #include <string>
-@@ -11,6 +12,7 @@
- #include "download.hpp"
+@@ -13,6 +13,8 @@
  #include "extract.hpp"
  #include "fs.hpp"
-+#include "progress_event.hpp"
+ #include "progress_event.hpp"
++#include "ryazhenka_config.hpp"
++#include "ryazhenka_logger.hpp"
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -40,6 +42,47 @@
-         this->setDescription(contentType::payloads);
-         this->createList(contentType::payloads);
-     }
+@@ -31,6 +33,7 @@
+             "menus/cheats/cheats_label"_i18n,
+             true);
+         this->addView(cheatsLabel);
++        this->createNxCheatCodeItem();
+         this->createGbatempItem();
+         this->createGfxItem();
+         this->createCheatSlipItem();
+@@ -347,4 +350,65 @@
+         return true;
+     });
+     this->addView(gfxItem);
++}
 +
-+    // Firmware: append a "pick any release" entry that fetches the full
-+    // THZoria release history on click and lists every tag as its own
-+    // download item — the user can install any version, not just latest.
-+    if (this->type == contentType::fw) {
-+        brls::ListItem* allVersions = new brls::ListItem(
-+            "menus/ryazhenka/firmware_all_versions"_i18n);
-+        allVersions->setHeight(LISTITEM_HEIGHT);
-+        allVersions->getClickEvent()->subscribe([](brls::View*) {
-+            const auto releases = download::resolveAllReleases("THZoria/NX_Firmware");
-+            if (releases.empty()) {
-+                util::showDialogBoxInfo("menus/ryazhenka/firmware_no_releases"_i18n);
++void ListDownloadTab::createNxCheatCodeItem()
++{
++    // tomvita/NXCheatCode — daily-updated cheats database. The release zip's
++    // titles/<TID>/cheats/<BID>.txt layout maps 1-to-1 onto Atmosphere's
++    // /atmosphere/contents/, so we extract to SD root and merge titles/* into
++    // /atmosphere/contents/ as a follow-up worker stage. Moved here from the
++    // Tools tab so the cheat sources live in one place.
++    brls::ListItem* item = new brls::ListItem("menus/ryazhenka/install_nxcheats"_i18n);
++    item->setHeight(LISTITEM_HEIGHT);
++    item->getClickEvent()->subscribe([](brls::View*) {
++        const std::string url(ryazhenka::kNxCheatCodeUrl);
++        const std::string confirm =
++            std::string("menus/ryazhenka/install_nxcheats_confirm"_i18n) + "\n\n" + url;
++        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
++        stagedFrame->setTitle("menus/ryazhenka/install_nxcheats"_i18n);
++        stagedFrame->addStage(new ConfirmPage(stagedFrame, confirm));
++        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() {
++            ryazhenka::log::info("nxcheats: downloading " + url);
++            util::downloadArchive(url, contentType::custom);
++        }));
++        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
++            ryazhenka::log::info("nxcheats: extracting titles.zip");
++            util::extractArchive(contentType::custom);
++            namespace fs_ns = std::filesystem;
++            std::error_code ec;
++            const fs_ns::path src = "/titles";
++            const fs_ns::path dst = "/atmosphere/contents";
++            if (!fs_ns::is_directory(src, ec)) {
++                ryazhenka::log::warn("nxcheats: /titles not found after extract");
 +                return;
 +            }
-+            brls::List* picker = new brls::List();
-+            for (const auto& [tag, url] : releases) {
-+                const std::string capturedTag = tag;
-+                const std::string capturedUrl = url;
-+                brls::ListItem* item = new brls::ListItem(capturedTag);
-+                item->setHeight(LISTITEM_HEIGHT);
-+                item->getClickEvent()->subscribe([capturedTag, capturedUrl](brls::View*) {
-+                    brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
-+                    sf->setTitle(std::string("menus/main/download_firmware"_i18n) + " — " + capturedTag);
-+                    sf->addStage(new ConfirmPage(sf,
-+                        std::string("menus/common/download"_i18n) + capturedTag + "\n" + capturedUrl));
-+                    sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
-+                        [capturedUrl]() { util::downloadArchive(capturedUrl, contentType::fw); }));
-+                    sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
-+                        []() { util::extractArchive(contentType::fw); }));
-+                    sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
-+                    brls::Application::pushView(sf);
-+                });
-+                picker->addView(item);
++            fs_ns::create_directories(dst, ec);
++            int copied = 0;
++            for (const auto& tidEntry : fs_ns::directory_iterator(src, ec)) {
++                if (!tidEntry.is_directory(ec)) continue;
++                const fs_ns::path target = dst / tidEntry.path().filename();
++                fs_ns::create_directories(target, ec);
++                for (auto it = fs_ns::recursive_directory_iterator(tidEntry.path(), ec);
++                     it != fs_ns::recursive_directory_iterator(); ++it) {
++                    const auto rel = fs_ns::relative(it->path(), tidEntry.path(), ec);
++                    const fs_ns::path out = target / rel;
++                    if (it->is_directory(ec)) {
++                        fs_ns::create_directories(out, ec);
++                    } else if (it->is_regular_file(ec)) {
++                        fs_ns::create_directories(out.parent_path(), ec);
++                        fs_ns::copy_file(it->path(), out,
++                                         fs_ns::copy_options::overwrite_existing, ec);
++                        if (!ec) ++copied;
++                    }
++                }
 +            }
-+            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
-+            frame->setContentView(picker);
-+            brls::PopupFrame::open("menus/ryazhenka/firmware_all_versions"_i18n,
-+                                   frame, "", "");
-+        });
-+        this->addView(allVersions);
-+    }
++            fs_ns::remove_all(src, ec);
++            ryazhenka::log::info(std::string("nxcheats: merged ") +
++                                 std::to_string(copied) + " cheat files into /atmosphere/contents/");
++        }));
++        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
++        brls::Application::pushView(stagedFrame);
++    });
++    this->addView(item);
  }
- 
- void ListDownloadTab::createList()
-@@ -65,6 +108,54 @@
-             listItem = new brls::ListItem(link.first);
-             listItem->setHeight(LISTITEM_HEIGHT);
-             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
-+                // Three URL markers are recognised in nx-links.json. They all
-+                // resolve at click time (not at MainFrame ctor) so launch is
-+                // never blocked on a network call.
-+                //
-+                //   @latest_asset:OWNER/REPO
-+                //     → query api.github.com/.../releases/latest, take the
-+                //       first .zip asset (fallback assets[0]). Standard
-+                //       extract-to-SD-root flow.
-+                //
-+                //   @download_to:<DEST_PATH>:<REST>
-+                //     → REST may be another marker or a direct URL. Download
-+                //       the resolved URL to DEST_PATH (parent dirs created
-+                //       automatically), no extract. Used for single-file
-+                //       drops like /switch/.overlays/foo.ovl or
-+                //       /switch/RyazhaAI/ryazha-ai.nro.
-+                //
-+                //   @reorg_ppsspp:OWNER/REPO
-+                //     → resolve like @latest_asset, do the standard extract,
-+                //       then move /PPSSPP_GL.nro → /switch/PPSSPP_GL.nro and
-+                //       /assets → /switch/ppsspp/assets so the emulator
-+                //       lands where it expects.
-+                std::string resolved = url;
-+                std::string download_to;    // non-empty → skip extract, single-file path
-+                bool ppsspp_reorg = false;
-+
-+                if (resolved.compare(0, 13, "@download_to:") == 0) {
-+                    const std::string rest = resolved.substr(13);
-+                    const auto sep = rest.find(':');
-+                    if (sep == std::string::npos) {
-+                        util::showDialogBoxInfo("Malformed @download_to: marker in nx-links.json");
-+                        return;
-+                    }
-+                    download_to = rest.substr(0, sep);
-+                    resolved = rest.substr(sep + 1);
-+                }
-+                if (resolved.compare(0, 14, "@reorg_ppsspp:") == 0) {
-+                    ppsspp_reorg = true;
-+                    resolved = "@latest_asset:" + resolved.substr(14);
-+                }
-+                if (resolved.compare(0, 14, "@latest_asset:") == 0) {
-+                    const std::string slug = resolved.substr(14);
-+                    resolved = download::resolveLatestAssetUrl(slug);
-+                    if (resolved.empty()) {
-+                        util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, slug));
-+                        return;
-+                    }
-+                }
-+
-                 brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-                 stagedFrame->setTitle(fmt::format("menus/main/getting"_i18n, contentTypeNames[(int)type].data()));
-                 stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
-@@ -76,21 +167,56 @@
-                         }
-                     }
-                 }
--                if (type != contentType::payloads && type != contentType::hekate_ipl) {
-+
-+                if (!download_to.empty()) {
-+                    // @download_to: single-file flow, no extract. Used for
-+                    // .ovl drops into /switch/.overlays/ and for the
-+                    // RyazhaAI .nro into /switch/RyazhaAI/.
-+                    fs::createTree(std::filesystem::path(download_to).parent_path().string() + "/");
-+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, download_to]() {
-+                        long sc = download::downloadFile(resolved, download_to, OFF);
-+                        ProgressEvent::instance().setStatusCode(sc);
-+                    }));
-+                }
-+                else if (type != contentType::payloads && type != contentType::hekate_ipl) {
-                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
--                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, url]() { util::downloadArchive(url, type); }));
-+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, resolved]() { util::downloadArchive(resolved, type); }));
-                     }
-                     stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
-+                    if (ppsspp_reorg) {
-+                        // Upstream PPSSPP.zip extracts /PPSSPP_GL.nro and
-+                        // /assets/* at SD root; the emulator expects them at
-+                        // /switch/PPSSPP_GL.nro and /switch/ppsspp/assets/.
-+                        // Move them after extract; create parents if missing.
-+                        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
-+                            std::error_code ec;
-+                            std::filesystem::create_directories("/switch", ec);
-+                            std::filesystem::create_directories("/switch/ppsspp", ec);
-+                            if (std::filesystem::exists("/PPSSPP_GL.nro", ec)) {
-+                                std::filesystem::rename("/PPSSPP_GL.nro", "/switch/PPSSPP_GL.nro", ec);
-+                            }
-+                            if (std::filesystem::is_directory("/assets", ec)) {
-+                                std::filesystem::rename("/assets", "/switch/ppsspp/assets", ec);
-+                            }
-+                            ProgressEvent::instance().setStatusCode(200);
-+                        }));
-+                    }
-                 }
-                 else if (type == contentType::payloads) {
-                     fs::createTree(BOOTLOADER_PL_PATH);
-                     std::string path = std::string(BOOTLOADER_PL_PATH) + title;
--                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
-+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
-+                        long sc = download::downloadFile(resolved, path, OFF);
-+                        ProgressEvent::instance().setStatusCode(sc);
-+                    }));
-                 }
-                 else if (type == contentType::hekate_ipl) {
-                     fs::createTree(BOOTLOADER_PATH);
-                     std::string path = std::string(BOOTLOADER_PATH) + title;
--                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
-+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [resolved, path]() {
-+                        long sc = download::downloadFile(resolved, path, OFF);
-+                        ProgressEvent::instance().setStatusCode(sc);
-+                    }));
-                 }
- 
-                 std::string doneMsg = "menus/common/all_done"_i18n;
-@@ -140,8 +266,17 @@
-                 "menus/main/bootloaders_text"_i18n);
-             break;
-         case contentType::cheats:
--            this->newCheatsVer = util::getCheatsVersion();
-+            // Skip the blocking HTTPS GET to CHEATS_URL_VERSION at ctor time.
-+            // HamletDuFromage's switch-cheats-db has gone stale (1.5+ months
-+            // no updates) and the call can hang the whole UI for minutes on a
-+            // flaky connection — that's the "бесконечная загрузка" the user
-+            // saw on the splash. Show whatever's cached on SD and use a
-+            // sentinel for newCheatsVer that satisfies the createList /
-+            // download-stage guards (non-empty, not "offline", and not equal
-+            // to currentCheatsVer) so clicking the cheats card still downloads
-+            // a fresh archive.
-             this->currentCheatsVer = util::readFile(CHEATS_VERSION);
-+            this->newCheatsVer = "latest";
-             description->setText("menus/main/cheats_text"_i18n + this->currentCheatsVer);
-             break;
-         case contentType::payloads:
-diff --git a/source/worker_page.cpp b/source/worker_page.cpp
---- a/source/worker_page.cpp
-+++ b/source/worker_page.cpp
-@@ -72,9 +72,14 @@
-         else if (ProgressEvent::instance().finished()) {
-             appletEndBlockingHomeButton();
-             appletSetMediaPlaybackState(false);
--            if (ProgressEvent::instance().getStatusCode() > 399) {
-+            // statusCode == 0 means the worker either never wrote one (curl
-+            // failure, callsite did not propagate) or genuine no-network.
-+            // Treating it as failure surfaces an error instead of silently
-+            // showing "all done" on a 0-byte file.
-+            long sc = ProgressEvent::instance().getStatusCode();
-+            if (sc == 0 || sc > 399) {
-                 this->draw_page = false;
--                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(ProgressEvent::instance().getStatusCode())));
-+                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(sc)));
-             }
-             if (ProgressEvent::instance().getInterupt()) {
-                 brls::Application::pushView(new MainFrame());
+\ No newline at end of file

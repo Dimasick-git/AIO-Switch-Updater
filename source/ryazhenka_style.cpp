@@ -3,13 +3,16 @@
 namespace ryazhenka {
 
 RyazhenkaStyle::RyazhenkaStyle() : brls::HorizonStyle() {
-    // Narrower sidebar — was 410 px, leaves more room for the right-pane
-    // text + value highlights that the user kept seeing cut off.
-    this->Sidebar.width = 290;
-    this->Sidebar.marginLeft   = 28;
-    this->Sidebar.marginRight  = 16;
-    this->Sidebar.marginTop    = 20;
-    this->Sidebar.marginBottom = 20;
+    // Sidebar width — was 410, the user complained the focus highlight got
+    // clipped on long Russian labels ("Обновление Atmosphere" etc.), so we
+    // give the sidebar a bit more room back: 340 fits the longest labels
+    // we ship and still leaves the content area noticeably wider than
+    // HorizonStyle.
+    this->Sidebar.width = 340;
+    this->Sidebar.marginLeft   = 32;
+    this->Sidebar.marginRight  = 20;
+    this->Sidebar.marginTop    = 24;
+    this->Sidebar.marginBottom = 24;
 
     // Shorter sidebar items so all 9 Ryazhenka tabs fit vertically without
     // the bottom one ("Состояние") falling off the screen. Was 70 px tall;

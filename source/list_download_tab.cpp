@@ -13,6 +13,8 @@
 #include "extract.hpp"
 #include "fs.hpp"
 #include "progress_event.hpp"
+#include "ryazhenka_config.hpp"
+#include "ryazhenka_logger.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -31,6 +33,7 @@ ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered
             "menus/cheats/cheats_label"_i18n,
             true);
         this->addView(cheatsLabel);
+        this->createNxCheatCodeItem();
         this->createGbatempItem();
         this->createGfxItem();
         this->createCheatSlipItem();
@@ -347,4 +350,65 @@ void ListDownloadTab::createGfxItem()
         return true;
     });
     this->addView(gfxItem);
+}
+
+void ListDownloadTab::createNxCheatCodeItem()
+{
+    // tomvita/NXCheatCode — daily-updated cheats database. The release zip's
+    // titles/<TID>/cheats/<BID>.txt layout maps 1-to-1 onto Atmosphere's
+    // /atmosphere/contents/, so we extract to SD root and merge titles/* into
+    // /atmosphere/contents/ as a follow-up worker stage. Moved here from the
+    // Tools tab so the cheat sources live in one place.
+    brls::ListItem* item = new brls::ListItem("menus/ryazhenka/install_nxcheats"_i18n);
+    item->setHeight(LISTITEM_HEIGHT);
+    item->getClickEvent()->subscribe([](brls::View*) {
+        const std::string url(ryazhenka::kNxCheatCodeUrl);
+        const std::string confirm =
+            std::string("menus/ryazhenka/install_nxcheats_confirm"_i18n) + "\n\n" + url;
+        brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+        stagedFrame->setTitle("menus/ryazhenka/install_nxcheats"_i18n);
+        stagedFrame->addStage(new ConfirmPage(stagedFrame, confirm));
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url]() {
+            ryazhenka::log::info("nxcheats: downloading " + url);
+            util::downloadArchive(url, contentType::custom);
+        }));
+        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
+            ryazhenka::log::info("nxcheats: extracting titles.zip");
+            util::extractArchive(contentType::custom);
+            namespace fs_ns = std::filesystem;
+            std::error_code ec;
+            const fs_ns::path src = "/titles";
+            const fs_ns::path dst = "/atmosphere/contents";
+            if (!fs_ns::is_directory(src, ec)) {
+                ryazhenka::log::warn("nxcheats: /titles not found after extract");
+                return;
+            }
+            fs_ns::create_directories(dst, ec);
+            int copied = 0;
+            for (const auto& tidEntry : fs_ns::directory_iterator(src, ec)) {
+                if (!tidEntry.is_directory(ec)) continue;
+                const fs_ns::path target = dst / tidEntry.path().filename();
+                fs_ns::create_directories(target, ec);
+                for (auto it = fs_ns::recursive_directory_iterator(tidEntry.path(), ec);
+                     it != fs_ns::recursive_directory_iterator(); ++it) {
+                    const auto rel = fs_ns::relative(it->path(), tidEntry.path(), ec);
+                    const fs_ns::path out = target / rel;
+                    if (it->is_directory(ec)) {
+                        fs_ns::create_directories(out, ec);
+                    } else if (it->is_regular_file(ec)) {
+                        fs_ns::create_directories(out.parent_path(), ec);
+                        fs_ns::copy_file(it->path(), out,
+                                         fs_ns::copy_options::overwrite_existing, ec);
+                        if (!ec) ++copied;
+                    }
+                }
+            }
+            fs_ns::remove_all(src, ec);
+            ryazhenka::log::info(std::string("nxcheats: merged ") +
+                                 std::to_string(copied) + " cheat files into /atmosphere/contents/");
+        }));
+        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
+        brls::Application::pushView(stagedFrame);
+    });
+    this->addView(item);
 }

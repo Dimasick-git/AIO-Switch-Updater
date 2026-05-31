@@ -26,7 +26,10 @@ namespace ryazhenka {
 
 namespace {
 
-const char* kCheck = "✓";  // ✓
+// Text label for the currently active palette — using a unicode glyph here
+// (e.g. ✓) often didn't render through the bundled fonts, leaving the user
+// unable to see which palette was selected. Plain localised text is robust.
+// The actual string lives in i18n (menus/ryazhenka/settings/selected).
 
 void setConfigKey(const char* key, const nlohmann::ordered_json& value) {
     try {
@@ -80,9 +83,16 @@ SettingsScreen::SettingsScreen() {
         brls::ListItem* card = new brls::ListItem(brls::i18n::getStr(theme::paletteI18nKey(id)));
         card->setHeight(LISTITEM_HEIGHT);
         card->getClickEvent()->subscribe([this, id](brls::View*) {
-            theme::applyPalette(id, /*persist=*/true);
-            haptics::success();
-            this->refreshPaletteChecks();
+            // Defensive: applyPalette mutates the live brls::Theme objects;
+            // any throw here would otherwise kill the whole process ("Program
+            // closed") that the user kept hitting on theme switches.
+            try {
+                theme::applyPalette(id, /*persist=*/true);
+                this->refreshPaletteChecks();
+            } catch (...) {
+                ryazhenka::log::warn("settings: applyPalette threw");
+            }
+            try { haptics::success(); } catch (...) {}
         });
         this->addView(card);
         this->paletteRows.push_back({id, card});
@@ -135,19 +145,9 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(this->backgroundToggle);
 
-    brls::ListItem* audioToggle = new brls::ListItem("menus/ryazhenka/settings/audio_toggle"_i18n);
-    audioToggle->setHeight(LISTITEM_HEIGHT);
-    audioToggle->setSubLabel("menus/ryazhenka/settings/audio_hint"_i18n);
-    audioToggle->getClickEvent()->subscribe([audioToggle](brls::View*) {
-        bool next = !audio::isEnabled();
-        audio::setEnabled(next);
-        setConfigKey("ryazhenka_audio_enabled", next);
-        if (next)
-            audio::click();
-        audioToggle->setValue(onOff(next));
-    });
-    audioToggle->setValue(onOff(audio::isEnabled()));
-    this->addView(audioToggle);
+    // Audio toggle removed at the user's request — the procedural audout
+    // tones don't work reliably on hardware. The module is still compiled
+    // (audio::init / pulse stubs are kept) so a future fix can re-expose it.
 
     // Touchscreen input — tap the screen to "press A" on the focused item;
     // tap the sidebar area to hop focus there. Default ON.
@@ -358,8 +358,9 @@ SettingsScreen::SettingsScreen() {
 
 void SettingsScreen::refreshPaletteChecks() {
     const theme::PaletteId active = theme::current();
+    const std::string selected = "menus/ryazhenka/settings/selected"_i18n;
     for (auto& row : this->paletteRows)
-        row.card->setValue(row.id == active ? kCheck : "");
+        row.card->setValue(row.id == active ? selected : "");
 }
 
 void SettingsScreen::refreshHaptics() {
