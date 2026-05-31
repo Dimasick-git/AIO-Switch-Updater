@@ -1,8 +1,17 @@
 diff --git a/source/download.cpp b/source/download.cpp
-index 4f148e6..cccd8a3 100644
+index 4f148e6..471ad24 100644
 --- a/source/download.cpp
 +++ b/source/download.cpp
-@@ -122,6 +122,8 @@ namespace download {
+@@ -14,6 +14,8 @@
+ 
+ #include "fs.hpp"
+ #include "progress_event.hpp"
++#include "ryazhenka_curl_retry.hpp"
++#include "ryazhenka_logger.hpp"
+ #include "utils.hpp"
+ 
+ namespace i18n = brls::i18n;
+@@ -122,6 +124,8 @@ namespace download {
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
              curl_easy_setopt(curl, CURLOPT_NOBODY, 1L);
@@ -11,7 +20,7 @@ index 4f148e6..cccd8a3 100644
              curl_easy_perform(curl);
              auto res = curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &dl);
              if (!res) {
-@@ -179,6 +181,8 @@ namespace download {
+@@ -179,6 +183,8 @@ namespace download {
              curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
              curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -20,7 +29,7 @@ index 4f148e6..cccd8a3 100644
              curl_easy_setopt(
                  curl,
                  CURLOPT_WRITEFUNCTION,
-@@ -290,7 +294,7 @@ namespace download {
+@@ -290,7 +296,7 @@ namespace download {
          const char* out = output.c_str();
          CURL* curl = curl_easy_init();
          ntwrk_struct_t chunk = {0};
@@ -29,7 +38,7 @@ index 4f148e6..cccd8a3 100644
          time_old = std::chrono::steady_clock::now();
          dlold = 0.0f;
          bool can_download = true;
-@@ -324,6 +328,18 @@ namespace download {
+@@ -324,6 +330,18 @@ namespace download {
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
                      curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
@@ -48,7 +57,53 @@ index 4f148e6..cccd8a3 100644
                      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
                      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
  
-@@ -369,12 +385,13 @@ namespace download {
+@@ -331,8 +349,43 @@ namespace download {
+                         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+                         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
+                     }
+-                    curl_easy_perform(curl);
+-                    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
++                    // Retry transient network failures (flaky Wi-Fi, dropped
++                    // connections, DNS hiccups) up to 3 attempts. The previous
++                    // code performed exactly once and never even checked the
++                    // CURLcode, so a connection-level failure surfaced as a bare
++                    // "server unavailable / timeout" (status 0) with nothing in
++                    // the log to explain it. Now the real curl error is logged
++                    // and a shaky connection gets a couple more chances.
++                    CURLcode cres = CURLE_OK;
++                    for (int attempt = 0; attempt < 3; ++attempt) {
++                        if (attempt > 0) {
++                            // Truncate the partially-written file and reset the
++                            // in-memory buffer so the retry starts clean.
++                            if (fp) { fp = freopen(out, "wb", fp); chunk.out = fp; }
++                            chunk.offset = 0;
++                            if (*out != 0 && !fp) break;
++                        }
++                        cres = curl_easy_perform(curl);
++                        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
++                        if (ProgressEvent::instance().getInterupt())
++                            break;  // user cancelled — honour it, no retry
++                        if (cres == CURLE_OK && status_code < 500)
++                            break;  // usable response
++                        if (attempt < 2 && ryazhenka::curl::isTransient(cres, status_code)) {
++                            ryazhenka::log::warn(
++                                std::string("downloadFile: transient rc=") + std::to_string((int)cres) +
++                                " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) + " — retrying");
++                            std::this_thread::sleep_for(
++                                std::chrono::milliseconds(ryazhenka::kCurlBaseDelayMs * (attempt + 1)));
++                            continue;
++                        }
++                        break;
++                    }
++                    if (cres != CURLE_OK)
++                        ryazhenka::log::warn(
++                            std::string("downloadFile: curl FAILED rc=") + std::to_string((int)cres) +
++                            " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) +
++                            " url=" + real_url);
+ 
+                     if (fp && chunk.offset && can_download)
+                         fwrite(chunk.data, 1, chunk.offset, fp);
+@@ -369,12 +422,13 @@ namespace download {
          chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
          chunk.size = 0;                               /* no data at this point */
  
@@ -63,7 +118,7 @@ index 4f148e6..cccd8a3 100644
  
          curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
          curl_easy_perform(curl_handle);
-@@ -392,8 +409,6 @@ namespace download {
+@@ -392,8 +446,6 @@ namespace download {
          curl_easy_cleanup(curl_handle);
          free(chunk.memory);
  
@@ -72,7 +127,7 @@ index 4f148e6..cccd8a3 100644
          return ver;
      }
  
-@@ -402,14 +417,15 @@ namespace download {
+@@ -402,14 +454,15 @@ namespace download {
          CURL* curl_handle;
          struct MemoryStruct chunk;
          struct curl_slist* list = NULL;
@@ -90,7 +145,7 @@ index 4f148e6..cccd8a3 100644
          if (!headers.empty()) {
              for (auto& h : headers) {
                  list = curl_slist_append(list, h.c_str());
-@@ -431,7 +447,6 @@ namespace download {
+@@ -431,7 +484,6 @@ namespace download {
          res = std::string(chunk.memory);
          free(chunk.memory);
  
@@ -98,7 +153,7 @@ index 4f148e6..cccd8a3 100644
          return status_code;
      }
  
-@@ -469,4 +484,80 @@ namespace download {
+@@ -469,4 +521,80 @@ namespace download {
          return res;
      }
  

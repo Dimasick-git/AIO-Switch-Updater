@@ -14,6 +14,8 @@
 
 #include "fs.hpp"
 #include "progress_event.hpp"
+#include "ryazhenka_curl_retry.hpp"
+#include "ryazhenka_logger.hpp"
 #include "utils.hpp"
 
 namespace i18n = brls::i18n;
@@ -347,8 +349,43 @@ namespace download {
                         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
                         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
                     }
-                    curl_easy_perform(curl);
-                    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                    // Retry transient network failures (flaky Wi-Fi, dropped
+                    // connections, DNS hiccups) up to 3 attempts. The previous
+                    // code performed exactly once and never even checked the
+                    // CURLcode, so a connection-level failure surfaced as a bare
+                    // "server unavailable / timeout" (status 0) with nothing in
+                    // the log to explain it. Now the real curl error is logged
+                    // and a shaky connection gets a couple more chances.
+                    CURLcode cres = CURLE_OK;
+                    for (int attempt = 0; attempt < 3; ++attempt) {
+                        if (attempt > 0) {
+                            // Truncate the partially-written file and reset the
+                            // in-memory buffer so the retry starts clean.
+                            if (fp) { fp = freopen(out, "wb", fp); chunk.out = fp; }
+                            chunk.offset = 0;
+                            if (*out != 0 && !fp) break;
+                        }
+                        cres = curl_easy_perform(curl);
+                        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                        if (ProgressEvent::instance().getInterupt())
+                            break;  // user cancelled — honour it, no retry
+                        if (cres == CURLE_OK && status_code < 500)
+                            break;  // usable response
+                        if (attempt < 2 && ryazhenka::curl::isTransient(cres, status_code)) {
+                            ryazhenka::log::warn(
+                                std::string("downloadFile: transient rc=") + std::to_string((int)cres) +
+                                " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) + " — retrying");
+                            std::this_thread::sleep_for(
+                                std::chrono::milliseconds(ryazhenka::kCurlBaseDelayMs * (attempt + 1)));
+                            continue;
+                        }
+                        break;
+                    }
+                    if (cres != CURLE_OK)
+                        ryazhenka::log::warn(
+                            std::string("downloadFile: curl FAILED rc=") + std::to_string((int)cres) +
+                            " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) +
+                            " url=" + real_url);
 
                     if (fp && chunk.offset && can_download)
                         fwrite(chunk.data, 1, chunk.offset, fp);
