@@ -76,18 +76,30 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             // failure, callsite did not propagate) or genuine no-network.
             // Treating it as failure surfaces an error instead of silently
             // showing "all done" on a 0-byte file.
-            long sc = ProgressEvent::instance().getStatusCode();
-            if (sc == 0 || sc > 399) {
+            const long sc = ProgressEvent::instance().getStatusCode();
+            const bool interrupted = ProgressEvent::instance().getInterupt();
+            const bool failed = (sc == 0 || sc > 399);
+
+            if (interrupted || failed) {
+                // Bail out of the ENTIRE staged flow on cancel or failure.
+                // The old code showed the error but ALSO called nextStage(),
+                // so a failed download still advanced to the extract stage
+                // (running extract on a missing/truncated file) and left the
+                // user stranded on a dead WorkerPage whose draw_page=false
+                // guard swallowed all input — a total freeze that forced a
+                // reboot. Returning to a fresh MainFrame and showing the error
+                // on top of it keeps the app usable.
                 this->draw_page = false;
-                brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(sc)));
-            }
-            if (ProgressEvent::instance().getInterupt()) {
-                brls::Application::pushView(new MainFrame());
-            }
-            else {
                 ProgressEvent::instance().setStatusCode(0);
-                frame->nextStage();
+                ProgressEvent::instance().setInterupt(false);
+                brls::Application::pushView(new MainFrame());
+                if (failed)
+                    brls::Application::crash(fmt::format("menus/errors/error_message"_i18n, util::getErrorMessage(sc)));
+                return;
             }
+
+            ProgressEvent::instance().setStatusCode(0);
+            frame->nextStage();
         }
         else {
             this->progressDisp->setProgress(ProgressEvent::instance().getStep(), ProgressEvent::instance().getMax());
