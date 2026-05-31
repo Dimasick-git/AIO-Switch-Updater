@@ -6,6 +6,7 @@
 #include "fs.hpp"
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_theme.hpp"
+#include "ryazhenka_touch.hpp"
 
 namespace ryazhenka {
 
@@ -51,8 +52,9 @@ void WaveBackground::preFrame() {
         phase_ -= kTwoPi * 1024.0f;  // keep the float bounded over long sessions
 
     // The background is the one view guaranteed to run every frame, so we drive
-    // the (non-blocking) haptics scheduler from here.
+    // the (non-blocking) haptics scheduler and the touch poll from here.
     haptics::tick();
+    touch::tick();
 }
 
 void WaveBackground::postFrame() {}

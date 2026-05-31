@@ -15,6 +15,7 @@
 #include "ryazhenka_haptics.hpp"
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_theme.hpp"
+#include "ryazhenka_touch.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -146,6 +147,20 @@ SettingsScreen::SettingsScreen() {
     });
     audioToggle->setValue(onOff(audio::isEnabled()));
     this->addView(audioToggle);
+
+    // Touchscreen input — tap the screen to "press A" on the focused item;
+    // tap the sidebar area to hop focus there. Default ON.
+    auto* touchToggle = new RyazhenkaCard("menus/ryazhenka/settings/touch_toggle"_i18n,
+                                          "menus/ryazhenka/settings/touch_hint"_i18n, "", "");
+    touchToggle->getClickEvent()->subscribe([touchToggle](brls::View*) {
+        bool next = !touch::isEnabled();
+        touch::setEnabled(next);
+        setConfigKey("ryazhenka_touch_enabled", next);
+        touchToggle->setValue(onOff(next));
+        haptics::click();
+    });
+    touchToggle->setValue(onOff(touch::isEnabled()));
+    this->addView(touchToggle);
 
     // --- Caches ---
     this->addView(new brls::Header("menus/ryazhenka/settings/cache_header"_i18n));

@@ -9,7 +9,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  #include <filesystem>
  #include <json.hpp>
  
-@@ -8,6 +9,19 @@
+@@ -8,6 +9,20 @@
  #include "current_cfw.hpp"
  #include "fs.hpp"
  #include "main_frame.hpp"
@@ -25,11 +25,12 @@ diff --git a/source/main.cpp b/source/main.cpp
 +#include "ryazhenka_splash.hpp"
 +#include "ryazhenka_style.hpp"
 +#include "ryazhenka_theme.hpp"
++#include "ryazhenka_touch.hpp"
 +// system_info / version_check headers intentionally not included — see body
  #include "warning_page.hpp"
  
  namespace i18n = brls::i18n;
-@@ -19,17 +33,26 @@
+@@ -19,17 +34,26 @@
  
  int main(int argc, char* argv[])
  {
@@ -59,7 +60,7 @@ diff --git a/source/main.cpp b/source/main.cpp
  
          //appletInitializeGamePlayRecording();
  
-@@ -43,6 +66,9 @@
+@@ -43,6 +67,9 @@
      nsInitialize();
      socketInitializeDefault();
      nxlinkStdio();
@@ -69,7 +70,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,9 +80,41 @@
+@@ -54,9 +81,42 @@
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
@@ -77,6 +78,7 @@ diff --git a/source/main.cpp b/source/main.cpp
 +    try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
 +    try { ryazhenka::haptics::init(); } catch (...) {}
 +    try { ryazhenka::audio::init(); } catch (...) {}
++    try { ryazhenka::touch::init(); } catch (...) {}
 +    // Banner async refresh is intentionally NOT kicked off here. Spawning a
 +    // detached std::thread that does curl at startup is exactly the pattern
 +    // that crashed the app on launch and was ripped out in commit ca62519
@@ -112,7 +114,7 @@ diff --git a/source/main.cpp b/source/main.cpp
      }
      else {
          brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
-@@ -65,10 +123,19 @@
+@@ -65,10 +125,19 @@
      while (brls::Application::mainLoop())
          ;
  

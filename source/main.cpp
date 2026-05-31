@@ -21,6 +21,7 @@
 #include "ryazhenka_splash.hpp"
 #include "ryazhenka_style.hpp"
 #include "ryazhenka_theme.hpp"
+#include "ryazhenka_touch.hpp"
 // system_info / version_check headers intentionally not included — see body
 #include "warning_page.hpp"
 
@@ -84,6 +85,7 @@ int main(int argc, char* argv[])
     try { ryazhenka::log::info("Ryazhenka Updater started"); } catch (...) {}
     try { ryazhenka::haptics::init(); } catch (...) {}
     try { ryazhenka::audio::init(); } catch (...) {}
+    try { ryazhenka::touch::init(); } catch (...) {}
     // Banner async refresh is intentionally NOT kicked off here. Spawning a
     // detached std::thread that does curl at startup is exactly the pattern
     // that crashed the app on launch and was ripped out in commit ca62519
