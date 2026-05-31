@@ -18,33 +18,15 @@ inline constexpr std::string_view kTelegramUrl = "https://t.me/Ryazhenkacfw";
 inline constexpr std::string_view kHomepageUrl = "https://github.com/Dimasick-git/Ryzhenka";
 inline constexpr std::string_view kRepoUrl = "https://github.com/Dimasick-git/AIO-Switch-Updater";
 
-// Self-update endpoints
-inline constexpr char kAppUrl[] =
-    "https://github.com/Dimasick-git/AIO-Switch-Updater/releases/latest/download/Ryazhenka_AIO.zip";
-inline constexpr char kTagsInfoUrl[] =
-    "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest";
-inline constexpr char kChangelogUrl[] =
-    "https://github.com/Dimasick-git/AIO-Switch-Updater/releases";
-
-// Source catalogue (Dimasick-git/nx-links mirrors the upstream nx-links schema)
-inline constexpr char kNxLinksUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/nx-links.json";
-inline constexpr char kFirmwareUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/firmwares.json";
-inline constexpr char kCfwUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/bootloaders.json";
-inline constexpr char kAmsUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/cfws.json";
-inline constexpr char kSxosUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/sxos.json";
-inline constexpr char kHekateUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/hekate.json";
-inline constexpr char kPayloadUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/nx-links/main/payloads.json";
-inline constexpr char kJcColorUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/jc_profiles.json";
-inline constexpr char kPcColorUrl[] =
-    "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/pc_profiles.json";
+// NOTE: the self-update endpoints (APP_URL / TAGS_INFO / CHANGELOG_URL) and the
+// source catalogue / colour-profile URLs (NXLINKS_URL, JC_COLOR_URL, ...) live
+// in constants.hpp and are the ones the app actually fetches. An earlier set of
+// duplicate kAppUrl / kNxLinksUrl / kFirmwareUrl ... constants used to sit here,
+// but they were never referenced AND pointed at a "Dimasick-git/nx-links" repo
+// that does not exist (every URL 404'd). They've been removed so there is a
+// single, valid source of truth for download URLs. Per-category JSON files
+// (firmwares.json / cfws.json / ...) are not used at all — the whole catalogue
+// is the single nx-links/nx-links.json index fetched via NXLINKS_URL.
 
 // Ryazhenka pack (full sd_card archive: Atmosphere + Hekate + sigpatches + tools)
 inline constexpr char kPackUrl[] =

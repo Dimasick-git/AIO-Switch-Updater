@@ -116,6 +116,17 @@ int main(int argc, char* argv[])
         // the "бесконечная загрузка" the user reported.
         brls::Application::pushView(new ryazhenka::Splash([] {
             brls::Application::pushView(new MainFrame());
+            // The splash hands off ~2 s in, long after the first frame has
+            // rendered, so this is the safe post-startup point the banner
+            // module's ca62519 rule allows for kicking the detached fetch.
+            // Without this nothing ever populated the cache that AboutTab and
+            // the splash read from (both are cached-only by design), so the
+            // banner never appeared. Honour the TTL so we don't refetch on
+            // every launch.
+            try {
+                if (!ryazhenka::banner::cacheIsFresh())
+                    ryazhenka::banner::refreshAsync();
+            } catch (...) {}
         }));
     }
     else {

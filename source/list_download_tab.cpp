@@ -152,7 +152,13 @@ void ListDownloadTab::createList(contentType type)
                 }
                 if (resolved.compare(0, 14, "@latest_asset:") == 0) {
                     const std::string slug = resolved.substr(14);
-                    resolved = download::resolveLatestAssetUrl(slug);
+                    // Payloads / hekate IPL want the raw .bin asset, not the
+                    // .zip the archive flow unpacks. Everything else prefers
+                    // the .zip artefact (the default).
+                    const std::string preferExt =
+                        (type == contentType::payloads || type == contentType::hekate_ipl)
+                            ? ".bin" : ".zip";
+                    resolved = download::resolveLatestAssetUrl(slug, preferExt);
                     if (resolved.empty()) {
                         util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, slug));
                         return;

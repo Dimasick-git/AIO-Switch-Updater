@@ -1,29 +1,24 @@
 {
-  "_comment": "Ryazhenka Updater download catalogue. Three URL shapes are supported by source/list_download_tab.cpp click handler: (1) direct https URLs for repos with stable asset filenames; (2) '@latest_asset:OWNER/REPO' — resolved at click time via api.github.com, takes first .zip asset of latest release (fallback assets[0]); (3) '@download_to:<DEST>:<URL_or_marker>' — single-file download to DEST path, no extract, used for .ovl and standalone .nro; (4) '@reorg_ppsspp:OWNER/REPO' — like @latest_asset but reorganises after extract (moves PPSSPP_GL.nro to /switch/ and assets/ to /switch/ppsspp/).",
+  "_comment": "Ryazhenka Updater download catalogue. URL shapes understood by source/list_download_tab.cpp: (1) direct https URLs for assets with a stable filename; (2) '@latest_asset:OWNER/REPO' — resolved at click time via api.github.com, takes the first asset matching the content type's preferred extension (.zip for archives, .bin for payloads/hekate_ipl), fallback assets[0]; (3) '@download_to:<DEST>:<URL_or_marker>' — single-file download to DEST, no extract, for .ovl / .nro; (4) '@reorg_ppsspp:OWNER/REPO' — like @latest_asset then moves PPSSPP_GL.nro to /switch/ and assets/ to /switch/ppsspp/. NOTE: direct releases/latest/download/<name> aliases only work when the asset filename is version-free; Atmosphere and hekate embed the version, so they MUST use @latest_asset.",
   "_schema_version": 2,
   "cfws": {
     "Atmosphere": {
       "Ryazhenka pack (полный)": "@latest_asset:Dimasick-git/Ryzhenka",
-      "Atmosphere (vanilla, upstream)":
-        "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/atmosphere.zip"
+      "Atmosphere (vanilla, upstream)": "@latest_asset:Atmosphere-NX/Atmosphere"
     }
   },
   "bootloaders": {
-    "Hekate + Nyx (CTCaer)":
-      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+    "Hekate + Nyx (CTCaer)": "@latest_asset:CTCaer/hekate"
   },
   "firmwares": {
     "Прошивка Switch (последняя, THZoria)": "@latest_asset:THZoria/NX_Firmware"
   },
-  "hekate": {
-    "Hekate + Nyx (CTCaer)":
-      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.zip"
+  "hekate_ipl": {
+    "hekate_ctcaer.bin": "@latest_asset:CTCaer/hekate"
   },
   "payloads": {
-    "Hekate payload (CTCaer)":
-      "https://github.com/CTCaer/hekate/releases/latest/download/hekate_ctcaer.bin",
-    "Fusee (Atmosphere)":
-      "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
+    "hekate_ctcaer.bin": "@latest_asset:CTCaer/hekate",
+    "fusee.bin": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
   },
   "custom": {
     "Sysmodules и хомбрю Ряженки (распаковываются в корень SD)": {

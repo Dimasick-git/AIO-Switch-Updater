@@ -519,14 +519,14 @@ namespace download {
         return out;
     }
 
-    std::string resolveLatestAssetUrl(const std::string& slug)
+    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt)
     {
         // GitHub /releases/latest returns the most recent non-draft,
-        // non-prerelease release with its full asset list. We prefer the
-        // first .zip asset because that is what the AIO downloader actually
-        // unpacks; if no .zip is present we fall back to assets[0]. This
-        // covers ovlSysmodules / Mission-Control / NX_Firmware where the
-        // asset filename embeds the version and breaks the
+        // non-prerelease release with its full asset list. We prefer the first
+        // asset whose name ends in preferExt (".zip" for archives we unpack,
+        // ".bin" for raw payloads); if none match we fall back to assets[0].
+        // This covers ovlSysmodules / Mission-Control / NX_Firmware / hekate
+        // where the asset filename embeds the version and breaks the
         // releases/latest/download/<filename> alias.
         const std::string api_url = "https://api.github.com/repos/" + slug + "/releases/latest";
         nlohmann::ordered_json payload;
@@ -534,6 +534,7 @@ namespace download {
         if (http != 200) return {};
         if (!payload.contains("assets") || !payload["assets"].is_array()) return {};
 
+        const std::size_t extLen = preferExt.size();
         std::string fallback;
         for (const auto& asset : payload["assets"]) {
             if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string()) continue;
@@ -541,7 +542,8 @@ namespace download {
             if (fallback.empty()) fallback = url;
             if (asset.contains("name") && asset["name"].is_string()) {
                 const std::string name = asset["name"].get<std::string>();
-                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0) {
+                if (extLen > 0 && name.size() >= extLen &&
+                    name.compare(name.size() - extLen, extLen, preferExt) == 0) {
                     return url;
                 }
             }

@@ -105,9 +105,27 @@ void freeBuffersForEffect(Effect& e) {
 void playEffect(Effect& e) {
     if (!g_initialized || !g_enabled)
         return;
-    // Round-robin between the two pre-baked buffers. If the chosen one is
-    // still queued from a previous call, audoutAppendAudioOutBuffer just
-    // returns an error code — we ignore it; the sound will play next time.
+
+    // Reclaim every buffer audout has finished playing. This is the whole
+    // reason UI sound "only worked once": audout keeps each appended buffer on
+    // an internal released list after it finishes, and a buffer that is still
+    // on that list cannot be appended again. Without draining it here the four
+    // pre-baked effect buffers all ended up stuck "released-but-not-reclaimed"
+    // after the first couple of plays and every later append silently failed.
+    // audoutGetReleasedAudioOutBuffer does NOT block (it just returns whatever
+    // is ready, count may be 0), so it is safe to call from the UI thread.
+    AudioOutBuffer* released = nullptr;
+    u32 releasedCount = 0;
+    while (R_SUCCEEDED(audoutGetReleasedAudioOutBuffer(&released, &releasedCount)) &&
+           releasedCount > 0) {
+        // Nothing to do with the pointer — our buffers are statically owned;
+        // reclaiming simply takes them off audout's released list so they can
+        // be re-appended below.
+    }
+
+    // Round-robin between the two pre-baked buffers. If the chosen one is still
+    // queued (effect retriggered faster than its ~107 ms playback), the append
+    // returns an error code — we ignore it; the sound plays on the next press.
     (void)audoutAppendAudioOutBuffer(&e.hdr[e.next]);
     e.next = (e.next + 1) % 2;
 }

@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <thread>
 
 #ifdef __SWITCH__
 #include <switch.h>
@@ -18,25 +17,36 @@ namespace ryazhenka::haptics {
 
 namespace {
 
+using clock = std::chrono::steady_clock;
+
+// Two settings, mutated from the Settings screen (main/UI thread) and read by
+// the per-frame scheduler (also main/UI thread). Atomics keep them honest even
+// though every current caller is on the same thread.
 std::atomic<bool> g_enabled{true};
 std::atomic<float> g_strength{1.0f};
-// True only after init() actually wired libnx HID up. In applet mode (or any
-// other failure path) init() returns early and this stays false — pulse()
-// must NOT spawn a thread in that case, the thread would do nothing useful
-// and burn ~256 KiB of stack from the already tight applet heap. The user
-// was hitting "Program closed" when navigating to Settings / Status (the
-// only tabs that build RyazhenkaCards) because each focus event spawned one
-// of those threads against the applet heap.
-std::atomic<bool> g_libnxReady{false};
 
-// Each buzz spawns a tiny detached thread that handles its own
-// start → sleep → zero-amp cycle. This was rewritten from a tick()-driven
-// model because tick() needed the UI thread to keep running — and the user
-// reported that pressing "Проверить сеть" (which synchronously blocks the
-// UI on a sequence of curl_easy_perform calls for several seconds) made the
-// rumble continue the whole time. A detached thread sleeps on its own kernel
-// thread, so the buzz always ends on time regardless of what the UI is doing.
-std::atomic<bool> g_buzzInFlight{false};
+// --- Frame-driven scheduler state (touched ONLY from the main/UI thread) ---
+//
+// History: an earlier revision spawned a detached std::thread per buzz to send
+// the stop value after a sleep. That model was the source of the "Program
+// closed" crashes the user kept hitting in Settings / Status: every focus and
+// every toggle fired a fresh thread that called libnx HID (hidSendVibration
+// values) concurrently with the main input poll, and the thread churn under
+// the tight applet heap was a reliable way to take the whole process down.
+//
+// borealis runs input handling, the click callbacks AND the per-frame
+// background preFrame() (which calls tick()) all on a single thread, so we can
+// drive the whole start → stop cycle from there with zero threads and zero
+// cross-thread HID access. This is exactly what the header has always
+// promised ("Frame-driven, non-blocking ... No worker threads").
+bool g_active = false;
+clock::time_point g_stopAt{};
+
+// Optional single follow-up buzz (used by error() for its double pulse).
+bool g_haveFollowup = false;
+float g_followupIntensity = 0.0f;
+int g_followupDuration = 0;
+clock::time_point g_followupAt{};
 
 #ifdef __SWITCH__
 HidVibrationDeviceHandle g_handheld[2];
@@ -65,16 +75,12 @@ void sendAll(float amp) {
 void sendAll(float /*amp*/) {}
 #endif
 
-void runBuzz(float amp, int duration_ms) {
-    bool expected = false;
-    if (!g_buzzInFlight.compare_exchange_strong(expected, true))
-        return;  // already buzzing — drop the new request rather than overlap
-    std::thread([amp, duration_ms]() {
-        sendAll(amp);
-        std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
-        sendAll(0.0f);
-        g_buzzInFlight.store(false);
-    }).detach();
+// Begins a buzz at the already-scaled amplitude `amp` for `duration_ms`. Runs
+// on the main thread; the matching stop is delivered by tick().
+void startBuzz(float amp, int duration_ms) {
+    sendAll(amp);
+    g_stopAt = clock::now() + std::chrono::milliseconds(std::max(1, duration_ms));
+    g_active = true;
 }
 
 }  // namespace
@@ -108,7 +114,6 @@ void init() {
                                                HidNpadStyleTag_NpadFullKey);
     g_initFull = R_SUCCEEDED(rc3);
 
-    g_libnxReady.store(g_initHandheld || g_initDual || g_initFull);
     log::info(std::string("haptics: handheld=") + (g_initHandheld ? "ok" : "no") +
               " dual=" + (g_initDual ? "ok" : "no") +
               " full=" + (g_initFull ? "ok" : "no") +
@@ -119,26 +124,34 @@ void init() {
 }
 
 void exit() {
-    g_enabled.store(false);  // worker threads will short-circuit before sending
+    g_enabled.store(false);
+    g_active = false;
+    g_haveFollowup = false;
     sendAll(0.0f);
 }
 
-// Frame-loop tick — no longer needed in the new model, but the symbol is
-// still referenced by ryazhenka_background.cpp::preFrame(). Keep as a no-op
-// so we don't need to regenerate that file just to drop the call.
-void tick() {}
+void tick() {
+    const auto now = clock::now();
+
+    // Stop an expired buzz.
+    if (g_active && now >= g_stopAt) {
+        sendAll(0.0f);
+        g_active = false;
+    }
+
+    // Fire a queued follow-up once its delay elapses. pulse() re-applies the
+    // strength scaling and the enabled check.
+    if (g_haveFollowup && now >= g_followupAt) {
+        g_haveFollowup = false;
+        pulse(g_followupIntensity, g_followupDuration);
+    }
+}
 
 void pulse(float intensity, int duration_ms) {
-    // Always run the thread when haptics are enabled in config — sendAll
-    // itself short-circuits when the libnx HID handles aren't initialised
-    // (applet mode), so the thread is just a no-op there. The earlier
-    // g_libnxReady gate was disabling the buzz on every device because the
-    // user runs in Application (title-takeover) mode where init() does
-    // succeed but the gate was being set under conditions I had wrong.
     if (!g_enabled.load())
         return;
     const float amp = std::clamp(intensity, 0.0f, 1.0f) * g_strength.load();
-    runBuzz(amp, duration_ms);
+    startBuzz(amp, duration_ms);
 }
 
 void focus()   { pulse(0.30f, 30); }
@@ -149,18 +162,20 @@ void error() {
     if (!g_enabled.load())
         return;
     pulse(0.55f, 50);
-    // Schedule the second buzz on its own thread so we keep the "not blocking
-    // the UI" guarantee even for compound patterns.
-    std::thread([]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(110));
-        pulse(0.55f, 40);
-    }).detach();
+    // Schedule the second buzz on the frame scheduler — no thread needed.
+    g_followupIntensity = 0.55f;
+    g_followupDuration  = 40;
+    g_followupAt        = clock::now() + std::chrono::milliseconds(110);
+    g_haveFollowup      = true;
 }
 
 void setEnabled(bool enabled) {
     g_enabled.store(enabled);
-    if (!enabled)
+    if (!enabled) {
+        g_active = false;
+        g_haveFollowup = false;
         sendAll(0.0f);
+    }
 }
 
 bool isEnabled() { return g_enabled.load(); }

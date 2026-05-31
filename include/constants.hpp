@@ -26,20 +26,19 @@ constexpr const char NXLINKS_URL[] = "https://raw.githubusercontent.com/Dimasick
 constexpr const char CUSTOM_FILENAME[] = "/config/aio-switch-updater/custom.zip";
 constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
 
-constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/firmwares.json";
+// The whole download catalogue is now served by the single nx-links/nx-links.json
+// index (NXLINKS_URL above) and resolved per-entry at click time. The old
+// per-category endpoints (FIRMWARE_URL / CFW_URL / AMS_URL / SXOS_URL /
+// HEKATE_URL / PAYLOAD_URL) pointed at nx-links/<category>.json files that were
+// never published (every URL 404'd) and were referenced by no code, so they
+// have been removed. The local filename/path constants they sat next to are
+// still used by the extract flow and are kept.
 constexpr const char FIRMWARE_FILENAME[] = "/config/aio-switch-updater/firmware.zip";
 constexpr const char FIRMWARE_PATH[] = "/firmware/";
 
-constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/bootloaders.json";
 constexpr const char BOOTLOADER_FILENAME[] = "/config/aio-switch-updater/bootloader.zip";
 
-constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/cfws.json";
-constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/sxos.json";
 constexpr const char AMS_FILENAME[] = "/config/aio-switch-updater/ams.zip";
-
-constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/hekate.json";
-
-constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/payloads.json";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 

@@ -17,10 +17,13 @@ namespace download {
 
     /// Resolve "@latest_asset:OWNER/REPO" into a concrete browser_download_url
     /// by querying api.github.com/repos/<slug>/releases/latest. Prefers the
-    /// first asset whose name ends in ".zip" (the user-facing artefact);
-    /// falls back to assets[0] if no .zip is present.
+    /// first asset whose name ends in `preferExt` (default ".zip", the
+    /// user-facing archive; pass ".bin" for raw payloads like hekate); falls
+    /// back to assets[0] if none match. Needed because GitHub release assets
+    /// embed the version in their filename, which breaks the
+    /// releases/latest/download/<stable-name> alias.
     /// Returns empty string on any failure (network, parse, no assets).
-    std::string resolveLatestAssetUrl(const std::string& slug);
+    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt = ".zip");
 
     /// Returns up to ~50 releases for `<slug>` as (tag_name, zip_url) pairs,
     /// freshest first. Each release's URL is picked the same way
