@@ -6,6 +6,7 @@
 #include "ryazhenka_banner.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"
+#include "utils.hpp"
 
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
@@ -48,9 +49,12 @@ AboutTab::AboutTab()
     for (const auto& link : ryazhenka::kEcosystemLinks) {
         brls::ListItem* card = new brls::ListItem(std::string(link.name), std::string(link.url));
         card->setHeight(LISTITEM_HEIGHT);
-        // No in-app browser — the URL is shown as the card subtitle; a click
-        // just gives confirming rumble feedback.
-        card->getClickEvent()->subscribe([](brls::View*) {
+        // Open the link in the system applet browser instead of just buzzing.
+        // util::openWebBrowser pops the Switch's own browser-applet, so users
+        // can read the repo / Telegram channel without leaving the app.
+        const std::string captured(link.url);
+        card->getClickEvent()->subscribe([captured](brls::View*) {
+            util::openWebBrowser(captured);
             ryazhenka::haptics::success();
         });
         this->addView(card);

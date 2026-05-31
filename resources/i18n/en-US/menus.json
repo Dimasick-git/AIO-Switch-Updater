@@ -68,7 +68,10 @@
       "autoupdate_toggle": "Auto-update Ryazhenka pack",
       "autoupdate_hint": "When ON, the Check button will offer to install a newer version. Off by default.",
       "check_updates": "Check for updates now",
-      "check_updates_done": "Done. Open Tools → Install Ryazhenka pack — the version on the right shows the latest tag. If it differs from your installed pack, run the install."
+      "check_updates_done": "Done. Open Tools → Install Ryazhenka pack — the version on the right shows the latest tag. If it differs from your installed pack, run the install.",
+      "ecosystem_updates": "Ryazhenka ecosystem (install / update)",
+      "ecosystem_hint": "Click any repo to install its latest release. Non-GitHub links open in the system browser.",
+      "ecosystem_confirm": "Install latest release from this repo? The .zip will be downloaded and extracted into the SD root, overwriting any existing files."
     },
     "palette": {
       "ryazhenka": "Ryazhenka (cream)",

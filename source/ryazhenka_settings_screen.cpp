@@ -5,6 +5,7 @@
 
 #include "confirm_page.hpp"
 #include "constants.hpp"
+#include "download.hpp"
 #include "fs.hpp"
 #include "ryazhenka_audio.hpp"
 #include "ryazhenka_background.hpp"
@@ -40,6 +41,24 @@ void setConfigKey(const char* key, const nlohmann::ordered_json& value) {
 
 std::string onOff(bool on) {
     return on ? "menus/ryazhenka/settings/on"_i18n : "menus/ryazhenka/settings/off"_i18n;
+}
+
+// Extracts "OWNER/REPO" from "https://github.com/OWNER/REPO[/...]". Returns
+// "" for anything that isn't a github.com URL — Telegram, mirrors, etc.
+// Used to wire the ecosystem-list items either to the GitHub release-install
+// flow (github) or to the system applet browser (everything else).
+std::string githubSlugFromUrl(const std::string& url) {
+    static const std::string kPrefix = "https://github.com/";
+    if (url.compare(0, kPrefix.size(), kPrefix) != 0)
+        return {};
+    std::string rest = url.substr(kPrefix.size());
+    const auto slash = rest.find('/');
+    if (slash == std::string::npos) return {};
+    // Trim any trailing path: blob/tree/issues etc.
+    const auto next = rest.find('/', slash + 1);
+    if (next != std::string::npos)
+        rest = rest.substr(0, next);
+    return rest;
 }
 
 }  // namespace
@@ -201,6 +220,57 @@ SettingsScreen::SettingsScreen() {
         haptics::success();
     });
     this->addView(checkUpdates);
+
+    // Ecosystem updates — one ListItem per Ryazhenka companion repo. Clicking
+    // a GitHub repo runs the standard Confirm → Download → Extract install
+    // flow against its latest release; clicking the Telegram link opens the
+    // system applet browser. This addresses the user's request to "update
+    // all the links from the About tab".
+    auto* ecosystemUpdates = new RyazhenkaCard("menus/ryazhenka/settings/ecosystem_updates"_i18n);
+    ecosystemUpdates->getClickEvent()->subscribe([](brls::View*) {
+        brls::List* list = new brls::List();
+        for (const auto& link : ryazhenka::kEcosystemLinks) {
+            const std::string name(link.name);
+            const std::string url(link.url);
+            brls::ListItem* item = new brls::ListItem(name);
+            item->setValue(url);
+            item->setHeight(LISTITEM_HEIGHT);
+            item->getClickEvent()->subscribe([name, url](brls::View*) {
+                const std::string slug = githubSlugFromUrl(url);
+                if (slug.empty()) {
+                    // Not a GitHub repo (Telegram etc.) — open in the system
+                    // browser applet instead of pretending to install it.
+                    util::openWebBrowser(url);
+                    return;
+                }
+                // Standard "@latest_asset" install flow: resolve URL, download
+                // to CUSTOM_FILENAME, extract at SD root, done.
+                brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+                sf->setTitle(name);
+                sf->addStage(new ConfirmPage(sf,
+                    std::string("menus/ryazhenka/settings/ecosystem_confirm"_i18n) + "\n\n" + url));
+                sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, [slug]() {
+                    const std::string asset = download::resolveLatestAssetUrl(slug);
+                    if (asset.empty()) {
+                        ryazhenka::log::warn("ecosystem: no latest asset for " + slug);
+                        return;
+                    }
+                    util::downloadArchive(asset, contentType::custom);
+                }));
+                sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n, []() {
+                    util::extractArchive(contentType::custom);
+                }));
+                sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
+                brls::Application::pushView(sf);
+            });
+            list->addView(item);
+        }
+        brls::AppletFrame* frame = new brls::AppletFrame(true, true);
+        frame->setContentView(list);
+        brls::PopupFrame::open("menus/ryazhenka/settings/ecosystem_updates"_i18n,
+                               frame, "menus/ryazhenka/settings/ecosystem_hint"_i18n, "");
+    });
+    this->addView(ecosystemUpdates);
 
     auto* clearSig = new RyazhenkaCard("menus/ryazhenka/settings/clear_sigpatches"_i18n);
     clearSig->getClickEvent()->subscribe([](brls::View*) {
