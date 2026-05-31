@@ -20,6 +20,14 @@ namespace {
 
 std::atomic<bool> g_enabled{true};
 std::atomic<float> g_strength{1.0f};
+// True only after init() actually wired libnx HID up. In applet mode (or any
+// other failure path) init() returns early and this stays false — pulse()
+// must NOT spawn a thread in that case, the thread would do nothing useful
+// and burn ~256 KiB of stack from the already tight applet heap. The user
+// was hitting "Program closed" when navigating to Settings / Status (the
+// only tabs that build RyazhenkaCards) because each focus event spawned one
+// of those threads against the applet heap.
+std::atomic<bool> g_libnxReady{false};
 
 // Each buzz spawns a tiny detached thread that handles its own
 // start → sleep → zero-amp cycle. This was rewritten from a tick()-driven
@@ -100,6 +108,7 @@ void init() {
                                                HidNpadStyleTag_NpadFullKey);
     g_initFull = R_SUCCEEDED(rc3);
 
+    g_libnxReady.store(g_initHandheld || g_initDual || g_initFull);
     log::info(std::string("haptics: handheld=") + (g_initHandheld ? "ok" : "no") +
               " dual=" + (g_initDual ? "ok" : "no") +
               " full=" + (g_initFull ? "ok" : "no") +
@@ -120,7 +129,12 @@ void exit() {
 void tick() {}
 
 void pulse(float intensity, int duration_ms) {
-    if (!g_enabled.load())
+    // Skip the std::thread spawn entirely when libnx HID isn't actually wired
+    // up (applet mode, init failure, etc.). The thread would have nothing to
+    // send and the spawn itself was costing ~256 KiB / call from the tight
+    // applet heap — enough to take the app down on tabs that build many
+    // focusable cards.
+    if (!g_enabled.load() || !g_libnxReady.load())
         return;
     const float amp = std::clamp(intensity, 0.0f, 1.0f) * g_strength.load();
     runBuzz(amp, duration_ms);
@@ -131,6 +145,8 @@ void click()   { pulse(0.60f, 50); }
 void success() { pulse(0.85f, 100); }
 
 void error() {
+    if (!g_enabled.load() || !g_libnxReady.load())
+        return;
     pulse(0.55f, 50);
     // Schedule the second buzz on its own thread so we keep the "not blocking
     // the UI" guarantee even for compound patterns.
