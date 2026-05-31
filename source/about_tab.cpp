@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "constants.hpp"
 #include "ryazhenka_banner.hpp"
 #include "ryazhenka_config.hpp"
 #include "ryazhenka_haptics.hpp"

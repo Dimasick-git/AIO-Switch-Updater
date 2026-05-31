@@ -14,11 +14,12 @@ diff --git a/include/about_tab.hpp b/include/about_tab.hpp
 diff --git a/source/about_tab.cpp b/source/about_tab.cpp
 --- a/source/about_tab.cpp
 +++ b/source/about_tab.cpp
-@@ -1,10 +1,27 @@
+@@ -1,10 +1,28 @@
  #include "about_tab.hpp"
  
 +#include <string>
 +
++#include "constants.hpp"
 +#include "ryazhenka_banner.hpp"
 +#include "ryazhenka_config.hpp"
 +#include "ryazhenka_haptics.hpp"
@@ -42,7 +43,7 @@ diff --git a/source/about_tab.cpp b/source/about_tab.cpp
      // Subtitle
      brls::Label* subTitle = new brls::Label(
          brls::LabelStyle::REGULAR,
-@@ -16,16 +33,33 @@
+@@ -16,16 +34,33 @@
      // Copyright
      brls::Label* copyright = new brls::Label(
          brls::LabelStyle::DESCRIPTION,
