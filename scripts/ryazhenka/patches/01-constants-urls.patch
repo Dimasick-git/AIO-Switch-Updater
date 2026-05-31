@@ -1,8 +1,16 @@
 diff --git a/include/constants.hpp b/include/constants.hpp
-index 10ad7d8..cf11cb0 100644
+index 10ad7d8..25ffe39 100644
 --- a/include/constants.hpp
 +++ b/include/constants.hpp
-@@ -13,35 +13,31 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include <string_view>
++
+ constexpr const char ROOT_PATH[] = "/";
+ constexpr const char APP_PATH[] = "/switch/aio-switch-updater/";
+ constexpr const char NRO_PATH[] = "/switch/aio-switch-updater/aio-switch-updater.nro";
+@@ -13,36 +15,31 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
  constexpr const char MARIKO_PAYLOAD_PATH[] = "/payload.bin";
  constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
  
@@ -22,33 +30,35 @@ index 10ad7d8..cf11cb0 100644
  constexpr const char HEKATE_IPL_PATH[] = "/bootloader/hekate_ipl.ini";
  
 -constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/firmwares.json";
-+constexpr const char FIRMWARE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/firmwares.json";
++// The whole download catalogue is now served by the single nx-links/nx-links.json
++// index (NXLINKS_URL above) and resolved per-entry at click time. The old
++// per-category endpoints (FIRMWARE_URL / CFW_URL / AMS_URL / SXOS_URL /
++// HEKATE_URL / PAYLOAD_URL) pointed at nx-links/<category>.json files that were
++// never published (every URL 404'd) and were referenced by no code, so they
++// have been removed. The local filename/path constants they sat next to are
++// still used by the extract flow and are kept.
  constexpr const char FIRMWARE_FILENAME[] = "/config/aio-switch-updater/firmware.zip";
  constexpr const char FIRMWARE_PATH[] = "/firmware/";
  
 -constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/bootloaders.json";
-+constexpr const char CFW_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/bootloaders.json";
  constexpr const char BOOTLOADER_FILENAME[] = "/config/aio-switch-updater/bootloader.zip";
  
 -constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/cfws.json";
 -constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/sxos.json";
-+constexpr const char AMS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/cfws.json";
-+constexpr const char SXOS_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/sxos.json";
  constexpr const char AMS_FILENAME[] = "/config/aio-switch-updater/ams.zip";
  
 -constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/hekate.json";
-+constexpr const char HEKATE_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/hekate.json";
- 
+-
 -constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/HamletDuFromage/nx-links/master/payloads.json";
 -
 -constexpr const char DEEPSEA_META_JSON[] = "https://builder.teamneptune.net/meta.json";
 -constexpr const char DEEPSEA_BUILD_URL[] = "https://builder.teamneptune.net/build/";
 -constexpr const char DEEPSEA_PACKAGE_PATH[] = "/config/deepsea/customPackage.json";
-+constexpr const char PAYLOAD_URL[] = "https://raw.githubusercontent.com/Dimasick-git/AIO-Switch-Updater/main/nx-links/payloads.json";
- 
+-
  constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
  
-@@ -75,9 +71,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
+ constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
+@@ -75,9 +72,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
  constexpr const char TITLES_PATH[] = "titles/";
  
  constexpr const char COLOR_PICKER_URL[] = "https://git.io/jcpicker";
