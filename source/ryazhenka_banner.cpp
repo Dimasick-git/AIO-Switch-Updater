@@ -1,11 +1,13 @@
 #include "ryazhenka_banner.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <mutex>
 #include <thread>
+#include <utility>
 
 #include <curl/curl.h>
 #include <json.hpp>
@@ -215,6 +217,91 @@ brls::Image* makeCachedOnlyImage() {
     if (path.empty())
         return nullptr;
     return new brls::Image(path);
+}
+
+namespace {
+
+// Hero-banner height in px. ~200 reads as a website hero strip on the 720p
+// panel without pushing the list content too far down.
+constexpr unsigned kBannerViewHeight = 200;
+
+// Full-width hero banner. brls::Image's CROP mode is broken for wide views in
+// this borealis fork (it overflows the layout) and SCALE distorts the artwork,
+// so we draw the image ourselves with a CSS-`cover` fit: scale to fill the
+// whole view, centre, and clip the vertical overflow to a rounded rect.
+class BannerView : public brls::View {
+  public:
+    explicit BannerView(std::string path) : path_(std::move(path)) {
+        this->setHeight(kBannerViewHeight);
+    }
+
+    ~BannerView() override { releaseTexture(); }
+
+    // (Re)load the texture every time the view comes on screen. This is what
+    // makes it survive the GL-context reset after a system applet closes — the
+    // old texture id is stale, so we drop it and create a fresh one.
+    void willAppear(bool /*resetState*/) override { reloadTexture(); }
+    void willDisappear(bool /*resetState*/) override { releaseTexture(); }
+
+    void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
+              brls::Style* /*style*/, brls::FrameContext* /*ctx*/) override {
+        if (texture_ == -1)
+            reloadTexture();
+        if (texture_ == -1 || imgW_ <= 0 || imgH_ <= 0)
+            return;
+
+        const float fx = static_cast<float>(x);
+        const float fy = static_cast<float>(y);
+        const float fw = static_cast<float>(width);
+        const float fh = static_cast<float>(height);
+        constexpr float kRadius = 12.0f;
+
+        // cover: scale so the image fills both dimensions, keep aspect, centre.
+        const float scale = std::max(fw / imgW_, fh / imgH_);
+        const float dw = imgW_ * scale;
+        const float dh = imgH_ * scale;
+        const float ox = fx + (fw - dw) * 0.5f;
+        const float oy = fy + (fh - dh) * 0.5f;
+
+        NVGpaint paint = nvgImagePattern(vg, ox, oy, dw, dh, 0.0f, texture_, 1.0f);
+        nvgBeginPath(vg);
+        nvgRoundedRect(vg, fx, fy, fw, fh, kRadius);
+        nvgFillPaint(vg, paint);
+        nvgFill(vg);
+    }
+
+  private:
+    void reloadTexture() {
+        NVGcontext* vg = brls::Application::getNVGContext();
+        if (!vg)
+            return;
+        releaseTexture();
+        texture_ = nvgCreateImage(vg, path_.c_str(), 0);
+        if (texture_ != -1)
+            nvgImageSize(vg, texture_, &imgW_, &imgH_);
+    }
+
+    void releaseTexture() {
+        if (texture_ != -1) {
+            if (NVGcontext* vg = brls::Application::getNVGContext())
+                nvgDeleteImage(vg, texture_);
+            texture_ = -1;
+            imgW_ = imgH_ = 0;
+        }
+    }
+
+    std::string path_;
+    int texture_ = -1;
+    int imgW_ = 0, imgH_ = 0;
+};
+
+}  // namespace
+
+brls::View* makeBannerView() {
+    const std::string path = cachedPath();
+    if (path.empty())
+        return nullptr;
+    return new BannerView(path);
 }
 
 namespace {

@@ -1,5 +1,5 @@
 diff --git a/source/main.cpp b/source/main.cpp
-index 842c971..5b0116b 100644
+index 842c971..2df462c 100644
 --- a/source/main.cpp
 +++ b/source/main.cpp
 @@ -1,6 +1,7 @@
@@ -71,7 +71,7 @@ index 842c971..5b0116b 100644
      pmdmntInitialize();
      pminfoInitialize();
      splInitialize();
-@@ -54,9 +81,50 @@ int main(int argc, char* argv[])
+@@ -54,9 +81,63 @@ int main(int argc, char* argv[])
  
      brls::Logger::setLogLevel(brls::LogLevel::DEBUG);
      brls::Logger::debug("Start");
@@ -80,6 +80,19 @@ index 842c971..5b0116b 100644
 +    try { ryazhenka::haptics::init(); } catch (...) {}
 +    try { ryazhenka::audio::init(); } catch (...) {}
 +    try { ryazhenka::touch::init(); } catch (...) {}
++
++    // Global UI feedback: borealis fires this whenever focus moves between
++    // views, so we get a click+buzz on EVERY menu navigation without needing
++    // every widget to be a RyazhenkaCard (none of them actually are — the card
++    // class was never instantiated, which is why sound/haptics only ever fired
++    // from the Settings toggles before). Both calls run on the UI thread and
++    // are no-ops when the respective feature is disabled.
++    try {
++        brls::Application::getGlobalFocusChangeEvent()->subscribe([](brls::View*) {
++            try { ryazhenka::audio::focus(); } catch (...) {}
++            try { ryazhenka::haptics::focus(); } catch (...) {}
++        });
++    } catch (...) {}
 +    // Banner async refresh is intentionally NOT kicked off here. Spawning a
 +    // detached std::thread that does curl at startup is exactly the pattern
 +    // that crashed the app on launch and was ripped out in commit ca62519
@@ -123,7 +136,7 @@ index 842c971..5b0116b 100644
      }
      else {
          brls::Application::pushView(new WarningPage("menus/main/launch_warning"_i18n));
-@@ -65,10 +133,19 @@ int main(int argc, char* argv[])
+@@ -65,10 +146,19 @@ int main(int argc, char* argv[])
      while (brls::Application::mainLoop())
          ;
  

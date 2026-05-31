@@ -29,7 +29,10 @@ constexpr std::size_t kSamplesPerBuffer =
     kBufferBytes / (sizeof(std::int16_t) * kChannels);
 
 bool g_initialized = false;
-bool g_enabled = false;
+// Default ON: the user asked for UI sound out of the box. init() still honours
+// an explicit ryazhenka_audio_enabled:false in config.json if the user turned
+// it off, so this only affects fresh configs.
+bool g_enabled = true;
 
 #ifdef __SWITCH__
 
@@ -114,10 +117,16 @@ void playEffect(Effect& e) {
     // after the first couple of plays and every later append silently failed.
     // audoutGetReleasedAudioOutBuffer does NOT block (it just returns whatever
     // is ready, count may be 0), so it is safe to call from the UI thread.
-    AudioOutBuffer* released = nullptr;
-    u32 releasedCount = 0;
-    while (R_SUCCEEDED(audoutGetReleasedAudioOutBuffer(&released, &releasedCount)) &&
-           releasedCount > 0) {
+    // Bounded to 8 (the total buffer count) so we can never spin here even if
+    // the libnx return semantics surprise us. audoutGetReleasedAudioOutBuffer
+    // is the non-blocking poll (audoutWaitPlayFinish is the blocking variant),
+    // so this returns count==0 and breaks once the released list is drained.
+    for (int guard = 0; guard < 8; ++guard) {
+        AudioOutBuffer* released = nullptr;
+        u32 releasedCount = 0;
+        if (R_FAILED(audoutGetReleasedAudioOutBuffer(&released, &releasedCount)) ||
+            releasedCount == 0)
+            break;
         // Nothing to do with the pointer — our buffers are statically owned;
         // reclaiming simply takes them off audout's released list so they can
         // be re-appended below.

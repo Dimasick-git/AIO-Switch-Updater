@@ -1,4 +1,5 @@
 diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
+index 43c91c1..429c702 100644
 --- a/source/tools_tab.cpp
 +++ b/source/tools_tab.cpp
 @@ -13,6 +13,15 @@
@@ -17,7 +18,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -28,6 +37,7 @@
+@@ -28,6 +37,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
  {
      if (!tag.empty() && tag != AppVersion) {
          brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
@@ -25,7 +26,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
          std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
          updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
              brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-@@ -42,56 +52,281 @@
+@@ -42,56 +52,281 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                  new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
              brls::Application::pushView(stagedFrame);
          });
@@ -315,7 +316,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      move->getClickEvent()->subscribe([](brls::View* view) {
          chdir("/");
          std::string error = "";
-@@ -103,9 +338,9 @@
+@@ -103,9 +338,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          }
          util::showDialogBoxInfo(error);
      });
@@ -326,7 +327,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      cleanUp->getClickEvent()->subscribe([](brls::View* view) {
          std::filesystem::remove(AMS_FILENAME);
          std::filesystem::remove(APP_FILENAME);
-@@ -119,9 +354,9 @@
+@@ -119,9 +354,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          fs::removeDir(FW_DIRECTORY_PATH);
          util::showDialogBoxInfo("menus/common/all_done"_i18n);
      });
@@ -337,7 +338,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
      language->getClickEvent()->subscribe([](brls::View* view) {
          std::vector<std::pair<std::string, std::string>> languages{
              std::make_pair("American English ({})", "en-US"),
-@@ -171,21 +406,38 @@
+@@ -171,21 +406,37 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          appView->setContentView(list);
          brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
      });
@@ -362,8 +363,7 @@ diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
 +    // ToolsTab is constructed inside MainFrame ctor, so spawning a curl
 +    // thread here would reintroduce the startup-crash regression. Refresh
 +    // is a manual action elsewhere; here we render whatever is on disk.
-+    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
-+        banner->setHeight(160);
++    if (brls::View* banner = ryazhenka::banner::makeBannerView()) {
 +        this->addView(banner);
 +    }
  

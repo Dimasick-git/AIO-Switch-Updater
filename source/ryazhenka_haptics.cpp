@@ -22,8 +22,11 @@ using clock = std::chrono::steady_clock;
 // Two settings, mutated from the Settings screen (main/UI thread) and read by
 // the per-frame scheduler (also main/UI thread). Atomics keep them honest even
 // though every current caller is on the same thread.
+// Defaults: rumble ON at 33% strength out of the box (per user request).
+// init() still honours explicit haptics_enabled / haptics_strength values from
+// config.json, so this only affects fresh configs.
 std::atomic<bool> g_enabled{true};
-std::atomic<float> g_strength{1.0f};
+std::atomic<float> g_strength{0.33f};
 
 // --- Frame-driven scheduler state (touched ONLY from the main/UI thread) ---
 //

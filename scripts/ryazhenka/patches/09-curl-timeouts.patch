@@ -1,5 +1,5 @@
 diff --git a/source/download.cpp b/source/download.cpp
-index 4f148e6..9430979 100644
+index 4f148e6..cccd8a3 100644
 --- a/source/download.cpp
 +++ b/source/download.cpp
 @@ -122,6 +122,8 @@ namespace download {
@@ -20,17 +20,35 @@ index 4f148e6..9430979 100644
              curl_easy_setopt(
                  curl,
                  CURLOPT_WRITEFUNCTION,
-@@ -324,6 +328,9 @@ namespace download {
+@@ -290,7 +294,7 @@ namespace download {
+         const char* out = output.c_str();
+         CURL* curl = curl_easy_init();
+         ntwrk_struct_t chunk = {0};
+-        long status_code;
++        long status_code = 0;
+         time_old = std::chrono::steady_clock::now();
+         dlold = 0.0f;
+         bool can_download = true;
+@@ -324,6 +328,18 @@ namespace download {
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
                      curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
                      curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
++                    // CRITICAL: checkSize() above ran on this same handle and left
++                    // CURLOPT_TIMEOUT=15s on it. Without clearing it here every real
++                    // download is hard-capped at 15s — small files squeak through but
++                    // anything bigger (the pack, Atmosphere, firmware, cheats
++                    // contents.zip) gets aborted mid-transfer, leaving a truncated
++                    // file that fails the zip-signature check ("HTTP 406") or reports
++                    // a bare timeout ("error 0"). Stalls are still caught by the
++                    // LOW_SPEED guard below, so 0 = "no hard cap" is what we want.
++                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);
 +                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
 +                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
 +                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
                      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
                      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
  
-@@ -369,12 +376,13 @@ namespace download {
+@@ -369,12 +385,13 @@ namespace download {
          chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
          chunk.size = 0;                               /* no data at this point */
  
@@ -45,7 +63,7 @@ index 4f148e6..9430979 100644
  
          curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0L);
          curl_easy_perform(curl_handle);
-@@ -392,8 +400,6 @@ namespace download {
+@@ -392,8 +409,6 @@ namespace download {
          curl_easy_cleanup(curl_handle);
          free(chunk.memory);
  
@@ -54,7 +72,13 @@ index 4f148e6..9430979 100644
          return ver;
      }
  
-@@ -407,9 +413,10 @@ namespace download {
+@@ -402,14 +417,15 @@ namespace download {
+         CURL* curl_handle;
+         struct MemoryStruct chunk;
+         struct curl_slist* list = NULL;
+-        long status_code;
++        long status_code = 0;
+ 
          chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
          chunk.size = 0;                               /* no data at this point */
  
@@ -66,7 +90,7 @@ index 4f148e6..9430979 100644
          if (!headers.empty()) {
              for (auto& h : headers) {
                  list = curl_slist_append(list, h.c_str());
-@@ -431,7 +438,6 @@ namespace download {
+@@ -431,7 +447,6 @@ namespace download {
          res = std::string(chunk.memory);
          free(chunk.memory);
  
@@ -74,3 +98,85 @@ index 4f148e6..9430979 100644
          return status_code;
      }
  
+@@ -469,4 +484,80 @@ namespace download {
+         return res;
+     }
+ 
++    // Picks the preferred download URL from a single release JSON node:
++    // first .zip asset, falling back to assets[0]. Returns "" if neither.
++    static std::string pickReleaseAssetUrl(const nlohmann::ordered_json& rel)
++    {
++        if (!rel.is_object() || !rel.contains("assets") || !rel["assets"].is_array())
++            return {};
++        std::string fallback;
++        for (const auto& asset : rel["assets"]) {
++            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string())
++                continue;
++            const std::string url = asset["browser_download_url"].get<std::string>();
++            if (fallback.empty()) fallback = url;
++            if (asset.contains("name") && asset["name"].is_string()) {
++                const std::string name = asset["name"].get<std::string>();
++                if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".zip") == 0)
++                    return url;
++            }
++        }
++        return fallback;
++    }
++
++    std::vector<std::pair<std::string, std::string>> resolveAllReleases(const std::string& slug)
++    {
++        // GitHub /releases (no /latest) returns the freshest 30 by default; we
++        // ask for 50 to give the user a long pick list. Same asset-selection
++        // rules as resolveLatestAssetUrl — prefer .zip, fall back to assets[0].
++        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases?per_page=50";
++        nlohmann::ordered_json payload;
++        const long http = getRequest(api_url, payload);
++        if (http != 200 || !payload.is_array()) return {};
++
++        std::vector<std::pair<std::string, std::string>> out;
++        out.reserve(payload.size());
++        for (const auto& rel : payload) {
++            if (!rel.is_object()) continue;
++            if (!rel.contains("tag_name") || !rel["tag_name"].is_string()) continue;
++            const std::string tag = rel["tag_name"].get<std::string>();
++            const std::string url = pickReleaseAssetUrl(rel);
++            if (!tag.empty() && !url.empty())
++                out.emplace_back(tag, url);
++        }
++        return out;
++    }
++
++    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt)
++    {
++        // GitHub /releases/latest returns the most recent non-draft,
++        // non-prerelease release with its full asset list. We prefer the first
++        // asset whose name ends in preferExt (".zip" for archives we unpack,
++        // ".bin" for raw payloads); if none match we fall back to assets[0].
++        // This covers ovlSysmodules / Mission-Control / NX_Firmware / hekate
++        // where the asset filename embeds the version and breaks the
++        // releases/latest/download/<filename> alias.
++        const std::string api_url = "https://api.github.com/repos/" + slug + "/releases/latest";
++        nlohmann::ordered_json payload;
++        const long http = getRequest(api_url, payload);
++        if (http != 200) return {};
++        if (!payload.contains("assets") || !payload["assets"].is_array()) return {};
++
++        const std::size_t extLen = preferExt.size();
++        std::string fallback;
++        for (const auto& asset : payload["assets"]) {
++            if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string()) continue;
++            const std::string url = asset["browser_download_url"].get<std::string>();
++            if (fallback.empty()) fallback = url;
++            if (asset.contains("name") && asset["name"].is_string()) {
++                const std::string name = asset["name"].get<std::string>();
++                if (extLen > 0 && name.size() >= extLen &&
++                    name.compare(name.size() - extLen, extLen, preferExt) == 0) {
++                    return url;
++                }
++            }
++        }
++        return fallback;
++    }
++
+ }  // namespace download
+\ No newline at end of file

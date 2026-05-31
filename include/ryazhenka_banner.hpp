@@ -49,6 +49,14 @@ brls::Image* makeImage();
 /// nullptr when the cache is missing.
 brls::Image* makeCachedOnlyImage();
 
+/// Full-width "website hero" banner view for the cached image: cover-fit
+/// (fills the whole width, crops vertical overflow, no aspect distortion) with
+/// rounded corners. Manages its own NanoVG texture and reloads it on
+/// willAppear so it survives the GL-context reset that happens when the user
+/// returns from a system applet (browser / swkbd). Returns nullptr when the
+/// cache is missing. Cached-only — never touches the network.
+brls::View* makeBannerView();
+
 /// Latest pack release tag (e.g. "v7.2.1"), or empty string if not yet
 /// cached. Refreshed alongside the banner image — no separate network call.
 std::string cachedPackTag();

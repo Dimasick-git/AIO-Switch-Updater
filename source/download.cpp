@@ -328,6 +328,15 @@ namespace download {
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
                     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
                     curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
+                    // CRITICAL: checkSize() above ran on this same handle and left
+                    // CURLOPT_TIMEOUT=15s on it. Without clearing it here every real
+                    // download is hard-capped at 15s — small files squeak through but
+                    // anything bigger (the pack, Atmosphere, firmware, cheats
+                    // contents.zip) gets aborted mid-transfer, leaving a truncated
+                    // file that fails the zip-signature check ("HTTP 406") or reports
+                    // a bare timeout ("error 0"). Stalls are still caught by the
+                    // LOW_SPEED guard below, so 0 = "no hard cap" is what we want.
+                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);
                     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
                     curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
                     curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);

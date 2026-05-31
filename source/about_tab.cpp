@@ -19,8 +19,7 @@ AboutTab::AboutTab()
     // here would reintroduce the startup-crash regression that ca62519
     // ripped out. The banner is refreshed elsewhere (Settings "refresh
     // banner" action) — here we only show whatever is already on disk.
-    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
-        banner->setHeight(180);
+    if (brls::View* banner = ryazhenka::banner::makeBannerView()) {
         this->addView(banner);
     }
 

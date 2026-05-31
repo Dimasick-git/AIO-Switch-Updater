@@ -86,6 +86,19 @@ int main(int argc, char* argv[])
     try { ryazhenka::haptics::init(); } catch (...) {}
     try { ryazhenka::audio::init(); } catch (...) {}
     try { ryazhenka::touch::init(); } catch (...) {}
+
+    // Global UI feedback: borealis fires this whenever focus moves between
+    // views, so we get a click+buzz on EVERY menu navigation without needing
+    // every widget to be a RyazhenkaCard (none of them actually are — the card
+    // class was never instantiated, which is why sound/haptics only ever fired
+    // from the Settings toggles before). Both calls run on the UI thread and
+    // are no-ops when the respective feature is disabled.
+    try {
+        brls::Application::getGlobalFocusChangeEvent()->subscribe([](brls::View*) {
+            try { ryazhenka::audio::focus(); } catch (...) {}
+            try { ryazhenka::haptics::focus(); } catch (...) {}
+        });
+    } catch (...) {}
     // Banner async refresh is intentionally NOT kicked off here. Spawning a
     // detached std::thread that does curl at startup is exactly the pattern
     // that crashed the app on launch and was ripped out in commit ca62519

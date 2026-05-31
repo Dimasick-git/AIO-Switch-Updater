@@ -424,8 +424,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
     // ToolsTab is constructed inside MainFrame ctor, so spawning a curl
     // thread here would reintroduce the startup-crash regression. Refresh
     // is a manual action elsewhere; here we render whatever is on disk.
-    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
-        banner->setHeight(160);
+    if (brls::View* banner = ryazhenka::banner::makeBannerView()) {
         this->addView(banner);
     }
 

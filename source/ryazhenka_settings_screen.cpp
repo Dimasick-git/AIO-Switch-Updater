@@ -16,6 +16,7 @@
 #include "ryazhenka_logger.hpp"
 #include "ryazhenka_theme.hpp"
 #include "ryazhenka_touch.hpp"
+#include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -198,7 +199,11 @@ SettingsScreen::SettingsScreen() {
         sf->setTitle("menus/ryazhenka/settings/refresh_banner"_i18n);
         sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
             const bool ok = ryazhenka::banner::fetchNow();
-            ryazhenka::catalog::refreshAsync();  // kick the catalogue too
+            // WorkerPage treats statusCode 0 / >399 as a failure and shows the
+            // red error dialog. fetchNow() doesn't touch ProgressEvent, so
+            // without this the banner downloaded fine yet the user still got an
+            // "HTTP 406" error popup. Report the real outcome instead.
+            ProgressEvent::instance().setStatusCode(ok ? 200 : 500);
             if (!ok)
                 ryazhenka::log::warn("settings: banner fetchNow returned false");
         }));
@@ -246,7 +251,8 @@ SettingsScreen::SettingsScreen() {
         sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
             // banner::fetchNow also refreshes .pack_tag — so the install_pack
             // card on the Tools tab will now show the freshest tag.
-            ryazhenka::banner::fetchNow();
+            const bool ok = ryazhenka::banner::fetchNow();
+            ProgressEvent::instance().setStatusCode(ok ? 200 : 500);
         }));
         sf->addStage(new ConfirmPage(sf, "menus/ryazhenka/settings/check_updates_done"_i18n));
         brls::Application::pushView(sf);

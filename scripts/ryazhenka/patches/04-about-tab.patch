@@ -1,7 +1,8 @@
 diff --git a/include/about_tab.hpp b/include/about_tab.hpp
+index 4bec166..92802cb 100644
 --- a/include/about_tab.hpp
 +++ b/include/about_tab.hpp
-@@ -6,9 +6,4 @@
+@@ -6,9 +6,4 @@ class AboutTab : public brls::List
  {
  public:
      AboutTab();
@@ -12,9 +13,10 @@ diff --git a/include/about_tab.hpp b/include/about_tab.hpp
 -    }
  };
 diff --git a/source/about_tab.cpp b/source/about_tab.cpp
+index d6c4a74..5f513e5 100644
 --- a/source/about_tab.cpp
 +++ b/source/about_tab.cpp
-@@ -1,10 +1,29 @@
+@@ -1,10 +1,28 @@
  #include "about_tab.hpp"
  
 +#include <string>
@@ -36,15 +38,14 @@ diff --git a/source/about_tab.cpp b/source/about_tab.cpp
 +    // here would reintroduce the startup-crash regression that ca62519
 +    // ripped out. The banner is refreshed elsewhere (Settings "refresh
 +    // banner" action) — here we only show whatever is already on disk.
-+    if (brls::Image* banner = ryazhenka::banner::makeCachedOnlyImage()) {
-+        banner->setHeight(180);
++    if (brls::View* banner = ryazhenka::banner::makeBannerView()) {
 +        this->addView(banner);
 +    }
 +
      // Subtitle
      brls::Label* subTitle = new brls::Label(
          brls::LabelStyle::REGULAR,
-@@ -16,16 +35,36 @@
+@@ -16,16 +34,36 @@ AboutTab::AboutTab()
      // Copyright
      brls::Label* copyright = new brls::Label(
          brls::LabelStyle::DESCRIPTION,
