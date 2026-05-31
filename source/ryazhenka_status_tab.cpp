@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "constants.hpp"
 #include "ryazhenka_chart_view.hpp"
 #include "ryazhenka_health.hpp"
 #include "ryazhenka_logger.hpp"
@@ -50,8 +51,9 @@ StatusTab::StatusTab()
 
     // CFW health summary card (filled in willAppear / refreshHealth so the
     // filesystem checks don't run at MainFrame construction time).
-    this->healthCard = new RyazhenkaCard("menus/ryazhenka/health_title"_i18n,
-                                         "menus/ryazhenka/status_collecting"_i18n, "", "");
+    this->healthCard = new brls::ListItem("menus/ryazhenka/health_title"_i18n);
+    this->healthCard->setHeight(LISTITEM_HEIGHT);
+    this->healthCard->setSubLabel("menus/ryazhenka/status_collecting"_i18n);
     this->healthCard->getClickEvent()->subscribe([this](brls::View*) { this->refreshHealth(); });
     this->addView(this->healthCard, false);
 
@@ -130,11 +132,11 @@ void StatusTab::refreshHealth() {
                 this->healthCard->setValue("menus/ryazhenka/health_ok"_i18n);
                 break;
         }
-        this->healthCard->setSubtitle(
+        this->healthCard->setSubLabel(
             std::to_string(warnings) + " warn   " + std::to_string(errors) + " err");
     } catch (...) {
         this->healthCard->setValue("");
-        this->healthCard->setSubtitle("menus/ryazhenka/status_charts_unavailable"_i18n);
+        this->healthCard->setSubLabel("menus/ryazhenka/status_charts_unavailable"_i18n);
     }
 }
 

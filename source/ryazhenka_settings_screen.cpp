@@ -77,8 +77,8 @@ SettingsScreen::SettingsScreen() {
         theme::PaletteId::Ocean,
     };
     for (theme::PaletteId id : ids) {
-        auto* card = new RyazhenkaCard(brls::i18n::getStr(theme::paletteI18nKey(id)),
-                                       "", "" /* palette icon */, "");
+        brls::ListItem* card = new brls::ListItem(brls::i18n::getStr(theme::paletteI18nKey(id)));
+        card->setHeight(LISTITEM_HEIGHT);
         card->getClickEvent()->subscribe([this, id](brls::View*) {
             theme::applyPalette(id, /*persist=*/true);
             haptics::success();
@@ -91,8 +91,8 @@ SettingsScreen::SettingsScreen() {
     // --- Haptics ---
     this->addView(new brls::Header("menus/ryazhenka/settings/haptics_header"_i18n));
 
-    this->hapticsToggle = new RyazhenkaCard("menus/ryazhenka/settings/haptics_toggle"_i18n,
-                                            "", "" /* vibration icon */, "");
+    this->hapticsToggle = new brls::ListItem("menus/ryazhenka/settings/haptics_toggle"_i18n);
+    this->hapticsToggle->setHeight(LISTITEM_HEIGHT);
     this->hapticsToggle->getClickEvent()->subscribe([this](brls::View*) {
         bool next = !haptics::isEnabled();
         haptics::setEnabled(next);
@@ -103,8 +103,8 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(this->hapticsToggle);
 
-    this->hapticsStrength = new RyazhenkaCard("menus/ryazhenka/settings/haptics_strength"_i18n,
-                                              "", "", "");
+    this->hapticsStrength = new brls::ListItem("menus/ryazhenka/settings/haptics_strength"_i18n);
+    this->hapticsStrength->setHeight(LISTITEM_HEIGHT);
     this->hapticsStrength->getClickEvent()->subscribe([this](brls::View*) {
         // Cycle 33% -> 66% -> 100%.
         float cur = 1.0f;
@@ -124,8 +124,8 @@ SettingsScreen::SettingsScreen() {
     // --- Background ---
     this->addView(new brls::Header("menus/ryazhenka/settings/background_header"_i18n));
 
-    this->backgroundToggle = new RyazhenkaCard("menus/ryazhenka/settings/background_toggle"_i18n,
-                                               "", "" /* image icon */, "");
+    this->backgroundToggle = new brls::ListItem("menus/ryazhenka/settings/background_toggle"_i18n);
+    this->backgroundToggle->setHeight(LISTITEM_HEIGHT);
     this->backgroundToggle->getClickEvent()->subscribe([this](brls::View*) {
         bool next = !WaveBackground::isEnabled();
         WaveBackground::setEnabled(next);
@@ -135,8 +135,9 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(this->backgroundToggle);
 
-    auto* audioToggle = new RyazhenkaCard("menus/ryazhenka/settings/audio_toggle"_i18n,
-                                          "menus/ryazhenka/settings/audio_hint"_i18n, "", "");
+    brls::ListItem* audioToggle = new brls::ListItem("menus/ryazhenka/settings/audio_toggle"_i18n);
+    audioToggle->setHeight(LISTITEM_HEIGHT);
+    audioToggle->setSubLabel("menus/ryazhenka/settings/audio_hint"_i18n);
     audioToggle->getClickEvent()->subscribe([audioToggle](brls::View*) {
         bool next = !audio::isEnabled();
         audio::setEnabled(next);
@@ -150,8 +151,9 @@ SettingsScreen::SettingsScreen() {
 
     // Touchscreen input — tap the screen to "press A" on the focused item;
     // tap the sidebar area to hop focus there. Default ON.
-    auto* touchToggle = new RyazhenkaCard("menus/ryazhenka/settings/touch_toggle"_i18n,
-                                          "menus/ryazhenka/settings/touch_hint"_i18n, "", "");
+    brls::ListItem* touchToggle = new brls::ListItem("menus/ryazhenka/settings/touch_toggle"_i18n);
+    touchToggle->setHeight(LISTITEM_HEIGHT);
+    touchToggle->setSubLabel("menus/ryazhenka/settings/touch_hint"_i18n);
     touchToggle->getClickEvent()->subscribe([touchToggle](brls::View*) {
         bool next = !touch::isEnabled();
         touch::setEnabled(next);
@@ -165,7 +167,8 @@ SettingsScreen::SettingsScreen() {
     // --- Caches ---
     this->addView(new brls::Header("menus/ryazhenka/settings/cache_header"_i18n));
 
-    auto* clearBanner = new RyazhenkaCard("menus/ryazhenka/settings/clear_banner"_i18n);
+    brls::ListItem* clearBanner = new brls::ListItem("menus/ryazhenka/settings/clear_banner"_i18n);
+    clearBanner->setHeight(LISTITEM_HEIGHT);
     clearBanner->getClickEvent()->subscribe([](brls::View*) {
         std::error_code ec;
         std::filesystem::remove(kBannerCachePath, ec);
@@ -173,7 +176,8 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(clearBanner);
 
-    auto* refreshBanner = new RyazhenkaCard("menus/ryazhenka/settings/refresh_banner"_i18n);
+    brls::ListItem* refreshBanner = new brls::ListItem("menus/ryazhenka/settings/refresh_banner"_i18n);
+    refreshBanner->setHeight(LISTITEM_HEIGHT);
     refreshBanner->getClickEvent()->subscribe([](brls::View*) {
         // Visible staged frame so the user can see the fetch actually happen
         // (the previous fire-and-forget refreshAsync looked like a no-op when
@@ -195,8 +199,9 @@ SettingsScreen::SettingsScreen() {
     // Auto-update Ryazhenka pack — checks the current pack tag against the
     // installed one when the toggle is enabled AND the user clicks "Check for
     // updates now". Off by default to honour the "no startup network" rule.
-    auto* autoUpdateToggle = new RyazhenkaCard("menus/ryazhenka/settings/autoupdate_toggle"_i18n,
-                                               "menus/ryazhenka/settings/autoupdate_hint"_i18n, "", "");
+    brls::ListItem* autoUpdateToggle = new brls::ListItem("menus/ryazhenka/settings/autoupdate_toggle"_i18n);
+    autoUpdateToggle->setHeight(LISTITEM_HEIGHT);
+    autoUpdateToggle->setSubLabel("menus/ryazhenka/settings/autoupdate_hint"_i18n);
     autoUpdateToggle->getClickEvent()->subscribe([autoUpdateToggle](brls::View*) {
         nlohmann::ordered_json cfg;
         try {
@@ -221,7 +226,8 @@ SettingsScreen::SettingsScreen() {
     }
     this->addView(autoUpdateToggle);
 
-    auto* checkUpdates = new RyazhenkaCard("menus/ryazhenka/settings/check_updates"_i18n);
+    brls::ListItem* checkUpdates = new brls::ListItem("menus/ryazhenka/settings/check_updates"_i18n);
+    checkUpdates->setHeight(LISTITEM_HEIGHT);
     checkUpdates->getClickEvent()->subscribe([](brls::View*) {
         brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
         sf->setTitle("menus/ryazhenka/settings/check_updates"_i18n);
@@ -241,7 +247,8 @@ SettingsScreen::SettingsScreen() {
     // flow against its latest release; clicking the Telegram link opens the
     // system applet browser. This addresses the user's request to "update
     // all the links from the About tab".
-    auto* ecosystemUpdates = new RyazhenkaCard("menus/ryazhenka/settings/ecosystem_updates"_i18n);
+    brls::ListItem* ecosystemUpdates = new brls::ListItem("menus/ryazhenka/settings/ecosystem_updates"_i18n);
+    ecosystemUpdates->setHeight(LISTITEM_HEIGHT);
     ecosystemUpdates->getClickEvent()->subscribe([](brls::View*) {
         brls::List* list = new brls::List();
         for (const auto& link : ryazhenka::kEcosystemLinks) {
@@ -287,7 +294,8 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(ecosystemUpdates);
 
-    auto* clearSig = new RyazhenkaCard("menus/ryazhenka/settings/clear_sigpatches"_i18n);
+    brls::ListItem* clearSig = new brls::ListItem("menus/ryazhenka/settings/clear_sigpatches"_i18n);
+    clearSig->setHeight(LISTITEM_HEIGHT);
     clearSig->getClickEvent()->subscribe([](brls::View*) {
         std::error_code ec;
         std::filesystem::remove(kSigpatchesRemoteCachePath, ec);
@@ -295,7 +303,8 @@ SettingsScreen::SettingsScreen() {
     });
     this->addView(clearSig);
 
-    auto* clearLog = new RyazhenkaCard("menus/ryazhenka/settings/clear_log"_i18n);
+    brls::ListItem* clearLog = new brls::ListItem("menus/ryazhenka/settings/clear_log"_i18n);
+    clearLog->setHeight(LISTITEM_HEIGHT);
     clearLog->getClickEvent()->subscribe([](brls::View*) {
         std::error_code ec;
         std::filesystem::remove(kLogFilePath, ec);
@@ -309,7 +318,8 @@ SettingsScreen::SettingsScreen() {
     // Emergency: if the user hid every tab via Tools → Hide tabs, this is the
     // only way back. Just delete hide_tabs.json — defaults are "everything
     // visible". Effect on next launch (or after relaunch).
-    auto* resetHidden = new RyazhenkaCard("menus/ryazhenka/settings/reset_hidden_tabs"_i18n);
+    brls::ListItem* resetHidden = new brls::ListItem("menus/ryazhenka/settings/reset_hidden_tabs"_i18n);
+    resetHidden->setHeight(LISTITEM_HEIGHT);
     resetHidden->getClickEvent()->subscribe([](brls::View*) {
         std::error_code ec;
         std::filesystem::remove(HIDE_TABS_JSON, ec);
@@ -320,7 +330,8 @@ SettingsScreen::SettingsScreen() {
 
     // Nuclear option: wipe the whole Ryazhenka config.json (palette, haptics,
     // audio, background). Defaults restored on next launch.
-    auto* resetConfig = new RyazhenkaCard("menus/ryazhenka/settings/reset_config"_i18n);
+    brls::ListItem* resetConfig = new brls::ListItem("menus/ryazhenka/settings/reset_config"_i18n);
+    resetConfig->setHeight(LISTITEM_HEIGHT);
     resetConfig->getClickEvent()->subscribe([](brls::View*) {
         std::error_code ec;
         std::filesystem::remove(CONFIG_FILE, ec);
@@ -331,10 +342,13 @@ SettingsScreen::SettingsScreen() {
 
     // --- About ---
     this->addView(new brls::Header("menus/ryazhenka/settings/about_header"_i18n));
-    auto* version = new RyazhenkaCard(std::string(kAppTitleLocalized), "", "", APP_VERSION);
+    brls::ListItem* version = new brls::ListItem(std::string(kAppTitleLocalized));
+    version->setHeight(LISTITEM_HEIGHT);
+    version->setValue(APP_VERSION);
     this->addView(version);
-    auto* author = new RyazhenkaCard("menus/ryazhenka/settings/author"_i18n, "",
-                                     "", std::string(kAppAuthor));
+    brls::ListItem* author = new brls::ListItem("menus/ryazhenka/settings/author"_i18n);
+    author->setHeight(LISTITEM_HEIGHT);
+    author->setValue(std::string(kAppAuthor));
     this->addView(author);
 
     this->refreshPaletteChecks();

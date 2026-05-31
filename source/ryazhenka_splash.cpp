@@ -70,6 +70,23 @@ void Splash::frame(brls::FrameContext* ctx) {
 
 void Splash::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
                   brls::Style* /*style*/, brls::FrameContext* /*ctx*/) {
+    // After the handoff to MainFrame the splash sits invisibly underneath on
+    // the view stack — but brls still calls frame()/draw() on every view in
+    // the stack. If the user pops back through an applet (web browser, swkbd)
+    // the GL context may be reset and the splash's cached banner texture
+    // becomes a dangling handle. Drawing through it crashes. Skip drawing
+    // entirely once we've handed off; the splash is never seen again either way.
+    if (this->handed_off_) {
+        if (this->bannerTexture_ != -1) {
+            if (auto* nvg = brls::Application::getNVGContext())
+                nvgDeleteImage(nvg, this->bannerTexture_);
+            this->bannerTexture_ = -1;
+            this->bannerW_ = 0;
+            this->bannerH_ = 0;
+        }
+        return;
+    }
+
     const float fx = static_cast<float>(x);
     const float fy = static_cast<float>(y);
     const float w  = static_cast<float>(width);

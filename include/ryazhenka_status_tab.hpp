@@ -28,7 +28,7 @@ private:
     int loading_frames_ = 0;
 
     // CFW health summary, refreshed each time the tab becomes visible.
-    RyazhenkaCard* healthCard = nullptr;
+    brls::ListItem* healthCard = nullptr;
     void refreshHealth();
 
     // Header label (sysinfo one-liner). sysinfo::collect() iterates
