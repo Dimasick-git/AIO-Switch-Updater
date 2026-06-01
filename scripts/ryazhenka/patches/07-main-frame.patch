@@ -1,5 +1,5 @@
 diff --git a/source/main_frame.cpp b/source/main_frame.cpp
-index 2bfe9e3..47b4a1b 100644
+index 2bfe9e3..7c60571 100644
 --- a/source/main_frame.cpp
 +++ b/source/main_frame.cpp
 @@ -8,6 +8,9 @@
@@ -12,7 +12,7 @@ index 2bfe9e3..47b4a1b 100644
  #include "tools_tab.hpp"
  #include "utils.hpp"
  
-@@ -20,20 +23,45 @@ namespace {
+@@ -20,20 +23,53 @@ namespace {
      constexpr const char AppVersion[] = APP_VERSION;
  }  // namespace
  
@@ -41,10 +41,18 @@ index 2bfe9e3..47b4a1b 100644
 +    // fall back to the blocking HTTPS GET when we have nothing cached
 +    // (typically first-ever launch).
 +    nlohmann::ordered_json nxlinks = ryazhenka::catalog::cachedNxLinks();
-+    if (nxlinks.empty()) {
-+        download::getRequest(NXLINKS_URL, nxlinks);
-+        if (!nxlinks.empty())
-+            ryazhenka::catalog::writeNxLinksCache(nxlinks);
++    // Re-fetch when the cache is empty OR stale/old-version. Without the second
++    // condition the SD cache (which has no natural expiry) masked new catalogue
++    // links forever — updating the app or editing nx-links.json server-side did
++    // nothing on a console that already had a cache. On a failed fetch we keep
++    // whatever stale copy we loaded so the tabs aren't empty offline.
++    if (nxlinks.empty() || !ryazhenka::catalog::cacheIsCurrent()) {
++        nlohmann::ordered_json fresh;
++        download::getRequest(NXLINKS_URL, fresh);
++        if (!fresh.empty()) {
++            nxlinks = fresh;
++            ryazhenka::catalog::writeNxLinksCache(fresh);
++        }
 +    }
 +
 +    // Per-release banner: fetch SYNCHRONOUSLY on this (main) thread, exactly
@@ -63,7 +71,7 @@ index 2bfe9e3..47b4a1b 100644
  
      bool erista = util::isErista();
  
-@@ -56,7 +84,17 @@ MainFrame::MainFrame() : TabFrame()
+@@ -56,7 +92,17 @@ MainFrame::MainFrame() : TabFrame()
          this->addTab("menus/main/custom_downloads"_i18n, new AmsTab_Custom(nxlinks, erista));
  
      if (!util::getBoolValue(hideStatus, "tools"))

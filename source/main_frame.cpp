@@ -43,10 +43,18 @@ MainFrame::MainFrame() : ryazhenka::RyazhenkaTabFrame()
     // fall back to the blocking HTTPS GET when we have nothing cached
     // (typically first-ever launch).
     nlohmann::ordered_json nxlinks = ryazhenka::catalog::cachedNxLinks();
-    if (nxlinks.empty()) {
-        download::getRequest(NXLINKS_URL, nxlinks);
-        if (!nxlinks.empty())
-            ryazhenka::catalog::writeNxLinksCache(nxlinks);
+    // Re-fetch when the cache is empty OR stale/old-version. Without the second
+    // condition the SD cache (which has no natural expiry) masked new catalogue
+    // links forever — updating the app or editing nx-links.json server-side did
+    // nothing on a console that already had a cache. On a failed fetch we keep
+    // whatever stale copy we loaded so the tabs aren't empty offline.
+    if (nxlinks.empty() || !ryazhenka::catalog::cacheIsCurrent()) {
+        nlohmann::ordered_json fresh;
+        download::getRequest(NXLINKS_URL, fresh);
+        if (!fresh.empty()) {
+            nxlinks = fresh;
+            ryazhenka::catalog::writeNxLinksCache(fresh);
+        }
     }
 
     // Per-release banner: fetch SYNCHRONOUSLY on this (main) thread, exactly

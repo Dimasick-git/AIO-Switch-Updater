@@ -24,8 +24,14 @@ namespace ryazhenka::catalog {
 nlohmann::ordered_json cachedNxLinks();
 
 /// Writes the given JSON to the SD cache. Safe to call from any context;
-/// silent on failure.
+/// silent on failure. Also stamps the writing APP_VERSION next to the cache.
 void writeNxLinksCache(const nlohmann::ordered_json& json);
+
+/// True only when the SD cache exists, was written by THIS app version, and is
+/// younger than the refresh TTL. When false, MainFrame re-fetches the catalogue
+/// so app updates (and server-side nx-links edits) actually take effect instead
+/// of being masked forever by a stale cache. Pure filesystem; no network.
+bool cacheIsCurrent();
 
 /// Kicks off a detached background fetch of NXLINKS_URL and writes the
 /// result to the cache. MUST NOT be called from the startup path — wire

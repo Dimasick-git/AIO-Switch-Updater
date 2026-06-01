@@ -1,6 +1,7 @@
 #include "ryazhenka_catalog.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <filesystem>
 #include <mutex>
@@ -22,6 +23,13 @@ namespace ryazhenka::catalog {
 namespace {
 
 constexpr const char kCachePath[] = "/config/aio-switch-updater/nx-links.json";
+// Sidecar storing the APP_VERSION that wrote the cache, so an app update always
+// pulls a fresh catalogue (this is why new payload/firmware links weren't
+// showing — the SD cache had no expiry and was reused forever).
+constexpr const char kCacheVerPath[] = "/config/aio-switch-updater/.nx-links.ver";
+// Refresh the catalogue at least this often even within one app version, so
+// edits to nx-links.json on the server propagate without an app update.
+constexpr int kCacheTtlHours = 72;
 
 std::atomic<bool> g_fetchInFlight{false};
 std::atomic<bool> g_shuttingDown{false};
@@ -125,6 +133,38 @@ void writeNxLinksCache(const nlohmann::ordered_json& json) {
         std::error_code ec;
         fs_ns::rename(tmpPath, kCachePath, ec);
     }
+    // Stamp the version that produced this cache.
+    if (std::FILE* vf = std::fopen(kCacheVerPath, "wb")) {
+        std::fwrite(APP_VERSION, 1, std::char_traits<char>::length(APP_VERSION), vf);
+        std::fclose(vf);
+    }
+}
+
+bool cacheIsCurrent() {
+    std::error_code ec;
+    if (!fs_ns::exists(kCachePath, ec))
+        return false;
+
+    // Version stamp must match this build.
+    std::string ver;
+    if (std::FILE* vf = std::fopen(kCacheVerPath, "r")) {
+        char buf[64];
+        std::size_t n = std::fread(buf, 1, sizeof(buf), vf);
+        std::fclose(vf);
+        ver.assign(buf, n);
+        while (!ver.empty() && (ver.back() == '\n' || ver.back() == '\r' || ver.back() == ' '))
+            ver.pop_back();
+    }
+    if (ver != std::string(APP_VERSION))
+        return false;
+
+    // And it must be younger than the TTL.
+    const auto mtime = fs_ns::last_write_time(kCachePath, ec);
+    if (ec)
+        return false;
+    const auto age = std::chrono::duration_cast<std::chrono::hours>(
+        decltype(mtime)::clock::now() - mtime).count();
+    return age < kCacheTtlHours;
 }
 
 bool refreshAsync() {
