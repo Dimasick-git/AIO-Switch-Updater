@@ -175,7 +175,13 @@ namespace util {
                 extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
                 break;
             case contentType::app:
-                extract::extract(APP_FILENAME, CONFIG_PATH);
+                // The Ryazhenka_AIO.zip is laid out as switch/aio-switch-updater/
+                // aio-switch-updater.nro, so it must be unzipped at the SD ROOT
+                // to overwrite the running .nro at NRO_PATH. The old code
+                // extracted into CONFIG_PATH, so the new build landed at
+                // /config/.../switch/... and the actual app was never replaced —
+                // that's why "version was the same, nothing updated".
+                extract::extract(APP_FILENAME, ROOT_PATH);
                 fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
                 break;
             case contentType::custom: {

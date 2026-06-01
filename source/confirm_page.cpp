@@ -35,7 +35,15 @@ ConfirmPage_Done::ConfirmPage_Done(brls::StagedAppletFrame* frame, const std::st
 ConfirmPage_AppUpdate::ConfirmPage_AppUpdate(brls::StagedAppletFrame* frame, const std::string& text) : ConfirmPage_Done(frame, text)
 {
     this->button->getClickEvent()->subscribe([](View* view) {
-        envSetNextLoad(FORWARDER_PATH, FORWARDER_PATH);
+        // Chain-load the freshly installed app, NOT the forwarder. The old code
+        // set next-load to FORWARDER_PATH which may be missing/stale, so the
+        // loader crashed on quit ("программа закрыта"). NRO_PATH is the .nro we
+        // just overwrote at the SD root, so it's guaranteed valid. If it somehow
+        // isn't there, or we're a title-takeover launch that ignores the hint,
+        // quit() simply returns to HOME — no crash.
+        std::error_code ec;
+        if (std::filesystem::exists(NRO_PATH, ec))
+            envSetNextLoad(NRO_PATH, NRO_PATH);
         romfsExit();
         brls::Application::quit();
     });

@@ -1,5 +1,5 @@
 diff --git a/source/utils.cpp b/source/utils.cpp
-index 4a3ffaa..8742894 100644
+index 4a3ffaa..8272be0 100644
 --- a/source/utils.cpp
 +++ b/source/utils.cpp
 @@ -157,6 +157,11 @@ namespace util {
@@ -14,7 +14,22 @@ index 4a3ffaa..8742894 100644
          switch (type) {
              case contentType::cheats: {
                  std::vector<std::string> titles = extract::getInstalledTitlesNs();
-@@ -196,6 +201,15 @@ namespace util {
+@@ -170,7 +175,13 @@ namespace util {
+                 extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
+                 break;
+             case contentType::app:
+-                extract::extract(APP_FILENAME, CONFIG_PATH);
++                // The Ryazhenka_AIO.zip is laid out as switch/aio-switch-updater/
++                // aio-switch-updater.nro, so it must be unzipped at the SD ROOT
++                // to overwrite the running .nro at NRO_PATH. The old code
++                // extracted into CONFIG_PATH, so the new build landed at
++                // /config/.../switch/... and the actual app was never replaced —
++                // that's why "version was the same, nothing updated".
++                extract::extract(APP_FILENAME, ROOT_PATH);
+                 fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
+                 break;
+             case contentType::custom: {
+@@ -196,6 +207,15 @@ namespace util {
          }
          if (type == contentType::ams_cfw || type == contentType::bootloaders || type == contentType::custom)
              fs::copyFiles(COPY_FILES_TXT);
@@ -30,7 +45,7 @@ index 4a3ffaa..8742894 100644
      }
  
      std::string formatListItemTitle(const std::string& str, size_t maxScore)
-@@ -353,6 +367,20 @@ namespace util {
+@@ -353,6 +373,20 @@ namespace util {
      {
          std::string res;
          switch (status_code) {
@@ -51,7 +66,7 @@ index 4a3ffaa..8742894 100644
              case 500:
                  res = fmt::format("{0:}: Internal Server Error", status_code);
                  break;
-@@ -360,7 +388,10 @@ namespace util {
+@@ -360,7 +394,10 @@ namespace util {
                  res = fmt::format("{0:}: Service Temporarily Unavailable", status_code);
                  break;
              default:
