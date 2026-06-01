@@ -1,141 +1,140 @@
-# RYAZHENKA UPDATER - RELEASE SUMMARY
+# РЯЖЕНКА UPDATER - СВОДКА РЕЛИЗОВ
 
-**Current Version:** v2.23.8 (2026-06-01)
+**Текущая версия:** v2.23.8 (2026-06-01)
 
-## Overview
+## Обзор
 
-Ryazhenka Updater represents a complete redesign and stabilization of the AIO Switch Updater application. The fork introduces a branded interface, comprehensive tooling, and resolves 25+ critical stability issues accumulated in the upstream codebase.
+Ряженка Updater представляет собой полную переделку и стабилизацию приложения AIO Switch Updater. Форк вводит фирменный интерфейс, комплексный инструментарий и исправляет 25+ критических проблем стабильности, накопившихся в апстриме.
 
-## Key Features
+## Ключевые особенности
 
-### UI/UX Redesign
+### Переделка UI/UX
 
-- New Ryazhenka branded interface with 4 switchable color palettes
-- Animated procedurally-generated wave background on startup
-- Branded launch splash screen with logo
-- Card-based layout for Tools, About, and Settings tabs
-- Smooth fade-in transitions between tab views
-- Responsive touch input support (tap to press A)
+- Новый фирменный интерфейс Ряженки с 4 переключаемыми цветовыми палитрами
+- Анимированный процедурно-генерируемый волновой фон при запуске
+- Фирменный экран загрузки с логотипом
+- Картоподобный макет вкладок Tools, About и Settings
+- Плавные fade-in переходы между вкладками
+- Поддержка сенсорного ввода (нажатие A при касании)
 
-### System Tooling
+### Системный инструментарий
 
-- **Sysmodule Manager** - Enable/disable system modules via boot2.flag toggle with safety restrictions on 7 system-critical TIDs
-- **Factory Restore** - Snapshot-based recovery of /atmosphere/ directory with pre-restore backup
-- **CFW Health Probe** - Sigpatches staleness detector, firmware version check, CFW status validation
-- **Diagnostics** - Log viewer, diagnostic dump export, network connectivity test
-- **Ecosystem Browser** - Direct link resolution and opening of About-tab ecosystem resources
+- **Sysmodule Manager** - Включение/отключение системных модулей через toggle boot2.flag с защитой 7 системно-критичных TID
+- **Factory Restore** - Восстановление /atmosphere/ на основе снимков с предварительным резервным копированием
+- **CFW Health Probe** - Детектор устарелости sigpatches, проверка версии firmware, валидация статуса CFW
+- **Диагностика** - Просмотр логов, экспорт диаг-дампа, тест сетевого подключения
+- **Обозреватель экосистемы** - Прямое разрешение и открытие ресурсов из вкладки About
 
-### Audio and Haptics
+### Звук и тактильная обратная связь
 
-- Procedural UI sound effects via libnx audout
-- Joy-Con and Pro Controller rumble engine with configurable intensity
-- Toggleable audio in Settings with lazy initialization
+- Процедурные звуковые эффекты UI через libnx audout
+- Двигатель вибрации Joy-Con и Pro Controller с настраиваемой интенсивностью
+- Переключение звука в Settings с ленивой инициализацией
 
-### Network and Downloads
+### Сетевое и загрузки
 
-- Self-update mechanism with correct SD installation path and chain-loading
-- Banner system with dynamic image resolution from releases
-- NX-Cheats integration card with daily cheat database updates
-- Dynamic URL resolution with @latest_asset, @download_to markers
-- Intelligent retry logic with exponential backoff and curl error logging
-- 15-second timeout cap on downloads with per-operation curl timeouts
-- TTL-based caching of nx-links catalog (6-hour default for sigpatches)
+- Механизм самообновления с корректной установкой на SD и chain-loading
+- Система баннеров с динамическим разрешением изображений из релизов
+- Интеграция NX-Cheats с карточкой ежедневного обновления базы читов
+- Динамическое разрешение URL с маркерами @latest_asset, @download_to
+- Умная логика повторных попыток с экспоненциальной задержкой и логированием ошибок curl
+- Лимит 15 секунд на загрузки с per-operation curl таймаутами
+- TTL-кэширование каталога nx-links (по умолчанию 6 часов для sigpatches)
 
-### Distribution
+### Распределение
 
-- Ryazhenka_AIO.zip archive for direct SD root extraction
-- Backward compatibility maintained - config paths unchanged (/switch/aio-switch-updater/, /config/aio-switch-updater/)
-- Internal updater file naming convention preserved (aio-switch-updater.nro on SD)
+- Архив Ryazhenka_AIO.zip для прямой распаковки на корень SD
+- Сохранена обратная совместимость - пути конфигов не изменены (/switch/aio-switch-updater/, /config/aio-switch-updater/)
+- Сохранена схема именования файлов внутреннего апдейтера (aio-switch-updater.nro на SD)
 
-## Bug Fixes (25+)
+## Исправления багов (25+)
 
-- Startup crashes with infinite splash screen loop (StatusTab constructor blocking)
-- RyazhenkaCard migration crashes on Settings/Status tabs
-- Haptics thread spawn crash when HID not ready
-- Banner download crash on app launch (detached thread issue)
-- Timeout errors reported after successful downloads
-- Application freezing on download failures
-- Lost download completion signal handling
-- Self-update no-op and crash (now installs to SD root with proper chain-load)
-- Stale nx-links catalog (cache not updating on app version change)
-- Memory leak in logging system and shutdown race condition
-- UI audio initialization errors
-- Settings tab crash with haptics threads
-- Status/audio toggle removal in intermediate versions
+- Краши при запуске с бесконечным циклом infinite splash (StatusTab в конструкторе)
+- Краши миграции RyazhenkaCard на вкладках Settings/Status
+- Крах spawn потока haptics при неготовом HID
+- Крах загрузки банера при запуске приложения (detached thread)
+- Ошибки таймаута после успешных загрузок
+- Зависание приложения при ошибках загрузки
+- Потеря сигнала завершения загрузки
+- Self-update не работал и падал (теперь устанавливает на SD root с proper chain-load)
+- Устаревший каталог nx-links (кэш не обновлялся при смене версии приложения)
+- Утечка памяти в системе логирования и race condition при выключении
+- Ошибки инициализации аудио UI
+- Крах вкладки Settings с haptics потоками
+- Удаление toggles status/audio в промежуточных версиях
 
-## Infrastructure
+## Инфраструктура
 
-### CI/CD Pipeline
+### CI/CD конвейер
 
-- GitHub Actions workflows for build, sync-upstream, and lint (replaced upstream main.yml)
-- Automatic release publication on every push to main
-- Numeric tag releases (run numbers #82, #81, #80, etc.)
-- Idempotent patch application system with reverse-check verification
-- Daily upstream synchronization with distinct exit codes for merge conflicts and patch failures
-- i18n key set diff checker (Russian/English parity)
-- Cppcheck static analysis job
-- devkitA64 pinned to 20260215 for SwitchWave ABI compatibility
+- GitHub Actions workflows для build, sync-upstream и lint (заменили апстримный main.yml)
+- Автоматическая публикация релиза на каждый пуш в main
+- Numeric tag релизы (номера runs #82, #81, #80 и т.д.)
+- Идемпотентная система применения патчей с reverse-check верификацией
+- Ежедневная синхронизация апстрима с различными exit-кодами для конфликтов merge и сбоев патчей
+- Checker diff наборов i18n ключей (русский/английский parity)
+- Job статического анализа cppcheck
+- devkitA64 закреплена на версии 20260215 для совместимости с SwitchWave ABI
 
-### Build System
+### Система сборки
 
-- Makefile configuration with APP_TITLE, APP_VERSION, APP_AUTHOR metadata
-- Automatic patch regeneration on constants.hpp changes
-- Build artifact packaging via pack_release.sh
-- Dependency management with action version pinning
+- Конфигурация Makefile с метаданными APP_TITLE, APP_VERSION, APP_AUTHOR
+- Автоматическая регенерация патчей при изменении constants.hpp
+- Упаковка артефактов через pack_release.sh
+- Управление зависимостями с pinning версий действий
 
-## Localization
+## Локализация
 
-- 228 translation keys (Russian-English parity maintained)
-- Default language set to Russian (instead of system locale)
-- 16 new keys added for new features (status_tab, sysmodule_manager, factory_restore, etc.)
-- Bilingual README, documentation, and issue templates
+- 228 ключей перевода (сохранена русско-английская parity)
+- Язык по умолчанию установлен на русский (вместо системной локали)
+- 16 новых ключей добавлены для новых функций (status_tab, sysmodule_manager, factory_restore и т.д.)
+- Двуязычные README, документация и шаблоны issues
 
-## Documentation
+## Документация
 
-- docs/dashboard.md - Feature overview (deprecated)
-- docs/sysmodule-manager.md - Module management guide
-- docs/factory-restore.md - Recovery procedure documentation
-- docs/sync-policy.md - Upstream synchronization policy
-- docs/build.md - Build and development guide
-- TROUBLESHOOTING.md - User support documentation in Russian
-- SECURITY.md - Security vulnerability reporting guidelines
-- CONTRIBUTING.md - Contribution guidelines
+- docs/sysmodule-manager.md - Руководство управления модулями
+- docs/factory-restore.md - Документация процедуры восстановления
+- docs/sync-policy.md - Политика синхронизации апстрима
+- docs/build.md - Руководство по сборке и разработке
+- TROUBLESHOOTING.md - Документация поддержки пользователей на русском
+- SECURITY.md - Рекомендации по отправке уязвимостей
+- CONTRIBUTING.md - Рекомендации по участию
 
-## Release Timeline
+## Хронология релизов
 
-| Version | Date | Key Changes |
-|---------|------|-------------|
-| v2.23.8 | 2026-06-01 | Self-update path correction and chain-load fix |
-| v2.23.7 | 2026-06-01 | nx-links cache refresh on app update and TTL management |
-| v2.23.6 | 2026-06-01 | Cheats database, firmware list, payloads, crash-safe workers |
-| v2.23.5 | 2026-06-01 | Download timeout error elimination |
-| v2.23.4 | 2026-05-31 | Retry logic implementation and curl error reporting |
-| v2.23.3 | 2026-05-29 | Major UI redesign, audio/haptics integration, branding system |
+| Версия  | Дата       | Ключевые изменения                                          |
+|---------|------------|-------------------------------------------------------------|
+| v2.23.8 | 2026-06-01 | Исправление пути self-update и fix chain-load               |
+| v2.23.7 | 2026-06-01 | Обновление nx-links кэша при update приложения и TTL        |
+| v2.23.6 | 2026-06-01 | Cheats DB, firmware list, payloads, crash-safe workers      |
+| v2.23.5 | 2026-06-01 | Удаление ошибок таймаута загрузок                           |
+| v2.23.4 | 2026-05-31 | Реализация retry логики и reporting ошибок curl             |
+| v2.23.3 | 2026-05-29 | Крупная переделка UI, интеграция audio/haptics, брендинг    |
 
-## Development Scope
+## Область разработки
 
-1. **Stability** - Elimination of 25+ critical crashes and hangs
-2. **Interface** - Complete UI redesign with Ryazhenka branding and visual consistency
-3. **Tooling** - System management features for Atmosphere, sigpatches, firmware
-4. **Networking** - Robust download handling with intelligent retry and timeout protection
-5. **Backward Compatibility** - Maintained user configuration paths and internal updater naming
+1. **Стабильность** - Устранение 25+ критических крахей и зависаний
+2. **Интерфейс** - Полная переделка UI с брендингом Ряженки и визуальной консистентностью
+3. **Инструментарий** - Функции управления системой для Atmosphere, sigpatches, firmware
+4. **Сетевое** - Надежная обработка загрузок с умными retry и timeout защитой
+5. **Обратная совместимость** - Сохранены пути конфигов пользователей и внутреннее именование апдейтера
 
-## Technical Debt Resolved
+## Разрешенный технический долг
 
-- Removed startup-time network calls that caused launch crashes
-- Eliminated duplicate curl_global_init calls
-- Fixed upstream i18n fallback mechanism
-- Resolved window coordinate access in touch handler
-- Corrected HID initialization ordering in haptics system
-- Proper thread lifecycle management in UI operations
-- Memory safety improvements in logging and shutdown paths
+- Удалены сетевые вызовы на стартапе, вызывавшие краши при запуске
+- Исправлены дублирующиеся curl_global_init вызовы
+- Исправлен механизм fallback апстримной i18n
+- Разрешен доступ к window координатам в touch handler
+- Исправлена последовательность инициализации HID в системе haptics
+- Правильное управление жизненным циклом потоков в UI операциях
+- Улучшения memory safety в логирования и путях выключения
 
-## Installation
+## Установка
 
-Download Ryazhenka_AIO.zip and extract to SD card root, or place ryazhenka-updater.nro in /switch/aio-switch-updater/.
+Скачайте Ryazhenka_AIO.zip и распакуйте на корень SD-карты, или поместите ryazhenka-updater.nro в /switch/aio-switch-updater/.
 
-SD card file naming: aio-switch-updater.nro (for internal updater compatibility)
+Имя файла на SD-карте: aio-switch-updater.nro (для совместимости с внутренним апдейтером)
 
-## Repository
+## Репозиторий
 
 https://github.com/Dimasick-git/AIO-Switch-Updater
