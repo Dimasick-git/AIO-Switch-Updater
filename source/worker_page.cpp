@@ -78,7 +78,16 @@ void WorkerPage::draw(NVGcontext* vg, int x, int y, unsigned width, unsigned hei
             // showing "all done" on a 0-byte file.
             const long sc = ProgressEvent::instance().getStatusCode();
             const bool interrupted = ProgressEvent::instance().getInterupt();
-            const bool failed = (sc == 0 || sc > 399);
+            // Only a real error code (>399) is a failure. statusCode 0 means
+            // "this stage reported no HTTP status" — which is the NORMAL state
+            // for every non-download stage (extract, cheats merge, joy-con
+            // backup, delete, …) because ProgressEvent::reset() leaves it 0 and
+            // those workers only set progress steps. The old `sc == 0` failure
+            // rule popped a bogus "server unavailable / timeout" right after a
+            // perfectly good download+extract. Real download failures are no
+            // longer 0: downloadFile() now returns 408 when curl fails, so they
+            // still trip this check.
+            const bool failed = (sc > 399);
 
             if (interrupted || failed) {
                 // Bail out of the ENTIRE staged flow on cancel or failure.

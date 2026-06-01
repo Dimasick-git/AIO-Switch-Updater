@@ -381,11 +381,19 @@ namespace download {
                         }
                         break;
                     }
-                    if (cres != CURLE_OK)
+                    if (cres != CURLE_OK) {
                         ryazhenka::log::warn(
                             std::string("downloadFile: curl FAILED rc=") + std::to_string((int)cres) +
                             " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) +
                             " url=" + real_url);
+                        // Turn a curl-level failure into a real error code so the
+                        // caller (and WorkerPage) treat it as a failure. We must
+                        // NOT leave it at 0 — 0 now means "stage did no network"
+                        // and is treated as success. 408 maps to the friendly
+                        // "server unavailable / timeout" message.
+                        if (status_code < 400)
+                            status_code = 408;
+                    }
 
                     if (fp && chunk.offset && can_download)
                         fwrite(chunk.data, 1, chunk.offset, fp);

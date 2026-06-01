@@ -157,6 +157,11 @@ namespace util {
     {
         chdir(ROOT_PATH);
         crashIfNotArchive(type);
+        // If the downloaded file isn't a real archive, crashIfNotArchive set
+        // status 406 already — stop here so we don't try to unzip garbage and
+        // so WorkerPage still reports that failure.
+        if (ProgressEvent::instance().getStatusCode() == 406)
+            return;
         switch (type) {
             case contentType::cheats: {
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
@@ -196,6 +201,15 @@ namespace util {
         }
         if (type == contentType::ams_cfw || type == contentType::bootloaders || type == contentType::custom)
             fs::copyFiles(COPY_FILES_TXT);
+
+        // Extraction finished OK. Mark the stage as a success — WorkerPage
+        // treats statusCode 0 as a failure (the fork rule that flags real
+        // download errors), and reset() leaves it 0 at the start of every
+        // stage. extract*/extractCheats only ever set progress steps, never a
+        // status, so without this the EXTRACT stage always ended at 0 and
+        // popped a bogus "server unavailable / timeout" right AFTER a perfectly
+        // good download — the bug the user kept hitting on cheats and installs.
+        ProgressEvent::instance().setStatusCode(200);
     }
 
     std::string formatListItemTitle(const std::string& str, size_t maxScore)
@@ -354,8 +368,10 @@ namespace util {
         std::string res;
         switch (status_code) {
             case 0:
-                // libcurl never received an HTTP status — DNS failure, refused
-                // connection or a timeout. The old "error: 0" was meaningless.
+            case 408:
+                // libcurl never received a usable HTTP status — DNS failure,
+                // refused connection or a timeout. downloadFile() reports these
+                // as 408 (0 now means "no network in this stage" = success).
                 res = "menus/errors/timeout_zero"_i18n;
                 break;
             case 404:
