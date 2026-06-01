@@ -237,11 +237,10 @@ class BannerView : public brls::View {
 
     ~BannerView() override { releaseTexture(); }
 
-    // (Re)load the texture every time the view comes on screen. This is what
-    // makes it survive the GL-context reset after a system applet closes — the
-    // old texture id is stale, so we drop it and create a fresh one.
-    void willAppear(bool /*resetState*/) override { reloadTexture(); }
-    void willDisappear(bool /*resetState*/) override { releaseTexture(); }
+    // Texture is created lazily in draw() exactly once and kept for the life of
+    // the view. We deliberately do NOT reload it on every willAppear — decoding
+    // the ~1 MB banner JPEG on each tab switch was the visible hitch the user
+    // felt entering Tools / About. brls::Image keeps its texture the same way.
 
     void draw(NVGcontext* vg, int x, int y, unsigned width, unsigned height,
               brls::Style* /*style*/, brls::FrameContext* /*ctx*/) override {

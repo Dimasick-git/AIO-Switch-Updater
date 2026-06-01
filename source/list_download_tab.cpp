@@ -25,7 +25,10 @@ ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered
 {
     this->setDescription();
 
-    this->createList();
+    // Firmware populates lazily from the full release list in willAppear(); skip
+    // the static nx-links entry so we don't show a redundant "latest" item.
+    if (this->type != contentType::fw)
+        this->createList();
 
     if (this->type == contentType::cheats) {
         brls::Label* cheatsLabel = new brls::Label(
@@ -46,45 +49,50 @@ ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered
         this->createList(contentType::payloads);
     }
 
-    // Firmware: append a "pick any release" entry that fetches the full
-    // THZoria release history on click and lists every tag as its own
-    // download item — the user can install any version, not just latest.
-    if (this->type == contentType::fw) {
-        brls::ListItem* allVersions = new brls::ListItem(
-            "menus/ryazhenka/firmware_all_versions"_i18n);
-        allVersions->setHeight(LISTITEM_HEIGHT);
-        allVersions->getClickEvent()->subscribe([](brls::View*) {
-            const auto releases = download::resolveAllReleases("THZoria/NX_Firmware");
-            if (releases.empty()) {
-                util::showDialogBoxInfo("menus/ryazhenka/firmware_no_releases"_i18n);
-                return;
-            }
-            brls::List* picker = new brls::List();
-            for (const auto& [tag, url] : releases) {
-                const std::string capturedTag = tag;
-                const std::string capturedUrl = url;
-                brls::ListItem* item = new brls::ListItem(capturedTag);
-                item->setHeight(LISTITEM_HEIGHT);
-                item->getClickEvent()->subscribe([capturedTag, capturedUrl](brls::View*) {
-                    brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
-                    sf->setTitle(std::string("menus/main/download_firmware"_i18n) + " — " + capturedTag);
-                    sf->addStage(new ConfirmPage(sf,
-                        std::string("menus/common/download"_i18n) + capturedTag + "\n" + capturedUrl));
-                    sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
-                        [capturedUrl]() { util::downloadArchive(capturedUrl, contentType::fw); }));
-                    sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
-                        []() { util::extractArchive(contentType::fw); }));
-                    sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
-                    brls::Application::pushView(sf);
-                });
-                picker->addView(item);
-            }
-            brls::AppletFrame* frame = new brls::AppletFrame(true, true);
-            frame->setContentView(picker);
-            brls::PopupFrame::open("menus/ryazhenka/firmware_all_versions"_i18n,
-                                   frame, "", "");
+    // Firmware: the full version list is fetched + shown directly (no "latest"
+    // shortcut, no extra tap). The fetch is a network call, so it is deferred to
+    // willAppear() — doing it here would block app launch (this tab is built in
+    // the MainFrame ctor). populateFirmwareList() runs once, the first time the
+    // user actually opens the firmware tab.
+}
+
+void ListDownloadTab::willAppear(bool resetState)
+{
+    brls::List::willAppear(resetState);
+    if (this->type == contentType::fw && !this->firmwarePopulated) {
+        this->firmwarePopulated = true;
+        this->populateFirmwareList();
+    }
+}
+
+void ListDownloadTab::populateFirmwareList()
+{
+    const auto releases = download::resolveAllReleases("THZoria/NX_Firmware");
+    if (releases.empty()) {
+        this->displayNotFound();
+        return;
+    }
+    for (const auto& [tag, url] : releases) {
+        const std::string capturedTag = tag;
+        const std::string capturedUrl = url;
+        brls::ListItem* item = new brls::ListItem(capturedTag);
+        item->setHeight(LISTITEM_HEIGHT);
+        item->getClickEvent()->subscribe([capturedTag, capturedUrl](brls::View*) {
+            brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+            sf->setTitle(std::string("menus/main/download_firmware"_i18n) + " — " + capturedTag);
+            sf->addStage(new ConfirmPage(sf,
+                std::string("menus/common/download"_i18n) + capturedTag + "\n" + capturedUrl));
+            // Download the firmware zip then extract it into /firmware/ at SD
+            // root (extractArchive(fw) wipes+recreates /firmware/ and unzips
+            // there — that's where Daybreak/Atmosphere expect the .nca set).
+            sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
+                [capturedUrl]() { util::downloadArchive(capturedUrl, contentType::fw); }));
+            sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
+                []() { util::extractArchive(contentType::fw); }));
+            sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
+            brls::Application::pushView(sf);
         });
-        this->addView(allVersions);
+        this->addView(item);
     }
 }
 

@@ -22,7 +22,10 @@ private:
     void setDescription();
     void setDescription(contentType type);
     void displayNotFound();
+    void populateFirmwareList();
+    bool firmwarePopulated = false;
 
 public:
     ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks = nlohmann::ordered_json::object());
+    void willAppear(bool resetState = false) override;
 };

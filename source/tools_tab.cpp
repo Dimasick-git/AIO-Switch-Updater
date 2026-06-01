@@ -8,6 +8,7 @@
 #include "app_page.hpp"
 #include "cheats_page.hpp"
 #include "confirm_page.hpp"
+#include "download.hpp"
 #include "extract.hpp"
 #include "fs.hpp"
 #include "hide_tabs_page.hpp"
@@ -35,22 +36,39 @@ namespace {
 
 ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
 {
-    if (!tag.empty() && tag != AppVersion) {
-        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
+    // Self-update AIO. Always shown (the old code hid it unless a tag was
+    // pre-fetched at startup — which it never was, so there was no way to update
+    // the app from the UI). On click we fetch the latest release tag and only
+    // offer the install when it differs from the running version.
+    {
+        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, AppVersion));
         updateApp->setHeight(LISTITEM_HEIGHT);
-        std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
-        updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
-            brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-            stagedFrame->setTitle("menus/common/updating"_i18n);
-            stagedFrame->addStage(
-                new ConfirmPage(stagedFrame, text));
-            stagedFrame->addStage(
-                new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, []() { util::downloadArchive(APP_URL, contentType::app); }));
-            stagedFrame->addStage(
-                new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() { util::extractArchive(contentType::app); }));
-            stagedFrame->addStage(
-                new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
-            brls::Application::pushView(stagedFrame);
+        updateApp->getClickEvent()->subscribe([](brls::View*) {
+            nlohmann::ordered_json j;
+            download::getRequest(TAGS_INFO, j);
+            std::string latest;
+            if (j.is_object() && j.contains("tag_name") && j["tag_name"].is_string())
+                latest = j["tag_name"].get<std::string>();
+            if (latest.empty()) {
+                util::showDialogBoxInfo("menus/tools/latest_version_not_found"_i18n);
+                return;
+            }
+            std::string norm = latest;
+            if (!norm.empty() && (norm.front() == 'v' || norm.front() == 'V'))
+                norm.erase(norm.begin());
+            if (norm == std::string(AppVersion)) {
+                util::showDialogBoxInfo(fmt::format("menus/tools/update_app_latest"_i18n, latest));
+                return;
+            }
+            brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
+            sf->setTitle("menus/common/updating"_i18n);
+            sf->addStage(new ConfirmPage(sf, "menus/tools/dl_app"_i18n + std::string(APP_URL)));
+            sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
+                                        []() { util::downloadArchive(APP_URL, contentType::app); }));
+            sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
+                                        []() { util::extractArchive(contentType::app); }));
+            sf->addStage(new ConfirmPage_AppUpdate(sf, "menus/common/all_done"_i18n));
+            brls::Application::pushView(sf);
         });
         this->addView(updateApp);
     }

@@ -42,8 +42,13 @@ constexpr const char AMS_FILENAME[] = "/config/aio-switch-updater/ams.zip";
 
 constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
 
-constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
-constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
+// IMPORTANT: use the *_complete.zip assets. The plain titles.zip / contents.zip
+// are tiny INCREMENTAL bundles (≈116 bytes — only the titles changed in the last
+// daily run), which is why "Загрузить читы" pulled an empty archive. The
+// *_complete.zip assets are the full GBATemp cheat database (~4.4 MB) and the
+// release auto-updates daily, so latest/download always serves the freshest set.
+constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_complete.zip";
+constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_complete.zip";
 constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
 constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
 constexpr const char CHEATS_URL_VERSION[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/VERSION";

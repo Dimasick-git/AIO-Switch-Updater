@@ -7,6 +7,7 @@
 #include "download.hpp"
 #include "extract.hpp"
 #include "main_frame.hpp"
+#include "ryazhenka_logger.hpp"
 #include "progress_event.hpp"
 #include "utils.hpp"
 
@@ -140,8 +141,23 @@ void WorkerPage::layout(NVGcontext* vg, brls::Style* style, brls::FontStash* sta
 
 void WorkerPage::doWork()
 {
-    if (this->workerFunc)
-        this->workerFunc();
+    // Runs on a worker thread. ANY exception escaping here would unwind into the
+    // std::thread and call std::terminate → "program closed". Extraction (bad
+    // zip, filesystem_error on a weird path, the cheats merge) is the usual
+    // culprit. Catch everything, log it, and report a failure status so the UI
+    // shows a clean error instead of crashing.
+    try {
+        if (this->workerFunc)
+            this->workerFunc();
+    } catch (const std::exception& e) {
+        ryazhenka::log::error(std::string("worker stage threw: ") + e.what());
+        ProgressEvent::instance().setStatusCode(500);
+        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+    } catch (...) {
+        ryazhenka::log::error("worker stage threw a non-std exception");
+        ProgressEvent::instance().setStatusCode(500);
+        ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+    }
 }
 
 brls::View* WorkerPage::getDefaultFocus()

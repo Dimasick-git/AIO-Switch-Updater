@@ -253,6 +253,7 @@
     "inject_payloads": "Прокинть payload",
     "getting_payload": "Получить payload-ы",
     "update_app": "Обновить приложение (v{})",
+    "update_app_latest": "У вас уже последняя версия: {}",
     "dl_app": "Загрузка:\nAIO-switch-updater\n\n\nFrom:\n",
     "changelog": "Изменения",
     "clean_up": "Удалить скачанные файлы",

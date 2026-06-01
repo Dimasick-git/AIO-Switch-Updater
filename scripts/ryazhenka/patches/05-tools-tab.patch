@@ -1,8 +1,14 @@
 diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
-index 43c91c1..429c702 100644
+index 43c91c1..d694e8a 100644
 --- a/source/tools_tab.cpp
 +++ b/source/tools_tab.cpp
-@@ -13,6 +13,15 @@
+@@ -8,11 +8,21 @@
+ #include "app_page.hpp"
+ #include "cheats_page.hpp"
+ #include "confirm_page.hpp"
++#include "download.hpp"
+ #include "extract.hpp"
+ #include "fs.hpp"
  #include "hide_tabs_page.hpp"
  #include "net_page.hpp"
  #include "payload_page.hpp"
@@ -18,19 +24,60 @@ index 43c91c1..429c702 100644
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -28,6 +37,7 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -26,72 +36,315 @@ namespace {
+ 
+ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
  {
-     if (!tag.empty() && tag != AppVersion) {
-         brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
-+        updateApp->setHeight(LISTITEM_HEIGHT);
-         std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
-         updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
-             brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-@@ -42,56 +52,281 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
-                 new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
-             brls::Application::pushView(stagedFrame);
-         });
--        updateApp->setHeight(LISTITEM_HEIGHT);
+-    if (!tag.empty() && tag != AppVersion) {
+-        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, tag));
+-        std::string text("menus/tools/dl_app"_i18n + std::string(APP_URL));
+-        updateApp->getClickEvent()->subscribe([text, tag](brls::View* view) {
+-            brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
+-            stagedFrame->setTitle("menus/common/updating"_i18n);
+-            stagedFrame->addStage(
+-                new ConfirmPage(stagedFrame, text));
+-            stagedFrame->addStage(
+-                new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, []() { util::downloadArchive(APP_URL, contentType::app); }));
+-            stagedFrame->addStage(
+-                new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() { util::extractArchive(contentType::app); }));
+-            stagedFrame->addStage(
+-                new ConfirmPage_AppUpdate(stagedFrame, "menus/common/all_done"_i18n));
+-            brls::Application::pushView(stagedFrame);
+-        });
++    // Self-update AIO. Always shown (the old code hid it unless a tag was
++    // pre-fetched at startup — which it never was, so there was no way to update
++    // the app from the UI). On click we fetch the latest release tag and only
++    // offer the install when it differs from the running version.
++    {
++        brls::ListItem* updateApp = new brls::ListItem(fmt::format("menus/tools/update_app"_i18n, AppVersion));
+         updateApp->setHeight(LISTITEM_HEIGHT);
++        updateApp->getClickEvent()->subscribe([](brls::View*) {
++            nlohmann::ordered_json j;
++            download::getRequest(TAGS_INFO, j);
++            std::string latest;
++            if (j.is_object() && j.contains("tag_name") && j["tag_name"].is_string())
++                latest = j["tag_name"].get<std::string>();
++            if (latest.empty()) {
++                util::showDialogBoxInfo("menus/tools/latest_version_not_found"_i18n);
++                return;
++            }
++            std::string norm = latest;
++            if (!norm.empty() && (norm.front() == 'v' || norm.front() == 'V'))
++                norm.erase(norm.begin());
++            if (norm == std::string(AppVersion)) {
++                util::showDialogBoxInfo(fmt::format("menus/tools/update_app_latest"_i18n, latest));
++                return;
++            }
++            brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
++            sf->setTitle("menus/common/updating"_i18n);
++            sf->addStage(new ConfirmPage(sf, "menus/tools/dl_app"_i18n + std::string(APP_URL)));
++            sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n,
++                                        []() { util::downloadArchive(APP_URL, contentType::app); }));
++            sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n,
++                                        []() { util::extractArchive(contentType::app); }));
++            sf->addStage(new ConfirmPage_AppUpdate(sf, "menus/common/all_done"_i18n));
++            brls::Application::pushView(sf);
++        });
          this->addView(updateApp);
      }
  
@@ -316,7 +363,7 @@ index 43c91c1..429c702 100644
      move->getClickEvent()->subscribe([](brls::View* view) {
          chdir("/");
          std::string error = "";
-@@ -103,9 +338,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -103,9 +356,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          }
          util::showDialogBoxInfo(error);
      });
@@ -327,7 +374,7 @@ index 43c91c1..429c702 100644
      cleanUp->getClickEvent()->subscribe([](brls::View* view) {
          std::filesystem::remove(AMS_FILENAME);
          std::filesystem::remove(APP_FILENAME);
-@@ -119,9 +354,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -119,9 +372,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          fs::removeDir(FW_DIRECTORY_PATH);
          util::showDialogBoxInfo("menus/common/all_done"_i18n);
      });
@@ -338,7 +385,7 @@ index 43c91c1..429c702 100644
      language->getClickEvent()->subscribe([](brls::View* view) {
          std::vector<std::pair<std::string, std::string>> languages{
              std::make_pair("American English ({})", "en-US"),
-@@ -171,21 +406,37 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -171,21 +424,37 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          appView->setContentView(list);
          brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
      });

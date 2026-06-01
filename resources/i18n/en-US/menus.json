@@ -244,6 +244,7 @@
     "inject_payloads": "Inject payload",
     "getting_payload": "Getting payload",
     "update_app": "Update the app (v{})",
+    "update_app_latest": "You're already on the latest version: {}",
     "dl_app": "Downloading:\nAIO-switch-updater\n\nFrom:\n",
     "changelog": "Changelog",
     "clean_up": "Clean up downloaded files",

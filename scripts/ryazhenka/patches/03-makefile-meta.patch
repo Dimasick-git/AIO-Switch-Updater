@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 7ac3ff0..4cc2c80 100644
+index 7ac3ff0..f9e41bb 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -20,10 +20,10 @@ SOURCES		:=	source
@@ -12,7 +12,7 @@ index 7ac3ff0..4cc2c80 100644
 -TARGET		:=	$(notdir $(CURDIR))
 +APP_TITLE	:=	Ryazhenka Updater
 +APP_AUTHOR	:=	Dimasick-git
-+APP_VERSION :=	2.23.5
++APP_VERSION :=	2.23.6
 +TARGET		:=	ryazhenka-updater
  
  ROMFS				:=	resources

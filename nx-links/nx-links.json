@@ -17,8 +17,8 @@
     "hekate_ctcaer.bin": "@latest_asset:CTCaer/hekate"
   },
   "payloads": {
-    "hekate_ctcaer.bin": "@latest_asset:CTCaer/hekate",
-    "fusee.bin": "https://github.com/Atmosphere-NX/Atmosphere/releases/latest/download/fusee.bin"
+    "Lockpick_RCM.bin": "@latest_asset:THZoria/Lockpick_RCMaster",
+    "TegraExplorer.bin": "@latest_asset:suchmememanyskill/TegraExplorer"
   },
   "custom": {
     "Sysmodules и хомбрю Ряженки (распаковываются в корень SD)": {

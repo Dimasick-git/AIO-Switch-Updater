@@ -1,5 +1,5 @@
 diff --git a/include/constants.hpp b/include/constants.hpp
-index 10ad7d8..25ffe39 100644
+index 10ad7d8..46809d2 100644
 --- a/include/constants.hpp
 +++ b/include/constants.hpp
 @@ -1,5 +1,7 @@
@@ -10,7 +10,7 @@ index 10ad7d8..25ffe39 100644
  constexpr const char ROOT_PATH[] = "/";
  constexpr const char APP_PATH[] = "/switch/aio-switch-updater/";
  constexpr const char NRO_PATH[] = "/switch/aio-switch-updater/aio-switch-updater.nro";
-@@ -13,36 +15,31 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
+@@ -13,40 +15,40 @@ constexpr const char RCM_PAYLOAD_PATH[] = "romfs:/aio_rcm.bin";
  constexpr const char MARIKO_PAYLOAD_PATH[] = "/payload.bin";
  constexpr const char MARIKO_PAYLOAD_PATH_TEMP[] = "/payload.bin.aio";
  
@@ -57,8 +57,19 @@ index 10ad7d8..25ffe39 100644
 -
  constexpr const char CUSTOM_PACKS_PATH[] = "/config/aio-switch-updater/custom_packs.json";
  
- constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
-@@ -75,9 +72,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
+-constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles.zip";
+-constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents.zip";
++// IMPORTANT: use the *_complete.zip assets. The plain titles.zip / contents.zip
++// are tiny INCREMENTAL bundles (≈116 bytes — only the titles changed in the last
++// daily run), which is why "Загрузить читы" pulled an empty archive. The
++// *_complete.zip assets are the full GBATemp cheat database (~4.4 MB) and the
++// release auto-updates daily, so latest/download always serves the freshest set.
++constexpr const char CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_complete.zip";
++constexpr const char CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_complete.zip";
+ constexpr const char GFX_CHEATS_URL_TITLES[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/titles_60fps-res-gfx.zip";
+ constexpr const char GFX_CHEATS_URL_CONTENTS[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/contents_60fps-res-gfx.zip";
+ constexpr const char CHEATS_URL_VERSION[] = "https://github.com/HamletDuFromage/switch-cheats-db/releases/latest/download/VERSION";
+@@ -75,9 +77,9 @@ constexpr const char CONTENTS_PATH[] = "contents/";
  constexpr const char TITLES_PATH[] = "titles/";
  
  constexpr const char COLOR_PICKER_URL[] = "https://git.io/jcpicker";
