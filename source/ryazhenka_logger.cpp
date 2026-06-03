@@ -100,9 +100,17 @@ void init() {
             buf[n] = '\0';
             std::fclose(f);
             const std::string_view view(buf, n);
-            if (view.find(kLogConfigKey) != std::string_view::npos &&
-                view.find("true") != std::string_view::npos) {
-                g_file_enabled = true;
+            // Search for "verbose_log": true as a key-value pair to avoid false
+            // positives from "true" appearing elsewhere in the JSON (other keys,
+            // URLs, strings).
+            static constexpr std::string_view kKeyColon = "\"verbose_log\":";
+            const auto pos = view.find(kKeyColon);
+            if (pos != std::string_view::npos) {
+                auto after = pos + kKeyColon.size();
+                while (after < view.size() && (view[after] == ' ' || view[after] == '\t')) ++after;
+                if (view.size() - after >= 4 && view.substr(after, 4) == "true") {
+                    g_file_enabled = true;
+                }
             }
         }
     }

@@ -61,6 +61,11 @@ namespace download {
                 data_struct->offset = 0;
             }
 
+            // Guard: a single chunk larger than the buffer cannot be handled safely.
+            if (realsize > data_struct->data_size) {
+                return 0;
+            }
+
             if (data_struct->aes)
                 aes128CtrCrypt(data_struct->aes, &data_struct->data[data_struct->offset], contents, realsize);
             else
@@ -94,6 +99,7 @@ namespace download {
         {
             char* memory;
             size_t size;
+            size_t capacity;
         };
 
         static size_t WriteMemoryCallback2(void* contents, size_t size, size_t nmemb, void* userp)
@@ -101,13 +107,17 @@ namespace download {
             size_t realsize = size * nmemb;
             struct MemoryStruct* mem = (struct MemoryStruct*)userp;
 
-            char* ptr = static_cast<char*>(realloc(mem->memory, mem->size + realsize + 1));
-            if (ptr == NULL) {
-                /* out of memory! */
-                return 0;
+            // Grow exponentially to avoid O(n²) realloc chain for large responses.
+            size_t needed = mem->size + realsize + 1;
+            if (needed > mem->capacity) {
+                size_t new_cap = mem->capacity ? mem->capacity * 2 : 4096;
+                while (new_cap < needed) new_cap *= 2;
+                char* ptr = static_cast<char*>(realloc(mem->memory, new_cap));
+                if (!ptr) return 0;
+                mem->memory = ptr;
+                mem->capacity = new_cap;
             }
 
-            mem->memory = ptr;
             memcpy(&(mem->memory[mem->size]), contents, realsize);
             mem->size += realsize;
             mem->memory[mem->size] = 0;
@@ -427,8 +437,9 @@ namespace download {
         CURL* curl_handle;
         struct MemoryStruct chunk;
 
-        chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
-        chunk.size = 0;                               /* no data at this point */
+        chunk.memory = static_cast<char*>(malloc(4096));
+        chunk.size = 0;
+        chunk.capacity = 4096;
 
         curl_handle = curl_easy_init();
         curl_easy_setopt(curl_handle, CURLOPT_URL, url);
@@ -464,8 +475,9 @@ namespace download {
         struct curl_slist* list = NULL;
         long status_code = 0;
 
-        chunk.memory = static_cast<char*>(malloc(1)); /* will be grown as needed by the realloc above */
-        chunk.size = 0;                               /* no data at this point */
+        chunk.memory = static_cast<char*>(malloc(4096));
+        chunk.size = 0;
+        chunk.capacity = 4096;
 
         curl_handle = curl_easy_init();
         curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
