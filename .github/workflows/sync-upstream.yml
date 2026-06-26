@@ -9,6 +9,9 @@ concurrency:
   group: sync-upstream
   cancel-in-progress: false
 
+env:
+  CANDIDATE_BRANCH: sync/upstream-candidate
+
 jobs:
   sync:
     name: Merge HamletDuFromage/aio-switch-updater@master
@@ -16,6 +19,9 @@ jobs:
     permissions:
       contents: write
       issues: write
+    outputs:
+      rc: ${{ steps.sync.outputs.rc }}
+      has_changes: ${{ steps.stage.outputs.has_changes }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v7
@@ -40,13 +46,17 @@ jobs:
           bash scripts/ryazhenka/sync-upstream.sh
           echo "rc=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Push merged main
+      - name: Stage merged result to candidate branch
+        id: stage
         if: steps.sync.outputs.rc == '0'
         run: |
           if git log origin/main..HEAD --oneline | grep -q .; then
-            git push origin main
+            git push --force origin HEAD:refs/heads/${{ env.CANDIDATE_BRANCH }}
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Upstream changes staged to ${{ env.CANDIDATE_BRANCH }} - build-check will gate promotion to main."
           else
             echo "no new commits to push"
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Open issue on merge conflict
@@ -74,3 +84,65 @@ jobs:
         run: |
           echo "sync-upstream.sh exited with ${{ steps.sync.outputs.rc }}"
           exit 1
+
+  build-check:
+    name: Build candidate, promote to main only if it compiles
+    needs: sync
+    if: needs.sync.outputs.rc == '0' && needs.sync.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout candidate branch
+        uses: actions/checkout@v7
+        with:
+          ref: sync/upstream-candidate
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build candidate in devkitPro container
+        id: build
+        run: |
+          set +e
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE":/work -w /work \
+            devkitpro/devkita64:latest \
+            bash -c '
+              set -e
+              git config --global --add safe.directory /work
+              git config --global --add safe.directory /work/lib/borealis
+              git config --global --add safe.directory /work/TegraExplorer
+              bash scripts/ryazhenka/apply-patches.sh --check
+              for i in 1 2 3 4 5; do
+                if apt-get -o Acquire::Retries=3 update -y; then break; fi
+                echo "apt-get update failed (attempt $i/5); retrying in $((i*5))s"; sleep $((i*5))
+              done
+              apt-get install -y build-essential zip python3
+              make -C aiosu-forwarder -f Makefile
+              make -j"$(nproc)"
+            '
+          rc=$?
+          set -e
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Promote candidate to main (build passed)
+        if: steps.build.outputs.rc == '0'
+        run: |
+          git config user.name "Dimasick-git"
+          git config user.email "caspiilauluxg@outlook.com"
+          git push origin HEAD:main
+          git push origin --delete sync/upstream-candidate || true
+          echo "::notice::Build passed - upstream sync promoted to main."
+
+      - name: Open issue on build failure (main untouched)
+        if: steps.build.outputs.rc != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Upstream sync: build failed after clean merge on $(date -u +%Y-%m-%d)" \
+            --label upstream-conflict \
+            --body "Upstream merged cleanly and Ryazhenka patches re-applied, but the project failed to build (\`make\`). The merged result is staged on branch \`sync/upstream-candidate\` and was NOT promoted to main. Inspect the build logs, fix locally, then push:\n\n\`\`\`\ngit fetch origin\ngit checkout sync/upstream-candidate\n# fix the build\ngit push origin HEAD:main\ngit push origin --delete sync/upstream-candidate\n\`\`\`"
