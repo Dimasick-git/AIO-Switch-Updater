@@ -51,7 +51,7 @@ jobs:
         if: steps.sync.outputs.rc == '0'
         run: |
           if git log origin/main..HEAD --oneline | grep -q .; then
-            git push --force origin HEAD:refs/heads/${{ env.CANDIDATE_BRANCH }}
+            git push origin HEAD:refs/heads/${{ env.CANDIDATE_BRANCH }}
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Upstream changes staged to ${{ env.CANDIDATE_BRANCH }} - build-check will gate promotion to main."
           else
