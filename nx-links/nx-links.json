@@ -2,47 +2,47 @@
   "_comment": "Ryazhenka Updater download catalogue. URL shapes understood by source/list_download_tab.cpp: (1) direct https URLs for assets with a stable filename; (2) '@latest_asset:OWNER/REPO' — resolved at click time via api.github.com, takes the first asset matching the content type's preferred extension (.zip for archives, .bin for payloads/hekate_ipl), fallback assets[0]; (3) '@download_to:<DEST>:<URL_or_marker>' — single-file download to DEST, no extract, for .ovl / .nro; (4) '@reorg_ppsspp:OWNER/REPO' — like @latest_asset then moves PPSSPP_GL.nro to /switch/ and assets/ to /switch/ppsspp/. NOTE: direct releases/latest/download/<name> aliases only work when the asset filename is version-free; Atmosphere and hekate embed the version, so they MUST use @latest_asset.",
   "_schema_version": 2,
   "cfws": {
-    "Atmosphere": {
-      "Ryazhenka pack (полный)": "@latest_asset:Dimasick-git/Ryzhenka",
-      "Atmosphere (vanilla, upstream)": "@latest_asset:Atmosphere-NX/Atmosphere"
+    "Atmosphère": {
+      "Ряженка BEST CFW": "@latest_asset:Dimasick-git/Ryzhenka",
+      "Atmosphère — оригинальная версия": "@latest_asset:Atmosphere-NX/Atmosphere"
     }
   },
   "bootloaders": {
-    "Hekate + Nyx (CTCaer)": "@latest_asset:CTCaer/hekate"
+    "Hekate + Nyx — загрузчик": "@latest_asset:CTCaer/hekate"
   },
   "firmwares": {
-    "Прошивка Switch (последняя, THZoria)": "@latest_asset:THZoria/NX_Firmware"
+    "Прошивка Nintendo Switch": "@latest_asset:THZoria/NX_Firmware"
   },
   "hekate_ipl": {
-    "hekate_ctcaer.bin": "@latest_asset:CTCaer/hekate"
+    "Hekate — основной payload": "@download_to:/bootloader/hekate_ctcaer.bin:@latest_asset:CTCaer/hekate"
   },
   "payloads": {
-    "Lockpick_RCM.bin": "@latest_asset:THZoria/Lockpick_RCMaster",
-    "TegraExplorer.bin": "@latest_asset:suchmememanyskill/TegraExplorer"
+    "Lockpick_RCM — ключи": "@download_to:/bootloader/payloads/Lockpick_RCM.bin:@latest_asset:THZoria/Lockpick_RCMaster",
+    "TegraExplorer — файловый менеджер": "@download_to:/bootloader/payloads/TegraExplorer.bin:@latest_asset:suchmememanyskill/TegraExplorer"
   },
   "custom": {
-    "Sysmodules и хомбрю Ряженки (распаковываются в корень SD)": {
-      "Ryazhahand bundle (overlay + конфиги)": "@latest_asset:Dimasick-git/Ryazhahand-Overlay",
-      "Sys-clk — overclock sysmodule": "@latest_asset:Dimasick-git/Sys-clk",
-      "Fizeau — display tuner": "@latest_asset:Dimasick-git/Fizeau",
-      "EdiZon — save editor": "@latest_asset:Dimasick-git/EdiZon",
-      "SwitchWave — видеоплеер": "@latest_asset:Dimasick-git/SwitchWave",
-      "ReverseNX-RT — режим док/хэнд": "@latest_asset:Dimasick-git/ReverseNX-RT",
-      "RyazhaTune — настройка профилей": "@latest_asset:Dimasick-git/RyazhaTune",
-      "ovlSysmodules — управление sysmodules": "@latest_asset:Dimasick-git/ovlSysmodules",
-      "Mission-Control — Bluetooth контроллеры": "@latest_asset:Dimasick-git/Mission-Control",
-      "Minecraft Online for Switch": "@latest_asset:Dimasick-git/Minecraft-Online-for-switch"
+    "Компоненты Ряженки": {
+      "Ryazhahand — меню оверлеев": "@latest_asset:Dimasick-git/Ryazhahand-Overlay",
+      "Sys-clk (RU) — модуль частот": "@latest_asset:Dimasick-git/Sys-clk",
+      "Fizeau — цвет экрана": "@latest_asset:Dimasick-git/Fizeau",
+      "EdiZon — сохранения и читы": "@latest_asset:Dimasick-git/EdiZon",
+      "SwitchWave — медиаплеер": "@latest_asset:Dimasick-git/SwitchWave",
+      "ReverseNX-RT — док и портативный режим": "@latest_asset:Dimasick-git/ReverseNX-RT",
+      "RyazhaTune — медиаплеер": "@latest_asset:Dimasick-git/RyazhaTune",
+      "ovlSysmodules — управление модулями": "@latest_asset:Dimasick-git/ovlSysmodules",
+      "Mission Control — Bluetooth-контроллеры": "@latest_asset:Dimasick-git/Mission-Control",
+      "Minecraft Shader Studio — набор шейдеров": "@latest_asset:Dimasick-git/Minecraft-Shader-Studio-for-Switch"
     },
-    "Overlays Ряженка (одиночный .ovl в /switch/.overlays/)": {
-      "Ryazha Status Monitor": "@download_to:/switch/.overlays/Ryazha-Status-Monitor.ovl:https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
-      "FPSLocker overlay": "@download_to:/switch/.overlays/FPSLocker.ovl:https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl"
+    "Оверлеи Ряженки": {
+      "Ryazha Status Monitor — оверлей": "@download_to:/switch/.overlays/Ryazha-Status-Monitor.ovl:https://github.com/Dimasick-git/Ryazha-Status-Monitor/releases/latest/download/Ryazha-Status-Monitor.ovl",
+      "FPSLocker — оверлей": "@download_to:/switch/.overlays/FPSLocker.ovl:https://github.com/Dimasick-git/FPSLocker/releases/latest/download/FPSLocker.ovl"
     },
-    "Тонкая настройка пака": {
-      "Ryazhenka Tuner — CLI настройщик": "@latest_asset:Dimasick-git/Ryazhenkabestcfw-Tuner"
+    "Системные настройки": {
+      "Ryazhenka Tuner — настройки CFW": "@latest_asset:Dimasick-git/Ryazhenkabestcfw-Tuner"
     },
-    "Эмуляторы и AI (особая установка)": {
-      "PPSSPP — эмулятор PSP": "@reorg_ppsspp:Dimasick-git/PPSSPP",
-      "RyazhaAI — ассистент CFW": "@download_to:/switch/RyazhaAI/ryazha-ai.nro:@latest_asset:Dimasick-git/RyazhaAI"
+    "Приложения и AI": {
+      "PPSSPP — эмулятор PSP": "@latest_asset:Dimasick-git/PPSSPP",
+      "RyazhaAI — AI-помощник": "@download_to:/switch/RyazhaAI/ryazha-ai.nro:@latest_asset:Dimasick-git/RyazhaAI"
     }
   }
 }

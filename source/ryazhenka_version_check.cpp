@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <thread>
@@ -164,17 +165,27 @@ std::vector<ToolStatus> runChecks() {
             status.repo = entry.value("repo", std::string{});
             status.local_path = entry.value("local_path", std::string{});
             const std::string api_url = entry.value("api_url", std::string{});
+            const std::string local_kind = entry.value("local_kind", std::string{"nro"});
 
             if (!status.local_path.empty()) {
-                status.local_version = readNroDisplayVersion(status.local_path);
-                if (!status.local_version) {
-                    status.note = "not installed or unreadable NACP";
+                if (local_kind == "nro") {
+                    status.local_version = readNroDisplayVersion(status.local_path);
+                    if (!status.local_version) {
+                        status.note = "not installed or unreadable NACP";
+                    }
+                } else {
+                    std::error_code ec;
+                    if (std::filesystem::exists(status.local_path, ec) && !ec) {
+                        status.note = "installed; local version unavailable";
+                    } else {
+                        status.note = "not installed";
+                    }
                 }
             }
             if (!api_url.empty()) {
                 status.latest_version = fetchLatestTag(api_url);
-                if (!status.latest_version && status.note.empty()) {
-                    status.note = "GitHub API unreachable";
+                if (!status.latest_version) {
+                    status.note += status.note.empty() ? "GitHub API unreachable" : "; GitHub API unreachable";
                 }
             }
             if (status.local_version && status.latest_version) {
@@ -188,6 +199,7 @@ std::vector<ToolStatus> runChecks() {
     appendCategory("tools");
     appendCategory("overlays");
     appendCategory("sysmodules");
+    appendCategory("packages");
 
     return out;
 }

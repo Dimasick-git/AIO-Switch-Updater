@@ -1,118 +1,116 @@
 {
-  "_comment": "List of Dimasick-git Ryazhenka tools that the updater checks for updates against GitHub releases. Each entry: name (display), repo (owner/name), local_path (expected .nro path on SD), api_url (GitHub releases/latest endpoint). The updater compares NACP display_version from local_path with the tag_name returned by api_url.",
+  "_comment": "Ryazhenka component status manifest. name is user-visible, repo and api_url identify the official latest release, local_path is the expected SD path. local_kind=nro permits an NACP version comparison; local_kind=file checks installation only, because .ovl, exefs.nsp and package files do not contain an NRO NACP header.",
   "tools": [
     {
-      "name": "Ryazhenka Updater (self)",
+      "name": "Ryazhenka Updater",
       "repo": "Dimasick-git/AIO-Switch-Updater",
       "local_path": "/switch/aio-switch-updater/aio-switch-updater.nro",
+      "local_kind": "nro",
       "api_url": "https://api.github.com/repos/Dimasick-git/AIO-Switch-Updater/releases/latest"
     },
     {
-      "name": "FPSLocker",
-      "repo": "Dimasick-git/FPSLocker",
-      "local_path": "/switch/FPSLocker/FPSLocker.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/FPSLocker/releases/latest"
-    },
-    {
-      "name": "EdiZon",
-      "repo": "Dimasick-git/EdiZon",
-      "local_path": "/switch/EdiZon/EdiZon.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/EdiZon/releases/latest"
-    },
-    {
-      "name": "Fizeau",
+      "name": "Fizeau — цвет экрана",
       "repo": "Dimasick-git/Fizeau",
       "local_path": "/switch/Fizeau/Fizeau.nro",
+      "local_kind": "nro",
       "api_url": "https://api.github.com/repos/Dimasick-git/Fizeau/releases/latest"
     },
     {
-      "name": "SwitchWave",
+      "name": "SwitchWave — медиаплеер",
       "repo": "Dimasick-git/SwitchWave",
       "local_path": "/switch/SwitchWave/SwitchWave.nro",
+      "local_kind": "nro",
       "api_url": "https://api.github.com/repos/Dimasick-git/SwitchWave/releases/latest"
     },
     {
-      "name": "ReverseNX-RT",
-      "repo": "Dimasick-git/ReverseNX-RT",
-      "local_path": "/switch/ReverseNX-RT/ReverseNX-RT.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/ReverseNX-RT/releases/latest"
-    },
-    {
-      "name": "Mission-Control",
-      "repo": "Dimasick-git/Mission-Control",
-      "local_path": "/switch/Mission-Control/Mission-Control.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/Mission-Control/releases/latest"
-    },
-    {
-      "name": "Ryazha Status Monitor",
-      "repo": "Dimasick-git/Ryazha-Status-Monitor",
-      "local_path": "/switch/Ryazha-Status-Monitor/Ryazha-Status-Monitor.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazha-Status-Monitor/releases/latest"
-    },
-    {
-      "name": "Ryazhenkabestcfw-Tuner",
-      "repo": "Dimasick-git/Ryazhenkabestcfw-Tuner",
-      "local_path": "/switch/Ryazhenkabestcfw-Tuner/Ryazhenkabestcfw-Tuner.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazhenkabestcfw-Tuner/releases/latest"
-    },
-    {
-      "name": "PPSSPP",
+      "name": "PPSSPP — эмулятор PSP",
       "repo": "Dimasick-git/PPSSPP",
-      "local_path": "/switch/PPSSPP/PPSSPP.nro",
+      "local_path": "/switch/ppsspp/PPSSPP.nro",
+      "local_kind": "nro",
       "api_url": "https://api.github.com/repos/Dimasick-git/PPSSPP/releases/latest"
-    },
-    {
-      "name": "ovlSysmodules",
-      "repo": "Dimasick-git/ovlSysmodules",
-      "local_path": "/switch/ovlSysmodules/ovlSysmodules.nro",
-      "api_url": "https://api.github.com/repos/Dimasick-git/ovlSysmodules/releases/latest"
     }
   ],
   "overlays": [
     {
-      "name": "Ryazhahand-Overlay",
+      "name": "Ryazhahand — меню оверлеев",
       "repo": "Dimasick-git/Ryazhahand-Overlay",
       "local_path": "/switch/.overlays/ovlmenu.ovl",
+      "local_kind": "file",
       "api_url": "https://api.github.com/repos/Dimasick-git/Ryazhahand-Overlay/releases/latest"
     },
     {
-      "name": "Status Monitor Overlay",
-      "repo": "Dimasick-git/Status-Monitor-Overlay",
-      "local_path": "/switch/.overlays/Status-Monitor-Overlay.ovl",
-      "api_url": "https://api.github.com/repos/Dimasick-git/Status-Monitor-Overlay/releases/latest"
+      "name": "Ryazha Status Monitor — оверлей",
+      "repo": "Dimasick-git/Ryazha-Status-Monitor",
+      "local_path": "/switch/.overlays/Ryazha-Status-Monitor.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazha-Status-Monitor/releases/latest"
+    },
+    {
+      "name": "FPSLocker — оверлей",
+      "repo": "Dimasick-git/FPSLocker",
+      "local_path": "/switch/.overlays/FPSLocker.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/FPSLocker/releases/latest"
+    },
+    {
+      "name": "EdiZon — оверлей читов",
+      "repo": "Dimasick-git/EdiZon",
+      "local_path": "/switch/.overlays/ovlEdiZon.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/EdiZon/releases/latest"
+    },
+    {
+      "name": "ReverseNX-RT — оверлей режима",
+      "repo": "Dimasick-git/ReverseNX-RT",
+      "local_path": "/switch/.overlays/ReverseNX-RT-ovl.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/ReverseNX-RT/releases/latest"
+    },
+    {
+      "name": "ovlSysmodules — оверлей модулей",
+      "repo": "Dimasick-git/ovlSysmodules",
+      "local_path": "/switch/.overlays/ovlSysmodules.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/ovlSysmodules/releases/latest"
+    },
+    {
+      "name": "RyazhaTune — медиаплеер",
+      "repo": "Dimasick-git/RyazhaTune",
+      "local_path": "/switch/.overlays/RyazhTune-Overlay.ovl",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/RyazhaTune/releases/latest"
     }
   ],
   "sysmodules": [
     {
-      "name": "Sys-clk (RU)",
+      "name": "Sys-clk (RU) — модуль частот",
       "repo": "Dimasick-git/Sys-clk",
       "local_path": "/atmosphere/contents/00FF0000636C6BFF/exefs.nsp",
+      "local_kind": "file",
       "api_url": "https://api.github.com/repos/Dimasick-git/Sys-clk/releases/latest"
     },
     {
-      "name": "nx-ovlloader",
-      "repo": "Dimasick-git/nx-ovlloader",
-      "local_path": "/atmosphere/contents/420000000007E51A/exefs.nsp",
-      "api_url": "https://api.github.com/repos/Dimasick-git/nx-ovlloader/releases/latest"
-    },
-    {
-      "name": "RCU (Ryazha Clock Utility)",
-      "repo": "Dimasick-git/RCU",
-      "local_path": "/atmosphere/contents/00FF0000526B7975/exefs.nsp",
-      "api_url": "https://api.github.com/repos/Dimasick-git/RCU/releases/latest"
-    },
-    {
-      "name": "RyazhaTune",
-      "repo": "Dimasick-git/RyazhaTune",
-      "local_path": "/atmosphere/contents/00FF000052547531/exefs.nsp",
-      "api_url": "https://api.github.com/repos/Dimasick-git/RyazhaTune/releases/latest"
+      "name": "Mission-Control — Bluetooth-контроллеры",
+      "repo": "Dimasick-git/Mission-Control",
+      "local_path": "/atmosphere/contents/010000000000bd00/exefs.nsp",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Mission-Control/releases/latest"
     }
   ],
-  "pack": {
-    "name": "Ryazhenka pack",
-    "repo": "Dimasick-git/Ryzhenka",
-    "asset_filename": "Ryazhenka_AIO.zip",
-    "api_url": "https://api.github.com/repos/Dimasick-git/Ryzhenka/releases/latest",
-    "marker_file": "/atmosphere/package3"
-  }
+  "packages": [
+    {
+      "name": "Ryazhenka Tuner — настройки CFW",
+      "repo": "Dimasick-git/Ryazhenkabestcfw-Tuner",
+      "local_path": "/switch/.packages/Ryazhenkabestcfw Tuner/package.ini",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryazhenkabestcfw-Tuner/releases/latest"
+    },
+    {
+      "name": "Ряженка BEST CFW",
+      "repo": "Dimasick-git/Ryzhenka",
+      "local_path": "/atmosphere/package3",
+      "local_kind": "file",
+      "api_url": "https://api.github.com/repos/Dimasick-git/Ryzhenka/releases/latest"
+    }
+  ]
 }

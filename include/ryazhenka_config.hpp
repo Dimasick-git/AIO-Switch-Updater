@@ -94,18 +94,18 @@ struct EcosystemLink {
 };
 
 inline constexpr EcosystemLink kEcosystemLinks[] = {
-    {"Ryazhenka pack",         "https://github.com/Dimasick-git/Ryzhenka"},
-    {"Atmosphere",             "https://github.com/Dimasick-git/Atmosphere"},
+    {"Ряженка BEST CFW",      "https://github.com/Dimasick-git/Ryzhenka"},
+    {"Atmosphère",             "https://github.com/Atmosphere-NX/Atmosphere"},
     {"Sys-clk (RU)",           "https://github.com/Dimasick-git/Sys-clk"},
-    {"Ryazhahand Overlay",     "https://github.com/Dimasick-git/Ryazhahand-Overlay"},
+    {"Ryazhahand",             "https://github.com/Dimasick-git/Ryazhahand-Overlay"},
     {"FPSLocker",              "https://github.com/Dimasick-git/FPSLocker"},
-    {"EdiZon",                 "https://github.com/Dimasick-git/EdiZon"},
-    {"Fizeau",                 "https://github.com/Dimasick-git/Fizeau"},
+    {"EdiZon — сохранения и читы", "https://github.com/Dimasick-git/EdiZon"},
+    {"Fizeau — цвет экрана",   "https://github.com/Dimasick-git/Fizeau"},
     {"ovlSysmodules",          "https://github.com/Dimasick-git/ovlSysmodules"},
     {"Mission-Control",        "https://github.com/Dimasick-git/Mission-Control"},
     {"Ryazha Status Monitor",  "https://github.com/Dimasick-git/Ryazha-Status-Monitor"},
-    {"Ryazhenka best CFW Tuner", "https://github.com/Dimasick-git/Ryazhenkabestcfw-Tuner"},
-    {"Telegram",               "https://t.me/Ryazhenkacfw"},
+    {"Ryazhenka Tuner",        "https://github.com/Dimasick-git/Ryazhenkabestcfw-Tuner"},
+    {"Telegram Ряженки",       "https://t.me/Ryazhenkacfw"},
 };
 
 } // namespace ryazhenka
