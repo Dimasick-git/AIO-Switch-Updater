@@ -14,6 +14,7 @@
 #include "hide_tabs_page.hpp"
 #include "net_page.hpp"
 #include "payload_page.hpp"
+#include "progress_event.hpp"
 #include "ryazhenka_backup.hpp"
 #include "ryazhenka_banner.hpp"
 #include "ryazhenka_config.hpp"
@@ -191,8 +192,17 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
             util::downloadArchive(packUrl, contentType::custom);
         }));
         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
-            ryazhenka::log::info("pack installer: extracting Ryazhenka_AIO.zip");
+            ryazhenka::log::info("pack installer: extracting Ryazhenkabestcfw.zip");
             util::extractArchive(contentType::custom);
+            if (ProgressEvent::instance().getStatusCode() == 200) {
+                // The ZIP is resolved from GitHub latest; refresh its tag after
+                // extraction so a stale launch-time cache is never recorded as
+                // the version actually installed on the SD card.
+                ryazhenka::banner::fetchNow();
+                const std::string tag = ryazhenka::banner::cachedPackTag();
+                if (!tag.empty())
+                    ryazhenka::banner::markInstalledPackTag(tag);
+            }
             ryazhenka::health::runAndNotifyIfDegraded();
         }));
         stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
@@ -285,7 +295,10 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
                         const bool ok = ryazhenka::restore::restoreFrom(
                             captured,
                             [](ryazhenka::restore::Stage, std::size_t, std::size_t) {});
-                        if (!ok) ryazhenka::log::warn("restore: failed");
+                        if (!ok) {
+                            ryazhenka::log::warn("restore: failed");
+                            ProgressEvent::instance().setStatusCode(500);
+                        }
                         ryazhenka::health::runAndNotifyIfDegraded();
                     }));
                 stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/ryazhenka/restore_done"_i18n));

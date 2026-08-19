@@ -65,4 +65,12 @@ std::string cachedPackTag();
 /// yet cached. May be markdown; the UI renders it as plain text.
 std::string cachedPackNotes();
 
+/// Release tag of the pack most recently installed by Ryazhenka Updater.
+/// Empty means that the pack predates version tracking or has never been
+/// installed through the updater.
+std::string installedPackTag();
+
+/// Persist the tag only after a pack installation completed successfully.
+bool markInstalledPackTag(const std::string& tag);
+
 }  // namespace ryazhenka::banner

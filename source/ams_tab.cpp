@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 #include "confirm_page.hpp"
 #include "current_cfw.hpp"
@@ -16,11 +17,23 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+namespace {
+
+std::string resolveReleaseMarker(const std::string& value) {
+    constexpr std::string_view kLatest = "@latest_asset:";
+    if (value.rfind(kLatest, 0) == 0) {
+        return download::resolveLatestAssetUrl(value.substr(kLatest.size()));
+    }
+    return value;
+}
+
+}  // namespace
+
 AmsTab::AmsTab(const nlohmann::ordered_json& nxlinks, const bool erista) : brls::List()
 {
     this->erista = erista;
     this->nxlinks = nxlinks;
-    this->hekate = util::getValueFromKey(nxlinks, "hekate");
+    this->hekate = util::getValueFromKey(nxlinks, "bootloaders");
 }
 
 void AmsTab::RegisterListItemAction(brls::ListItem* listItem) {}
@@ -29,10 +42,16 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
 {
     std::vector<std::pair<std::string, std::string>> links;
     links = download::getLinksFromJson(cfw_links);
-    if (links.size() && !this->hekate.empty()) {  // non-empty this->hekate indicates internet connection
-        auto hekate_link = download::getLinksFromJson(this->hekate);
-        std::string hekate_url = hekate_link[0].second;
-        std::string text_hekate = "menus/common/download"_i18n + hekate_link[0].first;
+    if (links.size()) {
+        std::string hekate_url;
+        std::string text_hekate;
+        if (hekate && !this->hekate.empty()) {
+            const auto hekate_links = download::getLinksFromJson(this->hekate);
+            if (!hekate_links.empty()) {
+                hekate_url = hekate_links.front().second;
+                text_hekate = "menus/common/download"_i18n + hekate_links.front().first;
+            }
+        }
 
         for (const auto& link : links) {
             bool pack = link.first.contains("[PACK]");
@@ -43,10 +62,21 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
             listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
+                    return;
                 }
-                else {
-                    CreateStagedFrames(text, url, erista, ams, hekate && !pack, text_hekate, hekate_url);
+                const std::string resolvedUrl = resolveReleaseMarker(url);
+                if (resolvedUrl.empty()) {
+                    util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, url));
+                    return;
                 }
+                const bool installHekate = hekate && !pack && !hekate_url.empty();
+                const std::string resolvedHekate = installHekate ? resolveReleaseMarker(hekate_url) : std::string{};
+                if (installHekate && resolvedHekate.empty()) {
+                    util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, hekate_url));
+                    return;
+                }
+                CreateStagedFrames(text, resolvedUrl, erista, ams, installHekate,
+                                   text_hekate, resolvedHekate);
             });
             this->RegisterListItemAction(listItem);
             this->addView(listItem);
@@ -106,7 +136,7 @@ void AmsTab_Regular::CreateLists()
     auto cfws = util::getValueFromKey(this->nxlinks, "cfws");
 
     this->addView(new brls::Label(brls::LabelStyle::DESCRIPTION, "menus/main/ams_text"_i18n + (CurrentCfw::running_cfw == CFW::ams ? "\n" + "menus/ams_update/current_ams"_i18n + CurrentCfw::getAmsInfo() : "") + (erista ? "\n" + "menus/ams_update/erista_rev"_i18n : "\n" + "menus/ams_update/mariko_rev"_i18n), true));
-    CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphere"));
+    CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphère"));
 
     // DeepSea builder removed: builder.teamneptune.net is no longer reachable
     // and the workflow had no other Ryazhenka-specific use. Atmosphere builds

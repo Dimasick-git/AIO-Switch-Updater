@@ -12,7 +12,7 @@ index 7ac3ff0..46ee87d 100644
 -TARGET		:=	$(notdir $(CURDIR))
 +APP_TITLE	:=	Ryazhenka Updater
 +APP_AUTHOR	:=	Dimasick-git
-+APP_VERSION :=	2.23.9
++APP_VERSION :=	2.24.0
 +TARGET		:=	ryazhenka-updater
  
  ROMFS				:=	resources

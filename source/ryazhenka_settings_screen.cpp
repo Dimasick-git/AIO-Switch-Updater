@@ -249,10 +249,29 @@ SettingsScreen::SettingsScreen() {
         brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
         sf->setTitle("menus/ryazhenka/settings/check_updates"_i18n);
         sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
-            // banner::fetchNow also refreshes .pack_tag — so the install_pack
-            // card on the Tools tab will now show the freshest tag.
             const bool ok = ryazhenka::banner::fetchNow();
             ProgressEvent::instance().setStatusCode(ok ? 200 : 500);
+            if (!ok) {
+                brls::Application::notify("menus/ryazhenka/settings/check_updates_failed"_i18n);
+                return;
+            }
+
+            const std::string remote = ryazhenka::banner::cachedPackTag();
+            const std::string installed = ryazhenka::banner::installedPackTag();
+            nlohmann::ordered_json cfg;
+            try { cfg = fs::parseJsonFile(CONFIG_FILE); } catch (...) {}
+            const bool notifyAvailable = cfg.is_object() && cfg.contains("ryazhenka_autoupdate") &&
+                                         cfg["ryazhenka_autoupdate"].is_boolean() &&
+                                         cfg["ryazhenka_autoupdate"].get<bool>();
+            if (remote.empty()) {
+                brls::Application::notify("menus/ryazhenka/settings/check_updates_failed"_i18n);
+            } else if (installed.empty()) {
+                brls::Application::notify("menus/ryazhenka/settings/check_updates_unknown"_i18n);
+            } else if (remote == installed) {
+                brls::Application::notify(fmt::format("menus/ryazhenka/settings/check_updates_latest"_i18n, remote));
+            } else if (notifyAvailable) {
+                brls::Application::notify(fmt::format("menus/ryazhenka/settings/check_updates_available"_i18n, remote, installed));
+            }
         }));
         sf->addStage(new ConfirmPage(sf, "menus/ryazhenka/settings/check_updates_done"_i18n));
         brls::Application::pushView(sf);
@@ -275,33 +294,12 @@ SettingsScreen::SettingsScreen() {
             brls::ListItem* item = new brls::ListItem(name);
             item->setValue(url);
             item->setHeight(LISTITEM_HEIGHT);
-            item->getClickEvent()->subscribe([name, url](brls::View*) {
-                const std::string slug = githubSlugFromUrl(url);
-                if (slug.empty()) {
-                    // Not a GitHub repo (Telegram etc.) — open in the system
-                    // browser applet instead of pretending to install it.
-                    util::openWebBrowser(url);
-                    return;
-                }
-                // Standard "@latest_asset" install flow: resolve URL, download
-                // to CUSTOM_FILENAME, extract at SD root, done.
-                brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
-                sf->setTitle(name);
-                sf->addStage(new ConfirmPage(sf,
-                    std::string("menus/ryazhenka/settings/ecosystem_confirm"_i18n) + "\n\n" + url));
-                sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, [slug]() {
-                    const std::string asset = download::resolveLatestAssetUrl(slug);
-                    if (asset.empty()) {
-                        ryazhenka::log::warn("ecosystem: no latest asset for " + slug);
-                        return;
-                    }
-                    util::downloadArchive(asset, contentType::custom);
-                }));
-                sf->addStage(new WorkerPage(sf, "menus/common/extracting"_i18n, []() {
-                    util::extractArchive(contentType::custom);
-                }));
-                sf->addStage(new ConfirmPage(sf, "menus/common/all_done"_i18n));
-                brls::Application::pushView(sf);
+            item->getClickEvent()->subscribe([url](brls::View*) {
+                // Экосистема содержит ZIP-паки, NRO, OVL и sysmodules. Один
+                // универсальный extract-flow мог установить файл не того типа
+                // в корень SD. Установка выполняется только через каталог,
+                // где для каждого компонента зафиксированы тип и путь.
+                util::openWebBrowser(url);
             });
             list->addView(item);
         }

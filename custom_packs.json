@@ -1,9 +1,4 @@
 {
-    "ams": {
-        "Name of Atmosphère pack": "link_to_zip",
-        "Name of another pack": "link_to_zip"
-    },
-    "misc": {
-        "name of download": "link"
-    }
+  "ams": {},
+  "misc": {}
 }

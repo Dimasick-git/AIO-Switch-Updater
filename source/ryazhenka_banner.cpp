@@ -334,4 +334,27 @@ std::string cachedPackNotes() {
     return slurp(kPackNotesCachePath);
 }
 
+std::string installedPackTag() {
+    std::string out = slurp(kInstalledPackTagPath);
+    while (!out.empty() && (out.back() == '\n' || out.back() == '\r' || out.back() == ' '))
+        out.pop_back();
+    return out;
+}
+
+bool markInstalledPackTag(const std::string& tag) {
+    if (tag.empty())
+        return false;
+    fs::createTree(CONFIG_PATH);
+    if (std::FILE* f = std::fopen(kInstalledPackTagPath, "w")) {
+        const std::size_t written = std::fwrite(tag.data(), 1, tag.size(), f);
+        std::fclose(f);
+        if (written == tag.size()) {
+            log::info(std::string("banner: marked installed pack ") + tag);
+            return true;
+        }
+    }
+    log::warn("banner: could not write installed pack tag");
+    return false;
+}
+
 }  // namespace ryazhenka::banner

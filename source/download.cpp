@@ -72,7 +72,8 @@ namespace download {
                 memcpy(&data_struct->data[data_struct->offset], contents, realsize);
 
             data_struct->offset += realsize;
-            data_struct->data[data_struct->offset] = 0;
+            if (data_struct->offset < data_struct->data_size)
+                data_struct->data[data_struct->offset] = 0;
             return realsize;
         }
 
@@ -414,7 +415,8 @@ namespace download {
             }
         }
 
-        fclose(chunk.out);
+        if (chunk.out)
+            fclose(chunk.out);
         if (!can_download) {
             brls::Application::crash("menus/errors/insufficient_storage"_i18n);
             std::this_thread::sleep_for(std::chrono::microseconds(2000000));

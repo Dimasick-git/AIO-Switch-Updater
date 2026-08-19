@@ -32,35 +32,38 @@ NetPage::NetPage() : AppletFrame(true, true)
     std::string labelText;
 
     if (!uuid || !profile.ip_setting_data.mtu) {
-        labelText = "Please connect to internet to use this feature.";
+        labelText = "menus/net/offline"_i18n;
         label = new brls::Label(brls::LabelStyle::DESCRIPTION, labelText, true);
         list->addView(label);
         cancel = new brls::ListItem("menus/common/go_back"_i18n);
-        cancel->getClickEvent()->subscribe([](brls::View* view) { brls::Application::pushView(new MainFrame()); });
+        cancel->getClickEvent()->subscribe([](brls::View* view) { brls::Application::popView(); });
         list->addView(cancel);
     }
     else {
         if (profile.ip_setting_data.ip_address_setting.is_automatic) {
-            labelText = "IP Adress: Automatic";
+            labelText = "menus/net/ip_auto"_i18n;
         }
         else {
             labelText = fmt::format(
-                "IP Adress: {}\nSubnet Mask: {}\nGateway: {}",
+                "menus/net/ip_manual"_i18n,
                 ipToString(profile.ip_setting_data.ip_address_setting.current_addr.addr),
                 ipToString(profile.ip_setting_data.ip_address_setting.subnet_mask.addr),
                 ipToString(profile.ip_setting_data.ip_address_setting.gateway.addr));
         }
-        labelText = fmt::format("{}\nLocal IP addr: {}\nMTU: {}", labelText, std::string(inet_ntoa({(in_addr_t)gethostid()})), std::to_string(unsigned(profile.ip_setting_data.mtu)));
+        labelText = fmt::format("{}\n{}", labelText,
+            fmt::format("menus/net/local_ip"_i18n,
+                std::string(inet_ntoa({(in_addr_t)gethostid()})),
+                std::to_string(unsigned(profile.ip_setting_data.mtu))));
 
         if (profile.ip_setting_data.dns_setting.is_automatic) {
-            labelText = fmt::format("{}\nDNS: Automatic", labelText);
+            labelText = fmt::format("{}\n{}", labelText, "menus/net/dns_auto"_i18n);
         }
         else {
             labelText = fmt::format(
-                "{}\nPrimary DNS: {}\nSecondary DNS: {}",
-                labelText,
-                ipToString(profile.ip_setting_data.dns_setting.primary_dns_server.addr),
-                ipToString(profile.ip_setting_data.dns_setting.secondary_dns_server.addr));
+                "{}\n{}", labelText,
+                fmt::format("menus/net/dns_manual"_i18n,
+                    ipToString(profile.ip_setting_data.dns_setting.primary_dns_server.addr),
+                    ipToString(profile.ip_setting_data.dns_setting.secondary_dns_server.addr)));
         }
 
         label = new brls::Label(brls::LabelStyle::DESCRIPTION, labelText, true);
@@ -81,36 +84,36 @@ NetPage::NetPage() : AppletFrame(true, true)
         }
 
         profiles.push_back(
-            json::object({{"name", "lan-play"},
-                          {"ip_addr", fmt::format("10.13.{}.{}", std::rand() % 256, std::rand() % 253 + 2)},
+            json::object({{"name", "menus/net/lan_play"_i18n},
+                          {"ip_addr", "10.13.37.2"},
                           {"subnet_mask", "255.255.0.0"},
                           {"gateway", "10.13.37.1"}}));
 
         profiles.push_back(
-            json::object({{"name", "Automatic IP Address"},
+            json::object({{"name", "menus/net/automatic_ip"_i18n},
                           {"ip_auto", true}}));
 
         profiles.push_back(
-            json::object({{"name", "Automatic DNS"},
+            json::object({{"name", "menus/net/automatic_dns"_i18n},
                           {"dns_auto", true}}));
 
         profiles.push_back(
-            json::object({{"name", "90DNS (Europe)"},
+            json::object({{"name", "menus/net/dns_eu"_i18n},
                           {"dns1", "163.172.141.219"},
                           {"dns2", "207.246.121.77"}}));
 
         profiles.push_back(
-            json::object({{"name", "90DNS (USA)"},
+            json::object({{"name", "menus/net/dns_usa"_i18n},
                           {"dns1", "207.246.121.77"},
                           {"dns2", "163.172.141.219"}}));
 
         profiles.push_back(
-            json::object({{"name", "Google DNS"},
+            json::object({{"name", "menus/net/google_dns"_i18n},
                           {"dns1", "8.8.8.8"},
                           {"dns2", "8.8.4.4"}}));
 
         profiles.push_back(
-            json::object({{"name", "ACNH mtu"},
+            json::object({{"name", "menus/net/acnh_mtu"_i18n},
                           {"mtu", 1500}}));
 
         for (const auto& p : profiles.items()) {
@@ -191,7 +194,7 @@ std::string NetPage::ipToString(u8* ip)
         res += std::to_string(unsigned(ip[i]));
         res += ".";
     }
-    res += std::to_string(unsigned(ip[4]));
+    res += std::to_string(unsigned(ip[3]));
     return res;
 }
 

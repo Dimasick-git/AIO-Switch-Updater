@@ -3,6 +3,7 @@
 #include "confirm_page.hpp"
 #include "download.hpp"
 #include "fs.hpp"
+#include "progress_event.hpp"
 #include "utils.hpp"
 #include "worker_page.hpp"
 
@@ -32,7 +33,10 @@ DownloadPayloadPage::DownloadPayloadPage(const nlohmann::ordered_json& payloads)
                 stagedFrame->addStage(
                     new ConfirmPage(stagedFrame, text));
                 stagedFrame->addStage(
-                    new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() { download::downloadFile(url, path, OFF); }));
+                    new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, path]() {
+                        const long status = download::downloadFile(url, path, OFF);
+                        ProgressEvent::instance().setStatusCode(status);
+                    }));
                 stagedFrame->addStage(
                     new ConfirmPage_Done(stagedFrame, "menus/common/all_done"_i18n));
                 brls::Application::pushView(stagedFrame);

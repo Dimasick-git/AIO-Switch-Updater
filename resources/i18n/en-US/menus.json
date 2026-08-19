@@ -68,10 +68,14 @@
       "autoupdate_toggle": "Auto-update Ryazhenka pack",
       "autoupdate_hint": "When ON, the Check button will offer to install a newer version. Off by default.",
       "check_updates": "Check for updates now",
-      "check_updates_done": "Done. Open Tools → Install Ryazhenka pack — the version on the right shows the latest tag. If it differs from your installed pack, run the install.",
-      "ecosystem_updates": "Ryazhenka ecosystem (install / update)",
-      "ecosystem_hint": "Click any repo to install its latest release. Non-GitHub links open in the system browser.",
-      "ecosystem_confirm": "Install latest release from this repo? The .zip will be downloaded and extracted into the SD root, overwriting any existing files.",
+      "check_updates_done": "Latest release data refreshed.",
+      "check_updates_latest": "Ryazhenka pack is already current: {}.",
+      "check_updates_available": "A new pack version is available: {}. Installed: {}.",
+      "check_updates_unknown": "The installed pack version is unknown. Install the pack once from Tools to enable exact comparison.",
+      "check_updates_failed": "Could not fetch the latest release data. Check the internet connection and try again.",
+      "install_update": "Install update",
+      "ecosystem_updates": "Ryazhenka ecosystem projects",
+      "ecosystem_hint": "Open the project page you need. Install and update components from the Ryazhenka catalogue, where every component has a verified SD destination.",
       "touch_toggle": "Touchscreen input",
       "touch_hint": "Tap the screen to press A on the focused item. Tap the sidebar area to hop focus there.",
       "selected": "selected"
@@ -296,7 +300,20 @@
     "launch_daybreak": "Do you want to launch Daybreak to install the downloaded sysupdate?"
   },
   "net": {
-    "title": "Internet settings"
+    "title": "Internet settings",
+    "offline": "Connect to the internet to change the network profile.",
+    "ip_auto": "IP: automatic",
+    "ip_manual": "IP: {}\nSubnet mask: {}\nGateway: {}",
+    "local_ip": "Local IP: {}\nMTU: {}",
+    "dns_auto": "DNS: automatic",
+    "dns_manual": "Primary DNS: {}\nSecondary DNS: {}",
+    "lan_play": "LAN-play",
+    "automatic_ip": "Automatic IP",
+    "automatic_dns": "Automatic DNS",
+    "dns_eu": "90DNS — Europe",
+    "dns_usa": "90DNS — USA",
+    "google_dns": "Google DNS",
+    "acnh_mtu": "Animal Crossing — MTU 1500"
   },
   "errors": {
     "insufficient_storage": "There isn't enough space available on your SD card to perform this operation.",
