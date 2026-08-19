@@ -249,23 +249,33 @@ SettingsScreen::SettingsScreen() {
         brls::StagedAppletFrame* sf = new brls::StagedAppletFrame();
         sf->setTitle("menus/ryazhenka/settings/check_updates"_i18n);
         sf->addStage(new WorkerPage(sf, "menus/common/downloading"_i18n, []() {
-            const bool ok = ryazhenka::banner::fetchNow();
-            ProgressEvent::instance().setStatusCode(ok ? 200 : 500);
-            if (!ok) {
+            // Проверка версии не должна зависеть от баннерной картинки: баннер
+            // может отсутствовать или быть временно недоступен, хотя release
+            // и ZIP пака доступны. Берём tag_name напрямую из GitHub API.
+            nlohmann::ordered_json release;
+            const long http = download::getRequest(
+                ryazhenka::kSigpatchesReleasesUrl,
+                release,
+                {"Accept: application/vnd.github+json"});
+            const bool valid = http == 200 && release.is_object() &&
+                               release.contains("tag_name") && release["tag_name"].is_string() &&
+                               !release["tag_name"].get<std::string>().empty();
+            if (!valid) {
+                ryazhenka::log::warn("settings: pack update API failed http=" + std::to_string(http));
+                ProgressEvent::instance().setStatusCode(http > 0 ? http : 408);
                 brls::Application::notify("menus/ryazhenka/settings/check_updates_failed"_i18n);
                 return;
             }
 
-            const std::string remote = ryazhenka::banner::cachedPackTag();
+            const std::string remote = release["tag_name"].get<std::string>();
             const std::string installed = ryazhenka::banner::installedPackTag();
+            ProgressEvent::instance().setStatusCode(200);
             nlohmann::ordered_json cfg;
             try { cfg = fs::parseJsonFile(CONFIG_FILE); } catch (...) {}
             const bool notifyAvailable = cfg.is_object() && cfg.contains("ryazhenka_autoupdate") &&
                                          cfg["ryazhenka_autoupdate"].is_boolean() &&
                                          cfg["ryazhenka_autoupdate"].get<bool>();
-            if (remote.empty()) {
-                brls::Application::notify("menus/ryazhenka/settings/check_updates_failed"_i18n);
-            } else if (installed.empty()) {
+            if (installed.empty()) {
                 brls::Application::notify("menus/ryazhenka/settings/check_updates_unknown"_i18n);
             } else if (remote == installed) {
                 brls::Application::notify(fmt::format("menus/ryazhenka/settings/check_updates_latest"_i18n, remote));
