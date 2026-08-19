@@ -1,8 +1,8 @@
 diff --git a/source/tools_tab.cpp b/source/tools_tab.cpp
-index 43c91c1..d694e8a 100644
+index 43c91c1a86124cc05a9ef358b8d49a1451e12de7..08f6a671734032c24c159ba80a6cffdb8c3c6718 100644
 --- a/source/tools_tab.cpp
 +++ b/source/tools_tab.cpp
-@@ -8,11 +8,21 @@
+@@ -8,11 +8,22 @@
  #include "app_page.hpp"
  #include "cheats_page.hpp"
  #include "confirm_page.hpp"
@@ -12,6 +12,7 @@ index 43c91c1..d694e8a 100644
  #include "hide_tabs_page.hpp"
  #include "net_page.hpp"
  #include "payload_page.hpp"
++#include "progress_event.hpp"
 +#include "ryazhenka_backup.hpp"
 +#include "ryazhenka_banner.hpp"
 +#include "ryazhenka_config.hpp"
@@ -24,7 +25,7 @@ index 43c91c1..d694e8a 100644
  #include "utils.hpp"
  #include "worker_page.hpp"
  
-@@ -26,72 +36,315 @@ namespace {
+@@ -26,72 +37,327 @@ namespace {
  
  ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payloads, bool erista, const nlohmann::ordered_json& hideStatus) : brls::List()
  {
@@ -199,8 +200,17 @@ index 43c91c1..d694e8a 100644
 +            util::downloadArchive(packUrl, contentType::custom);
 +        }));
 +        stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, []() {
-+            ryazhenka::log::info("pack installer: extracting Ryazhenka_AIO.zip");
++            ryazhenka::log::info("pack installer: extracting Ryazhenkabestcfw.zip");
 +            util::extractArchive(contentType::custom);
++            if (ProgressEvent::instance().getStatusCode() == 200) {
++                // The ZIP is resolved from GitHub latest; refresh its tag after
++                // extraction so a stale launch-time cache is never recorded as
++                // the version actually installed on the SD card.
++                ryazhenka::banner::fetchNow();
++                const std::string tag = ryazhenka::banner::cachedPackTag();
++                if (!tag.empty())
++                    ryazhenka::banner::markInstalledPackTag(tag);
++            }
 +            ryazhenka::health::runAndNotifyIfDegraded();
 +        }));
 +        stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/common/all_done"_i18n));
@@ -293,7 +303,10 @@ index 43c91c1..d694e8a 100644
 +                        const bool ok = ryazhenka::restore::restoreFrom(
 +                            captured,
 +                            [](ryazhenka::restore::Stage, std::size_t, std::size_t) {});
-+                        if (!ok) ryazhenka::log::warn("restore: failed");
++                        if (!ok) {
++                            ryazhenka::log::warn("restore: failed");
++                            ProgressEvent::instance().setStatusCode(500);
++                        }
 +                        ryazhenka::health::runAndNotifyIfDegraded();
 +                    }));
 +                stagedFrame->addStage(new ConfirmPage(stagedFrame, "menus/ryazhenka/restore_done"_i18n));
@@ -363,7 +376,7 @@ index 43c91c1..d694e8a 100644
      move->getClickEvent()->subscribe([](brls::View* view) {
          chdir("/");
          std::string error = "";
-@@ -103,9 +356,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -103,9 +369,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          }
          util::showDialogBoxInfo(error);
      });
@@ -374,7 +387,7 @@ index 43c91c1..d694e8a 100644
      cleanUp->getClickEvent()->subscribe([](brls::View* view) {
          std::filesystem::remove(AMS_FILENAME);
          std::filesystem::remove(APP_FILENAME);
-@@ -119,9 +372,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -119,9 +385,9 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          fs::removeDir(FW_DIRECTORY_PATH);
          util::showDialogBoxInfo("menus/common/all_done"_i18n);
      });
@@ -385,7 +398,7 @@ index 43c91c1..d694e8a 100644
      language->getClickEvent()->subscribe([](brls::View* view) {
          std::vector<std::pair<std::string, std::string>> languages{
              std::make_pair("American English ({})", "en-US"),
-@@ -171,21 +424,37 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
+@@ -171,21 +437,37 @@ ToolsTab::ToolsTab(const std::string& tag, const nlohmann::ordered_json& payload
          appView->setContentView(list);
          brls::PopupFrame::open("menus/tools/language"_i18n, appView, "", "");
      });
