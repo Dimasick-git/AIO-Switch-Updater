@@ -35,66 +35,132 @@ namespace extract {
             return strcasecmp(a.c_str(), b.c_str()) == 0;
         }
 
-        s64 getUncompressedSize(const std::string& archivePath)
+        bool getUncompressedSize(const std::string& archivePath, s64& size)
         {
-            s64 size = 0;
+            size = 0;
             unzFile zfile = unzOpen(archivePath.c_str());
+            if (zfile == nullptr)
+                return false;
+
             unz_global_info gi;
-            unzGetGlobalInfo(zfile, &gi);
+            if (unzGetGlobalInfo(zfile, &gi) != UNZ_OK) {
+                unzClose(zfile);
+                return false;
+            }
+
             for (uLong i = 0; i < gi.number_entry; ++i) {
                 unz_file_info fi;
-                unzOpenCurrentFile(zfile);
-                unzGetCurrentFileInfo(zfile, &fi, NULL, 0, NULL, 0, NULL, 0);
-                size += fi.uncompressed_size;
-                unzCloseCurrentFile(zfile);
-                unzGoToNextFile(zfile);
-            }
-            unzClose(zfile);
-            return size;  // in B
-        }
-
-        void ensureAvailableStorage(const std::string& archivePath)
-        {
-            s64 uncompressedSize = getUncompressedSize(archivePath);
-            s64 freeStorage;
-
-            if (R_SUCCEEDED(fs::getFreeStorageSD(freeStorage))) {
-                brls::Logger::info("Uncompressed size of archive {}: {}. Available: {}", archivePath, uncompressedSize, freeStorage);
-                if (uncompressedSize * 1.1 > freeStorage) {
-                    brls::Application::crash("menus/errors/insufficient_storage"_i18n);
-                    std::this_thread::sleep_for(std::chrono::microseconds(2000000));
-                    brls::Application::quit();
+                if (unzGetCurrentFileInfo(zfile, &fi, NULL, 0, NULL, 0, NULL, 0) != UNZ_OK) {
+                    unzClose(zfile);
+                    return false;
+                }
+                size += static_cast<s64>(fi.uncompressed_size);
+                if (i + 1 < gi.number_entry && unzGoToNextFile(zfile) != UNZ_OK) {
+                    unzClose(zfile);
+                    return false;
                 }
             }
+            unzClose(zfile);
+            return true;
         }
 
-        void extractEntry(std::string filename, unzFile& zfile, bool forceCreateTree = false)
+        bool ensureAvailableStorage(const std::string& archivePath)
         {
+            s64 uncompressedSize = 0;
+            if (!getUncompressedSize(archivePath, uncompressedSize)) {
+                brls::Logger::error("Cannot inspect archive {} before extraction", archivePath);
+                return false;
+            }
+
+            s64 archiveSize = 0;
+            try {
+                archiveSize = static_cast<s64>(std::filesystem::file_size(archivePath));
+            }
+            catch (const std::filesystem::filesystem_error&) {
+                brls::Logger::error("Cannot get archive size for {}", archivePath);
+                return false;
+            }
+
+            s64 freeStorage = 0;
+            if (R_FAILED(fs::getFreeStorageSD(freeStorage))) {
+                brls::Logger::error("Cannot query free space on SD card");
+                return false;
+            }
+
+            // The archive remains on the SD card while its payload is written.
+            constexpr s64 safetyMargin = 4 * 1024 * 1024;
+            const s64 requiredStorage = uncompressedSize + archiveSize + safetyMargin;
+            brls::Logger::info("Archive {} requires {} bytes (payload {}, archive {}, margin {}). Available: {}",
+                archivePath, requiredStorage, uncompressedSize, archiveSize, safetyMargin, freeStorage);
+            return freeStorage >= requiredStorage;
+        }
+
+        bool extractEntry(const std::string& filename, unzFile& zfile)
+        {
+            if (filename.empty())
+                return false;
             if (filename.back() == '/') {
                 fs::createTree(filename);
-                return;
+                return true;
             }
-            if (forceCreateTree) {
-                fs::createTree(filename);
-            }
+
+            // ZIP writers are not required to list every parent directory.
+            fs::createTree(filename);
             void* buf = malloc(WRITE_BUFFER_SIZE);
-            FILE* outfile;
-            outfile = fopen(filename.c_str(), "wb");
-            for (int j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE); j > 0; j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) {
-                fwrite(buf, 1, j, outfile);
+            if (buf == nullptr) {
+                brls::Logger::error("Out of memory while extracting {}", filename);
+                return false;
             }
+
+            FILE* outfile = fopen(filename.c_str(), "wb");
+            if (outfile == nullptr) {
+                brls::Logger::error("Cannot open {} for writing", filename);
+                free(buf);
+                return false;
+            }
+
+            bool success = true;
+            for (;;) {
+                const int readSize = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE);
+                if (readSize == 0)
+                    break;
+                if (readSize < 0 || fwrite(buf, 1, static_cast<size_t>(readSize), outfile) != static_cast<size_t>(readSize)) {
+                    brls::Logger::error("Write or ZIP read failed for {}", filename);
+                    success = false;
+                    break;
+                }
+            }
+
             free(buf);
-            fclose(outfile);
+            if (fclose(outfile) != 0) {
+                brls::Logger::error("Cannot finish writing {}", filename);
+                success = false;
+            }
+            return success;
         }
     }  // namespace
 
-    void extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func)
+    bool extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func)
     {
-        ensureAvailableStorage(archivePath);
+        if (!ensureAvailableStorage(archivePath)) {
+            brls::Logger::error("Insufficient storage or unreadable archive: {}", archivePath);
+            ProgressEvent::instance().setStatusCode(507);
+            return false;
+        }
 
         unzFile zfile = unzOpen(archivePath.c_str());
+        if (zfile == nullptr) {
+            brls::Logger::error("Cannot open ZIP archive {}", archivePath);
+            ProgressEvent::instance().setStatusCode(406);
+            return false;
+        }
         unz_global_info gi;
-        unzGetGlobalInfo(zfile, &gi);
+        if (unzGetGlobalInfo(zfile, &gi) != UNZ_OK) {
+            brls::Logger::error("Cannot read ZIP directory from {}", archivePath);
+            unzClose(zfile);
+            ProgressEvent::instance().setStatusCode(406);
+            return false;
+        }
 
         ProgressEvent::instance().setTotalSteps(gi.number_entry);
         ProgressEvent::instance().setStep(0);
@@ -104,8 +170,12 @@ namespace extract {
 
         for (uLong i = 0; i < gi.number_entry; ++i) {
             char szFilename[0x301] = "";
-            unzOpenCurrentFile(zfile);
-            unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
+            if (unzOpenCurrentFile(zfile) != UNZ_OK || unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0) != UNZ_OK) {
+                brls::Logger::error("Cannot read ZIP entry {} from {}", i, archivePath);
+                unzClose(zfile);
+                ProgressEvent::instance().setStatusCode(406);
+                return false;
+            }
             std::string filename = workingPath + szFilename;
 
             if (ProgressEvent::instance().getInterupt()) {
@@ -116,16 +186,29 @@ namespace extract {
                 if ((preserveInis == true && filename.substr(filename.length() - 4) == ".ini") || std::find_if(ignoreList.begin(), ignoreList.end(), [&filename](std::string ignored) {
                                                                                                                     u8 res = filename.find(ignored);
                                                                                                                     return (res == 0 || res == 1); }) != ignoreList.end()) {
-                    if (!std::filesystem::exists(filename)) {
-                        extractEntry(filename, zfile);
+                    if (!std::filesystem::exists(filename) && !extractEntry(filename, zfile)) {
+                        unzCloseCurrentFile(zfile);
+                        unzClose(zfile);
+                        ProgressEvent::instance().setStatusCode(507);
+                        return false;
                     }
                 }
                 else {
                     if ((filename == "/atmosphere/package3") || (filename == "/atmosphere/stratosphere.romfs")) {
-                        extractEntry(filename + ".aio", zfile);
+                        if (!extractEntry(filename + ".aio", zfile)) {
+                            unzCloseCurrentFile(zfile);
+                            unzClose(zfile);
+                            ProgressEvent::instance().setStatusCode(507);
+                            return false;
+                        }
                     }
                     else {
-                        extractEntry(filename, zfile);
+                        if (!extractEntry(filename, zfile)) {
+                            unzCloseCurrentFile(zfile);
+                            unzClose(zfile);
+                            ProgressEvent::instance().setStatusCode(507);
+                            return false;
+                        }
                         if (filename.substr(0, 14) == "/hekate_ctcaer") {
                             fs::copyFile(filename, UPDATE_BIN_PATH);
                             if (CurrentCfw::running_cfw == CFW::ams && util::showDialogBoxBlocking(fmt::format("menus/utils/set_hekate_reboot_payload"_i18n, UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH), "menus/common/yes"_i18n, "menus/common/no"_i18n) == 0) {
@@ -141,6 +224,8 @@ namespace extract {
         }
         unzClose(zfile);
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+        func();
+        return true;
     }
 
     std::vector<std::string> getInstalledTitlesNs()

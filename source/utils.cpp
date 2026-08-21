@@ -162,6 +162,8 @@ namespace util {
         // so WorkerPage still reports that failure.
         if (ProgressEvent::instance().getStatusCode() == 406)
             return;
+
+        bool extractionSuccessful = true;
         switch (type) {
             case contentType::cheats: {
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
@@ -172,7 +174,7 @@ namespace util {
             case contentType::fw:
                 fs::removeDir(FIRMWARE_PATH);
                 fs::createTree(FIRMWARE_PATH);
-                extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
+                extractionSuccessful = extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
                 break;
             case contentType::app:
                 // The Ryazhenka_AIO.zip is laid out as switch/aio-switch-updater/
@@ -181,17 +183,18 @@ namespace util {
                 // extracted into CONFIG_PATH, so the new build landed at
                 // /config/.../switch/... and the actual app was never replaced —
                 // that's why "version was the same, nothing updated".
-                extract::extract(APP_FILENAME, ROOT_PATH);
-                fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
+                extractionSuccessful = extract::extract(APP_FILENAME, ROOT_PATH);
+                if (extractionSuccessful)
+                    fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
                 break;
             case contentType::custom: {
                 int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                extract::extract(CUSTOM_FILENAME, ROOT_PATH, preserveInis);
+                extractionSuccessful = extract::extract(CUSTOM_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
             case contentType::bootloaders: {
                 int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                extract::extract(BOOTLOADER_FILENAME, ROOT_PATH, preserveInis);
+                extractionSuccessful = extract::extract(BOOTLOADER_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
             case contentType::ams_cfw: {
@@ -199,12 +202,15 @@ namespace util {
                 int deleteContents = showDialogBoxBlocking("menus/ams_update/delete_sysmodules_flags"_i18n, "menus/common/no"_i18n, "menus/common/yes"_i18n);
                 if (deleteContents == 1)
                     removeSysmodulesFlags(AMS_CONTENTS);
-                extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
+                extractionSuccessful = extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
             }
             default:
                 break;
         }
+        if (!extractionSuccessful)
+            return;
+
         if (type == contentType::ams_cfw || type == contentType::bootloaders || type == contentType::custom)
             fs::copyFiles(COPY_FILES_TXT);
 
