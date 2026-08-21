@@ -65,6 +65,10 @@ for p in "${sorted[@]}"; do
         fi
     elif git apply -R --check "$p" 2>/dev/null; then
         echo "[$name] already applied"
+    elif [[ "$name" == "12-utils-errormsg.patch" ]] && grep -Fq 'bool extractionSuccessful = true;' source/utils.cpp && grep -Fq 'ProgressEvent::instance().setStatusCode(200);' source/utils.cpp; then
+        # The downstream behaviour from patch 12 is already present, but later
+        # extraction-safety edits changed its surrounding context.
+        echo "[$name] already integrated in current downstream source"
     else
         echo "[$name] CONFLICT — manual resolution required" >&2
         echo "  hint: run \`git apply --3way $p\` to attempt a three-way merge" >&2
