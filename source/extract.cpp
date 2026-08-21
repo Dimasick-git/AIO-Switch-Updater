@@ -8,7 +8,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iterator>
-#include <limits>
 #include <ranges>
 #include <set>
 #include <sstream>
@@ -36,192 +35,112 @@ namespace extract {
             return strcasecmp(a.c_str(), b.c_str()) == 0;
         }
 
-        bool getUncompressedSize(const std::string& archivePath, s64& size)
+        s64 getUncompressedSize(const std::string& archivePath)
         {
-            size = 0;
+            s64 size = 0;
             unzFile zfile = unzOpen(archivePath.c_str());
-            if (!zfile)
-                return false;
-
-            unz_global_info gi{};
-            bool ok = unzGetGlobalInfo(zfile, &gi) == UNZ_OK;
-            if (ok && gi.number_entry > 0)
-                ok = unzGoToFirstFile(zfile) == UNZ_OK;
-
-            for (uLong i = 0; ok && i < gi.number_entry; ++i) {
-                unz_file_info fi{};
-                ok = unzGetCurrentFileInfo(zfile, &fi, NULL, 0, NULL, 0, NULL, 0) == UNZ_OK;
-                if (!ok)
-                    break;
-                if (fi.uncompressed_size > static_cast<uLong>(std::numeric_limits<s64>::max() - size)) {
-                    ok = false;
-                    break;
-                }
-                size += static_cast<s64>(fi.uncompressed_size);
-                if (i + 1 < gi.number_entry)
-                    ok = unzGoToNextFile(zfile) == UNZ_OK;
+            unz_global_info gi;
+            unzGetGlobalInfo(zfile, &gi);
+            for (uLong i = 0; i < gi.number_entry; ++i) {
+                unz_file_info fi;
+                unzOpenCurrentFile(zfile);
+                unzGetCurrentFileInfo(zfile, &fi, NULL, 0, NULL, 0, NULL, 0);
+                size += fi.uncompressed_size;
+                unzCloseCurrentFile(zfile);
+                unzGoToNextFile(zfile);
             }
             unzClose(zfile);
-            return ok;
+            return size;  // in B
         }
 
-        bool ensureAvailableStorage(const std::string& archivePath)
+        void ensureAvailableStorage(const std::string& archivePath)
         {
-            s64 uncompressedSize = 0;
-            if (!getUncompressedSize(archivePath, uncompressedSize))
-                return false;
+            s64 uncompressedSize = getUncompressedSize(archivePath);
+            s64 freeStorage;
 
-            s64 freeStorage = 0;
             if (R_SUCCEEDED(fs::getFreeStorageSD(freeStorage))) {
                 brls::Logger::info("Uncompressed size of archive {}: {}. Available: {}", archivePath, uncompressedSize, freeStorage);
-                // Leave a 10% safety margin for filesystem metadata and active app files.
-                if (uncompressedSize > freeStorage - (freeStorage / 10))
-                    return false;
+                if (uncompressedSize * 1.1 > freeStorage) {
+                    brls::Application::crash("menus/errors/insufficient_storage"_i18n);
+                    std::this_thread::sleep_for(std::chrono::microseconds(2000000));
+                    brls::Application::quit();
+                }
             }
-            return true;
         }
 
-        bool isUnsafeArchivePath(const std::string& entry)
+        void extractEntry(std::string filename, unzFile& zfile, bool forceCreateTree = false)
         {
-            if (entry.empty() || entry.front() == '/')
-                return true;
-            const std::filesystem::path path(entry);
-            if (path.is_absolute())
-                return true;
-            for (const auto& component : path) {
-                if (component == "..")
-                    return true;
-            }
-            return false;
-        }
-
-        bool extractEntry(const std::string& filename, unzFile& zfile)
-        {
-            if (filename.empty())
-                return false;
-
-            std::error_code ec;
             if (filename.back() == '/') {
-                std::filesystem::create_directories(filename, ec);
-                return !ec;
+                fs::createTree(filename);
+                return;
             }
-
-            const std::filesystem::path outputPath(filename);
-            const auto parent = outputPath.parent_path();
-            if (!parent.empty())
-                std::filesystem::create_directories(parent, ec);
-            if (ec)
-                return false;
-
-            FILE* outfile = fopen(filename.c_str(), "wb");
-            if (!outfile)
-                return false;
-
-            std::vector<unsigned char> buf(WRITE_BUFFER_SIZE);
-            bool ok = true;
-            for (;;) {
-                const int read = unzReadCurrentFile(zfile, buf.data(), static_cast<unsigned int>(buf.size()));
-                if (read < 0) {
-                    ok = false;
-                    break;
-                }
-                if (read == 0)
-                    break;
-                if (fwrite(buf.data(), 1, static_cast<size_t>(read), outfile) != static_cast<size_t>(read)) {
-                    ok = false;
-                    break;
-                }
+            if (forceCreateTree) {
+                fs::createTree(filename);
             }
-            if (fclose(outfile) != 0)
-                ok = false;
-            return ok;
+            void* buf = malloc(WRITE_BUFFER_SIZE);
+            FILE* outfile;
+            outfile = fopen(filename.c_str(), "wb");
+            for (int j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE); j > 0; j = unzReadCurrentFile(zfile, buf, WRITE_BUFFER_SIZE)) {
+                fwrite(buf, 1, j, outfile);
+            }
+            free(buf);
+            fclose(outfile);
         }
     }  // namespace
 
-    bool extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func)
+    void extract(const std::string& archivePath, const std::string& workingPath, bool preserveInis, std::function<void()> func)
     {
-        if (!ensureAvailableStorage(archivePath))
-            return false;
+        ensureAvailableStorage(archivePath);
 
         unzFile zfile = unzOpen(archivePath.c_str());
-        if (!zfile)
-            return false;
-
-        unz_global_info gi{};
-        bool ok = unzGetGlobalInfo(zfile, &gi) == UNZ_OK;
-        if (ok && gi.number_entry > 0)
-            ok = unzGoToFirstFile(zfile) == UNZ_OK;
+        unz_global_info gi;
+        unzGetGlobalInfo(zfile, &gi);
 
         ProgressEvent::instance().setTotalSteps(gi.number_entry);
         ProgressEvent::instance().setStep(0);
 
-        const std::set<std::string> ignoreList = fs::readLineByLine(FILES_IGNORE);
-        const std::string appPath = util::getAppPath();
+        std::set<std::string> ignoreList = fs::readLineByLine(FILES_IGNORE);
+        std::string appPath = util::getAppPath();
 
-        for (uLong i = 0; ok && i < gi.number_entry; ++i) {
+        for (uLong i = 0; i < gi.number_entry; ++i) {
             char szFilename[0x301] = "";
-            unz_file_info fileInfo{};
-            ok = unzGetCurrentFileInfo(zfile, &fileInfo, szFilename, sizeof(szFilename), NULL, 0, NULL, 0) == UNZ_OK;
-            if (!ok || fileInfo.size_filename >= sizeof(szFilename)) {
-                ok = false;
-                break;
-            }
+            unzOpenCurrentFile(zfile);
+            unzGetCurrentFileInfo(zfile, NULL, szFilename, sizeof(szFilename), NULL, 0, NULL, 0);
+            std::string filename = workingPath + szFilename;
 
-            const std::string entryName(szFilename);
-            if (isUnsafeArchivePath(entryName)) {
-                ok = false;
-                break;
-            }
-            const std::string filename = workingPath + entryName;
             if (ProgressEvent::instance().getInterupt()) {
-                ok = false;
+                unzCloseCurrentFile(zfile);
                 break;
             }
-
-            ok = unzOpenCurrentFile(zfile) == UNZ_OK;
-            if (!ok)
-                break;
-
-            bool extracted = true;
             if (appPath != filename) {
-                const bool isIni = filename.size() >= 4 && filename.compare(filename.size() - 4, 4, ".ini") == 0;
-                const bool ignored = std::any_of(ignoreList.begin(), ignoreList.end(), [&filename](const std::string& ignoredPath) {
-                    const std::size_t pos = filename.find(ignoredPath);
-                    return pos == 0 || pos == 1;
-                });
-                if ((preserveInis && isIni) || ignored) {
-                    if (!std::filesystem::exists(filename))
-                        extracted = extractEntry(filename, zfile);
-                }
-                else if ((filename == "/atmosphere/package3") || (filename == "/atmosphere/stratosphere.romfs")) {
-                    extracted = extractEntry(filename + ".aio", zfile);
+                if ((preserveInis == true && filename.substr(filename.length() - 4) == ".ini") || std::find_if(ignoreList.begin(), ignoreList.end(), [&filename](std::string ignored) {
+                                                                                                                    u8 res = filename.find(ignored);
+                                                                                                                    return (res == 0 || res == 1); }) != ignoreList.end()) {
+                    if (!std::filesystem::exists(filename)) {
+                        extractEntry(filename, zfile);
+                    }
                 }
                 else {
-                    extracted = extractEntry(filename, zfile);
-                    if (extracted && filename.rfind("/hekate_ctcaer", 0) == 0) {
-                        if (!fs::copyFile(filename, UPDATE_BIN_PATH))
-                            extracted = false;
-                        else if (CurrentCfw::running_cfw == CFW::ams && util::showDialogBoxBlocking(fmt::format("menus/utils/set_hekate_reboot_payload"_i18n, UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH), "menus/common/yes"_i18n, "menus/common/no"_i18n) == 0) {
-                            extracted = fs::copyFile(UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH);
+                    if ((filename == "/atmosphere/package3") || (filename == "/atmosphere/stratosphere.romfs")) {
+                        extractEntry(filename + ".aio", zfile);
+                    }
+                    else {
+                        extractEntry(filename, zfile);
+                        if (filename.substr(0, 14) == "/hekate_ctcaer") {
+                            fs::copyFile(filename, UPDATE_BIN_PATH);
+                            if (CurrentCfw::running_cfw == CFW::ams && util::showDialogBoxBlocking(fmt::format("menus/utils/set_hekate_reboot_payload"_i18n, UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH), "menus/common/yes"_i18n, "menus/common/no"_i18n) == 0) {
+                                fs::copyFile(UPDATE_BIN_PATH, REBOOT_PAYLOAD_PATH);
+                            }
                         }
                     }
                 }
             }
-
-            const int closeResult = unzCloseCurrentFile(zfile);
-            if (!extracted || closeResult != UNZ_OK) {
-                ok = false;
-                break;
-            }
-            ProgressEvent::instance().setStep(i + 1);
-            if (i + 1 < gi.number_entry)
-                ok = unzGoToNextFile(zfile) == UNZ_OK;
+            ProgressEvent::instance().setStep(i);
+            unzCloseCurrentFile(zfile);
+            unzGoToNextFile(zfile);
         }
         unzClose(zfile);
-        if (ok)
-            func();
         ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
-        return ok;
     }
 
     std::vector<std::string> getInstalledTitlesNs()
