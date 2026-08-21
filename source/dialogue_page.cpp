@@ -146,6 +146,25 @@ void DialoguePage_fw::instantiateButtons()
     this->label = new brls::Label(brls::LabelStyle::DIALOG, fmt::format("{}\n\n{}", this->text, "menus/firmware/launch_daybreak"_i18n), true);
 }
 
+void DialoguePage_choice::instantiateButtons()
+{
+    this->button1->setLabel(this->firstLabel);
+    this->button2->setLabel(this->secondLabel);
+
+    this->button1->getClickEvent()->subscribe([this](View*) {
+        if (this->value)
+            *this->value = this->firstValue;
+        this->frame->nextStage();
+    });
+    this->button2->getClickEvent()->subscribe([this](View*) {
+        if (this->value)
+            *this->value = !this->firstValue;
+        this->frame->nextStage();
+    });
+
+    this->label = new brls::Label(brls::LabelStyle::DIALOG, this->text, true);
+}
+
 void DialoguePage_confirm::instantiateButtons()
 {
     this->button1->getClickEvent()->subscribe([this](View* view) {

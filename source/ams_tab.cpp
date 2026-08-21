@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -88,14 +89,37 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
 
 void AmsTab::CreateStagedFrames(const std::string& text, const std::string& url, bool erista, bool ams, bool hekate, const std::string& text_hekate, const std::string& hekate_url)
 {
+    const contentType type = this->type;
+    // These choices are collected on the UI thread before the worker starts.
+    // Opening modal dialogs inside the extraction worker made large CFW packs
+    // appear to hang on «Извлечение» and could leave the staged flow blocked.
+    const auto preserveInis = std::make_shared<bool>(false);
+    const auto deleteContents = std::make_shared<bool>(false);
+
     brls::StagedAppletFrame* stagedFrame = new brls::StagedAppletFrame();
-    stagedFrame->setTitle(this->type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
+    stagedFrame->setTitle(type == contentType::ams_cfw ? "menus/ams_update/getting_ams"_i18n : "menus/ams_update/custom_download"_i18n);
+    stagedFrame->addStage(new ConfirmPage(stagedFrame, text));
     stagedFrame->addStage(
-        new ConfirmPage(stagedFrame, text));
+        new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [url, type]() { util::downloadArchive(url, type); }));
+
+    if (type == contentType::custom || type == contentType::bootloaders || type == contentType::ams_cfw) {
+        // First button is «Да» = overwrite INI = do not preserve it.
+        stagedFrame->addStage(new DialoguePage_choice(
+            stagedFrame, "menus/utils/overwrite_inis"_i18n, preserveInis, false,
+            "menus/common/yes"_i18n, "menus/common/no"_i18n));
+    }
+    if (type == contentType::ams_cfw) {
+        // This question is intentionally ordered «Нет / Да», as in the
+        // previous installer flow: deleting boot2 flags is opt-in.
+        stagedFrame->addStage(new DialoguePage_choice(
+            stagedFrame, "menus/ams_update/delete_sysmodules_flags"_i18n, deleteContents, false,
+            "menus/common/no"_i18n, "menus/common/yes"_i18n));
+    }
+
     stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [&, url]() { util::downloadArchive(url, this->type); }));
-    stagedFrame->addStage(
-        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [&]() { util::extractArchive(this->type); }));
+        new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [type, preserveInis, deleteContents]() {
+            util::extractArchive(type, "", *preserveInis, *deleteContents);
+        }));
     if (hekate) {
         stagedFrame->addStage(
             new DialoguePage_ams(stagedFrame, text_hekate, erista));

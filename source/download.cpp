@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
+#include <limits>
 #include <regex>
 #include <string>
 #include <thread>
@@ -46,25 +48,45 @@ namespace download {
             u_int64_t offset;
             FILE* out;
             Aes128CtrContext* aes;
+            bool write_failed;
         } ntwrk_struct_t;
+
+        static bool flushOutput(ntwrk_struct_t& data)
+        {
+            if (data.offset == 0)
+                return true;
+            // downloadFile(..., output="") uses the fixed buffer only for
+            // small API/text responses; refuse an oversized response rather
+            // than writing past the buffer.
+            if (!data.out)
+                return false;
+            if (fwrite(data.data, 1, static_cast<size_t>(data.offset), data.out) != data.offset) {
+                data.write_failed = true;
+                return false;
+            }
+            data.offset = 0;
+            return true;
+        }
 
         static size_t WriteMemoryCallback(void* contents, size_t size, size_t num_files, void* userp)
         {
-            if (ProgressEvent::instance().getInterupt()) {
+            if (ProgressEvent::instance().getInterupt())
                 return 0;
-            }
-            ntwrk_struct_t* data_struct = (ntwrk_struct_t*)userp;
-            size_t realsize = size * num_files;
 
-            if (realsize + data_struct->offset >= data_struct->data_size) {
-                fwrite(data_struct->data, data_struct->offset, 1, data_struct->out);
-                data_struct->offset = 0;
-            }
-
-            // Guard: a single chunk larger than the buffer cannot be handled safely.
-            if (realsize > data_struct->data_size) {
+            ntwrk_struct_t* data_struct = static_cast<ntwrk_struct_t*>(userp);
+            if (size != 0 && num_files > std::numeric_limits<size_t>::max() / size)
                 return 0;
+            const size_t realsize = size * num_files;
+
+            // A one-mebibyte bounded buffer is used for SD writes. Flush before
+            // adding a chunk that would exceed it and report any write failure
+            // back to curl instead of silently keeping a truncated ZIP.
+            if (realsize > data_struct->data_size - data_struct->offset) {
+                if (!flushOutput(*data_struct))
+                    return 0;
             }
+            if (realsize > data_struct->data_size)
+                return 0;
 
             if (data_struct->aes)
                 aes128CtrCrypt(data_struct->aes, &data_struct->data[data_struct->offset], contents, realsize);
@@ -323,110 +345,126 @@ namespace download {
             aes128CtrContextCreate(chunk.aes, key.c_str(), iv.c_str());
         }
 
-        if (curl) {
-            FILE* fp = fopen(out, "wb");
-            if (fp || *out == 0) {
+        if (!curl) {
+            status_code = 408;
+        }
+        else {
+            FILE* fp = *out != 0 ? fopen(out, "wb") : nullptr;
+            if (*out != 0 && !fp) {
+                status_code = 507;
+            }
+            else {
                 chunk.data = static_cast<u_int8_t*>(malloc(_1MiB));
-                chunk.data_size = _1MiB;
-                chunk.out = fp;
-
-                if (*out != 0) {
-                    can_download = is_mega ? !real_url.empty() : checkSize(curl, url);
+                if (!chunk.data) {
+                    status_code = 507;
                 }
+                else {
+                    chunk.data_size = _1MiB;
+                    chunk.out = fp;
 
-                if (can_download) {
-                    curl_easy_setopt(curl, CURLOPT_URL, real_url.c_str());
-                    curl_easy_setopt(curl, CURLOPT_USERAGENT, API_AGENT);
-                    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-                    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-                    curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
-                    // CRITICAL: checkSize() above ran on this same handle and left
-                    // CURLOPT_TIMEOUT=15s on it. Without clearing it here every real
-                    // download is hard-capped at 15s — small files squeak through but
-                    // anything bigger (the pack, Atmosphere, firmware, cheats
-                    // contents.zip) gets aborted mid-transfer, leaving a truncated
-                    // file that fails the zip-signature check ("HTTP 406") or reports
-                    // a bare timeout ("error 0"). Stalls are still caught by the
-                    // LOW_SPEED guard below, so 0 = "no hard cap" is what we want.
-                    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);
-                    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
-                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
-                    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
-                    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-                    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
+                    if (*out != 0)
+                        can_download = is_mega ? !real_url.empty() : checkSize(curl, url);
 
-                    if (api == OFF) {
-                        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
-                        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
+                    if (!can_download) {
+                        // The preflight uses the remote compressed length and
+                        // requires 2.5x room for the archive and its extraction.
+                        status_code = 507;
                     }
-                    // Retry transient network failures (flaky Wi-Fi, dropped
-                    // connections, DNS hiccups) up to 3 attempts. The previous
-                    // code performed exactly once and never even checked the
-                    // CURLcode, so a connection-level failure surfaced as a bare
-                    // "server unavailable / timeout" (status 0) with nothing in
-                    // the log to explain it. Now the real curl error is logged
-                    // and a shaky connection gets a couple more chances.
-                    CURLcode cres = CURLE_OK;
-                    for (int attempt = 0; attempt < 3; ++attempt) {
-                        if (attempt > 0) {
-                            // Truncate the partially-written file and reset the
-                            // in-memory buffer so the retry starts clean.
-                            if (fp) { fp = freopen(out, "wb", fp); chunk.out = fp; }
-                            chunk.offset = 0;
-                            if (*out != 0 && !fp) break;
+                    else {
+                        curl_easy_setopt(curl, CURLOPT_URL, real_url.c_str());
+                        curl_easy_setopt(curl, CURLOPT_USERAGENT, API_AGENT);
+                        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                        curl_easy_setopt(curl, CURLOPT_NOBODY, 0L);
+                        // checkSize() used this handle for HEAD and set a 15s
+                        // timeout. Clear it for the real archive transfer.
+                        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 0L);
+                        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+                        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+                        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
+                        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+                        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
+
+                        if (api == OFF) {
+                            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+                            curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
                         }
-                        cres = curl_easy_perform(curl);
-                        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
-                        if (ProgressEvent::instance().getInterupt())
-                            break;  // user cancelled — honour it, no retry
-                        if (cres == CURLE_OK && status_code < 500)
-                            break;  // usable response
-                        if (attempt < 2 && ryazhenka::curl::isTransient(cres, status_code)) {
+
+                        CURLcode cres = CURLE_OK;
+                        for (int attempt = 0; attempt < 3; ++attempt) {
+                            if (attempt > 0) {
+                                if (fp) {
+                                    fp = freopen(out, "wb", fp);
+                                    chunk.out = fp;
+                                }
+                                chunk.offset = 0;
+                                chunk.write_failed = false;
+                                if (*out != 0 && !fp) {
+                                    status_code = 507;
+                                    break;
+                                }
+                            }
+
+                            cres = curl_easy_perform(curl);
+                            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+                            if (ProgressEvent::instance().getInterupt())
+                                break;
+                            if (chunk.write_failed) {
+                                status_code = 507;
+                                break;
+                            }
+                            if (cres == CURLE_OK && status_code < 500)
+                                break;
+                            if (attempt < 2 && ryazhenka::curl::isTransient(cres, status_code)) {
+                                ryazhenka::log::warn(
+                                    std::string("downloadFile: transient rc=") + std::to_string((int)cres) +
+                                    " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) + " — retrying");
+                                std::this_thread::sleep_for(
+                                    std::chrono::milliseconds(ryazhenka::kCurlBaseDelayMs * (attempt + 1)));
+                                continue;
+                            }
+                            break;
+                        }
+
+                        if (cres != CURLE_OK && !chunk.write_failed && status_code < 400) {
                             ryazhenka::log::warn(
-                                std::string("downloadFile: transient rc=") + std::to_string((int)cres) +
-                                " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) + " — retrying");
-                            std::this_thread::sleep_for(
-                                std::chrono::milliseconds(ryazhenka::kCurlBaseDelayMs * (attempt + 1)));
-                            continue;
-                        }
-                        break;
-                    }
-                    if (cres != CURLE_OK) {
-                        ryazhenka::log::warn(
-                            std::string("downloadFile: curl FAILED rc=") + std::to_string((int)cres) +
-                            " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) +
-                            " url=" + real_url);
-                        // Turn a curl-level failure into a real error code so the
-                        // caller (and WorkerPage) treat it as a failure. We must
-                        // NOT leave it at 0 — 0 now means "stage did no network"
-                        // and is treated as success. 408 maps to the friendly
-                        // "server unavailable / timeout" message.
-                        if (status_code < 400)
+                                std::string("downloadFile: curl FAILED rc=") + std::to_string((int)cres) +
+                                " (" + curl_easy_strerror(cres) + ") http=" + std::to_string(status_code) +
+                                " url=" + real_url);
                             status_code = 408;
+                        }
+
+                        if (chunk.write_failed || !flushOutput(chunk) || (fp && fflush(fp) != 0)) {
+                            status_code = 507;
+                        }
+                        else if (*out != 0 && status_code >= 200 && status_code < 300) {
+                            curl_off_t expectedSize = -1;
+                            curl_easy_getinfo(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &expectedSize);
+                            std::error_code ec;
+                            const auto written = std::filesystem::file_size(out, ec);
+                            if (ec || (expectedSize >= 0 && written != static_cast<uintmax_t>(expectedSize))) {
+                                ryazhenka::log::warn("downloadFile: downloaded size does not match Content-Length");
+                                status_code = 409;
+                            }
+                        }
                     }
-
-                    if (fp && chunk.offset && can_download)
-                        fwrite(chunk.data, 1, chunk.offset, fp);
-
-                    curl_easy_cleanup(curl);
-                    ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
                 }
             }
+
+            curl_easy_cleanup(curl);
         }
 
-        if (chunk.out)
-            fclose(chunk.out);
-        if (!can_download) {
-            brls::Application::crash("menus/errors/insufficient_storage"_i18n);
-            std::this_thread::sleep_for(std::chrono::microseconds(2000000));
-            brls::Application::quit();
+        if (chunk.out) {
+            if (fclose(chunk.out) != 0 && status_code < 400)
+                status_code = 507;
+            chunk.out = nullptr;
+        }
+        if (!can_download)
             res = {};
-        }
 
-        if (*out == 0) {
+        if (*out == 0 && chunk.data)
             res.assign(chunk.data, chunk.data + chunk.offset);
-        }
 
         free(chunk.data);
         free(chunk.aes);

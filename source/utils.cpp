@@ -153,15 +153,15 @@ namespace util {
         }
     }
 
-    void extractArchive(contentType type, const std::string& version)
+    void extractArchive(contentType type, const std::string& version, bool preserveInis, bool deleteContents)
     {
         chdir(ROOT_PATH);
         crashIfNotArchive(type);
-        // If the downloaded file isn't a real archive, crashIfNotArchive set
-        // status 406 already — stop here so we don't try to unzip garbage and
-        // so WorkerPage still reports that failure.
+        // If the downloaded file has no ZIP signature, do not call minizip.
         if (ProgressEvent::instance().getStatusCode() == 406)
             return;
+
+        bool extracted = true;
         switch (type) {
             case contentType::cheats: {
                 std::vector<std::string> titles = extract::getInstalledTitlesNs();
@@ -172,49 +172,42 @@ namespace util {
             case contentType::fw:
                 fs::removeDir(FIRMWARE_PATH);
                 fs::createTree(FIRMWARE_PATH);
-                extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
+                extracted = extract::extract(FIRMWARE_FILENAME, FIRMWARE_PATH);
                 break;
             case contentType::app:
-                // The Ryazhenka_AIO.zip is laid out as switch/aio-switch-updater/
-                // aio-switch-updater.nro, so it must be unzipped at the SD ROOT
-                // to overwrite the running .nro at NRO_PATH. The old code
-                // extracted into CONFIG_PATH, so the new build landed at
-                // /config/.../switch/... and the actual app was never replaced —
-                // that's why "version was the same, nothing updated".
-                extract::extract(APP_FILENAME, ROOT_PATH);
-                fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
+                // Ryazhenka_AIO.zip contains switch/aio-switch-updater/ and must
+                // be extracted at the SD root to replace the running NRO.
+                extracted = extract::extract(APP_FILENAME, ROOT_PATH);
+                if (extracted)
+                    extracted = fs::copyFile(ROMFS_FORWARDER, FORWARDER_PATH);
                 break;
-            case contentType::custom: {
-                int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                extract::extract(CUSTOM_FILENAME, ROOT_PATH, preserveInis);
+            case contentType::custom:
+                extracted = extract::extract(CUSTOM_FILENAME, ROOT_PATH, preserveInis);
                 break;
-            }
-            case contentType::bootloaders: {
-                int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                extract::extract(BOOTLOADER_FILENAME, ROOT_PATH, preserveInis);
+            case contentType::bootloaders:
+                extracted = extract::extract(BOOTLOADER_FILENAME, ROOT_PATH, preserveInis);
                 break;
-            }
-            case contentType::ams_cfw: {
-                int preserveInis = showDialogBoxBlocking("menus/utils/overwrite_inis"_i18n, "menus/common/yes"_i18n, "menus/common/no"_i18n);
-                int deleteContents = showDialogBoxBlocking("menus/ams_update/delete_sysmodules_flags"_i18n, "menus/common/no"_i18n, "menus/common/yes"_i18n);
-                if (deleteContents == 1)
+            case contentType::ams_cfw:
+                if (deleteContents)
                     removeSysmodulesFlags(AMS_CONTENTS);
-                extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
+                extracted = extract::extract(AMS_FILENAME, ROOT_PATH, preserveInis);
                 break;
-            }
             default:
                 break;
         }
+
+        if (!extracted) {
+            // 409 denotes a local archive or extraction-integrity failure. This
+            // is distinct from HTTP/download errors and keeps the staged flow
+            // from advancing after a partial install.
+            ProgressEvent::instance().setStatusCode(409);
+            ProgressEvent::instance().setStep(ProgressEvent::instance().getMax());
+            return;
+        }
+
         if (type == contentType::ams_cfw || type == contentType::bootloaders || type == contentType::custom)
             fs::copyFiles(COPY_FILES_TXT);
 
-        // Extraction finished OK. Mark the stage as a success — WorkerPage
-        // treats statusCode 0 as a failure (the fork rule that flags real
-        // download errors), and reset() leaves it 0 at the start of every
-        // stage. extract*/extractCheats only ever set progress steps, never a
-        // status, so without this the EXTRACT stage always ended at 0 and
-        // popped a bogus "server unavailable / timeout" right AFTER a perfectly
-        // good download — the bug the user kept hitting on cheats and installs.
         ProgressEvent::instance().setStatusCode(200);
     }
 
@@ -386,6 +379,9 @@ namespace util {
             case 403:
             case 406:
                 res = fmt::format("menus/errors/http_forbidden"_i18n, status_code);
+                break;
+            case 409:
+                res = "Проверка ZIP не пройдена: архив повреждён, неполный или не удалось записать файл на SD-карту.";
                 break;
             case 500:
                 res = fmt::format("{0:}: Internal Server Error", status_code);
