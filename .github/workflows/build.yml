@@ -12,6 +12,10 @@ on:
         description: "Build without publishing a GitHub Release (for smoke tests)"
         type: boolean
         default: false
+      republish_current_release:
+        description: "Replace files in the existing APP_VERSION release without creating a new tag"
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -94,8 +98,8 @@ jobs:
           path: Ryazhenka_AIO.zip
           if-no-files-found: error
 
-      - name: Publish GitHub Release (main branch only, on APP_VERSION bump)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.event.inputs.skip_release != 'true' && steps.version.outputs.tag_exists != 'true'
+      - name: Publish or refresh GitHub Release
+        if: github.ref == 'refs/heads/main' && github.event.inputs.skip_release != 'true' && ((github.event_name == 'push' && steps.version.outputs.tag_exists != 'true') || (github.event_name == 'workflow_dispatch' && inputs.republish_current_release == true))
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -117,6 +121,7 @@ jobs:
             `Makefile` и запушьте в main.
           prerelease: false
           make_latest: "true"
+          overwrite_files: true
           files: |
             ryazhenka-updater.nro
             Ryazhenka_AIO.zip
