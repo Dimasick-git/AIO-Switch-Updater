@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <regex>
@@ -50,12 +49,6 @@ namespace download {
             FILE* out;
             Aes128CtrContext* aes;
             bool write_failed;
-            std::uint64_t received_bytes;
-            // The release server can keep an HTTP connection open after every
-            // Content-Length byte has arrived. Record that condition so the
-            // progress callback can end the transfer instead of leaving the
-            // UI forever at max-1 progress.
-            bool body_complete;
         } ntwrk_struct_t;
 
         static bool flushOutput(ntwrk_struct_t& data)
@@ -101,11 +94,6 @@ namespace download {
                 memcpy(&data_struct->data[data_struct->offset], contents, realsize);
 
             data_struct->offset += realsize;
-            if (realsize > std::numeric_limits<std::uint64_t>::max() - data_struct->received_bytes) {
-                data_struct->write_failed = true;
-                return 0;
-            }
-            data_struct->received_bytes += static_cast<std::uint64_t>(realsize);
             if (data_struct->offset < data_struct->data_size)
                 data_struct->data[data_struct->offset] = 0;
             return realsize;
@@ -113,34 +101,19 @@ namespace download {
 
         int download_progress(void* p, double dltotal, double dlnow, double ultotal, double ulnow)
         {
-            auto* state = static_cast<ntwrk_struct_t*>(p);
-            if (ProgressEvent::instance().getInterupt())
-                return 1;  // Abort cURL immediately when the user presses B.
-            if (dltotal <= 0.0)
-                return 0;
+            if (dltotal <= 0.0) return 0;
 
-            const double fractionDownloaded = dlnow / dltotal;
-            const int counter = static_cast<int>(fractionDownloaded * ProgressEvent::instance().getMax());
+            double fractionDownloaded = dlnow / dltotal;
+            int counter = (int)(fractionDownloaded * ProgressEvent::instance().getMax());  //20 is the number of increments
             ProgressEvent::instance().setStep(std::min(ProgressEvent::instance().getMax() - 1, counter));
             ProgressEvent::instance().setNow(dlnow);
             ProgressEvent::instance().setTotalCount(dltotal);
-            const auto time_now = std::chrono::steady_clock::now();
-            const double elapsed = std::chrono::duration<double>(time_now - time_old).count();
-            if (elapsed > 1.2f) {
-                ProgressEvent::instance().setSpeed((dlnow - dlold) / elapsed);
+            auto time_now = std::chrono::steady_clock::now();
+            double elasped_time = ((std::chrono::duration<double>)(time_now - time_old)).count();
+            if (elasped_time > 1.2f) {
+                ProgressEvent::instance().setSpeed((dlnow - dlold) / elasped_time);
                 dlold = dlnow;
                 time_old = time_now;
-            }
-
-            // GitHub's CDN (or a captive/proxy network) may deliver the entire
-            // declared body yet leave the connection open. All payload bytes
-            // have already passed the write callback at this point. Stop cURL
-            // deliberately; downloadFile accepts this expected callback abort,
-            // flushes the final buffer and validates the exact file size.
-            const auto expectedBytes = static_cast<std::uint64_t>(dltotal);
-            if (state && expectedBytes > 0 && dlnow >= dltotal && state->received_bytes >= expectedBytes) {
-                state->body_complete = true;
-                return 1;
             }
             return 0;
         }
@@ -416,7 +389,6 @@ namespace download {
                         if (api == OFF) {
                             curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
                             curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, download_progress);
-                            curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &chunk);
                         }
 
                         CURLcode cres = CURLE_OK;
@@ -428,8 +400,6 @@ namespace download {
                                 }
                                 chunk.offset = 0;
                                 chunk.write_failed = false;
-                                chunk.received_bytes = 0;
-                                chunk.body_complete = false;
                                 if (*out != 0 && !fp) {
                                     status_code = 507;
                                     break;
@@ -440,12 +410,6 @@ namespace download {
                             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
                             if (ProgressEvent::instance().getInterupt())
                                 break;
-                            // A callback abort after dlnow reached dltotal is a
-                            // successful body transfer, not a network failure.
-                            if (cres == CURLE_ABORTED_BY_CALLBACK && chunk.body_complete &&
-                                status_code >= 200 && status_code < 300) {
-                                cres = CURLE_OK;
-                            }
                             if (chunk.write_failed) {
                                 status_code = 507;
                                 break;
