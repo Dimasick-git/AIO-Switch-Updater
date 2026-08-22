@@ -65,6 +65,10 @@ for p in "${sorted[@]}"; do
         fi
     elif git apply -R --check "$p" 2>/dev/null; then
         echo "[$name] already applied"
+    elif [[ "$name" == "10-remove-deepsea.patch" ]] && grep -Fq 'const bool ryazhenkaOnly = link.first.find("только для Ряженки")' source/ams_tab.cpp && grep -Fq 'CreateDownloadItems(util::getValueFromKey(cfws, "Atmosphère"));' source/ams_tab.cpp; then
+        # Patch 10's DeepSea removal and Atmosphere source selection are present,
+        # but the Ryazhenka-only Hekate guard extends the same hunk.
+        echo "[$name] already integrated in current downstream source"
     elif [[ "$name" == "12-utils-errormsg.patch" ]] && grep -Fq 'bool extractionSuccessful = true;' source/utils.cpp && grep -Fq 'ProgressEvent::instance().setStatusCode(200);' source/utils.cpp; then
         # The downstream behaviour from patch 12 is already present, but later
         # extraction-safety edits changed its surrounding context.

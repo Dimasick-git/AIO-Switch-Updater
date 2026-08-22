@@ -21,6 +21,49 @@
 namespace i18n = brls::i18n;
 using namespace i18n::literals;
 
+namespace {
+
+constexpr const char RyazhenkaHekateTitle[] = "Hekate RYZ + Nyx — только для Ряженки";
+constexpr const char RyazhenkaOnlyWarning[] =
+    "\n\nВНИМАНИЕ: это обновление предназначено только для пользователей прошивки Ряженка.";
+
+bool isRyazhenkaOnlyUpdate(const std::string& title)
+{
+    return title.find("только для Ряженки") != std::string::npos;
+}
+
+bool prepareRyazhenkaHekateInstall()
+{
+    // Remove only files owned by the Hekate-RYZ release before extracting it.
+    // User-created boot entries, payloads, themes and any additional ini files
+    // are deliberately preserved.
+    constexpr const char* managedPaths[] = {
+        "/bootloader/update.bin",
+        "/bootloader/sys",
+        "/bootloader/res",
+        "/bootloader/hekate_ipl.ini",
+        "/bootloader/nyx.ini",
+        "/bootloader/ini/more_configs.ini",
+        "/bootloader/payloads/Lockpick_RCM.bin",
+        "/bootloader/payloads/TegraExplorer.bin",
+        "/payload.bin",
+    };
+
+    std::error_code ec;
+    for (const char* path : managedPaths) {
+        ec.clear();
+        std::filesystem::remove_all(path, ec);
+        if (ec) {
+            ryazhenka::log::error(std::string("Cannot prepare Hekate-RYZ file ") + path + ": " + ec.message());
+            ProgressEvent::instance().setStatusCode(507);
+            return false;
+        }
+    }
+    return true;
+}
+
+}  // namespace
+
 ListDownloadTab::ListDownloadTab(const contentType type, const nlohmann::ordered_json& nxlinks) : brls::List(), type(type), nxlinks(nxlinks)
 {
     this->setDescription();
@@ -115,8 +158,10 @@ void ListDownloadTab::createList(contentType type)
         for (const auto& link : links) {
             const std::string title = link.first;
             const std::string url = link.second;
-            const std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
-            listItem = new brls::ListItem(link.first);
+            const bool ryazhenkaOnly = isRyazhenkaOnlyUpdate(title);
+            std::string text("menus/common/download"_i18n + title + "menus/common/from"_i18n + url);
+            if (ryazhenkaOnly) text += RyazhenkaOnlyWarning;
+            listItem = new brls::ListItem(title);
             listItem->setHeight(LISTITEM_HEIGHT);
             listItem->getClickEvent()->subscribe([this, type, text, url, title](brls::View* view) {
                 // Three URL markers are recognised in nx-links.json. They all
@@ -159,16 +204,19 @@ void ListDownloadTab::createList(contentType type)
                     resolved = "@latest_asset:" + resolved.substr(14);
                 }
                 if (resolved.compare(0, 14, "@latest_asset:") == 0) {
-                    const std::string slug = resolved.substr(14);
+                    const std::string repoAndAsset = resolved.substr(14);
+                    const auto selectorPos = repoAndAsset.find('#');
+                    const std::string repo = repoAndAsset.substr(0, selectorPos);
+                    const std::string selector = selectorPos == std::string::npos ? "" : repoAndAsset.substr(selectorPos + 1);
                     // Payloads / hekate IPL want the raw .bin asset, not the
                     // .zip the archive flow unpacks. Everything else prefers
                     // the .zip artefact (the default).
                     const std::string preferExt =
                         (type == contentType::payloads || type == contentType::hekate_ipl)
                             ? ".bin" : ".zip";
-                    resolved = download::resolveLatestAssetUrl(slug, preferExt);
+                    resolved = download::resolveLatestAssetUrl(repo, preferExt, selector);
                     if (resolved.empty()) {
-                        util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, slug));
+                        util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, repo));
                         return;
                     }
                 }
@@ -199,7 +247,17 @@ void ListDownloadTab::createList(contentType type)
                     if (type != contentType::cheats || (this->newCheatsVer != this->currentCheatsVer && this->newCheatsVer != "offline")) {
                         stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/downloading"_i18n, [this, type, resolved]() { util::downloadArchive(resolved, type); }));
                     }
-                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type]() { util::extractArchive(type, this->newCheatsVer); }));
+                    stagedFrame->addStage(new WorkerPage(stagedFrame, "menus/common/extracting"_i18n, [this, type, title]() {
+                        if (type == contentType::bootloaders && title == RyazhenkaHekateTitle) {
+                            // Do not remove anything unless the download is a valid ZIP.
+                            if (!util::isArchive(BOOTLOADER_FILENAME)) {
+                                ProgressEvent::instance().setStatusCode(406);
+                                return;
+                            }
+                            if (!prepareRyazhenkaHekateInstall()) return;
+                        }
+                        util::extractArchive(type, this->newCheatsVer);
+                    }));
                     if (ppsspp_reorg) {
                         // Upstream PPSSPP.zip extracts /PPSSPP_GL.nro and
                         // /assets/* at SD root; the emulator expects them at

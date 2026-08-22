@@ -15,15 +15,15 @@ namespace download {
     long downloadPage(const std::string& url, std::string& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
     long getRequest(const std::string& url, nlohmann::ordered_json& res, const std::vector<std::string>& headers = {}, const std::string& body = "");
 
-    /// Resolve "@latest_asset:OWNER/REPO" into a concrete browser_download_url
-    /// by querying api.github.com/repos/<slug>/releases/latest. Prefers the
-    /// first asset whose name ends in `preferExt` (default ".zip", the
-    /// user-facing archive; pass ".bin" for raw payloads like hekate); falls
-    /// back to assets[0] if none match. Needed because GitHub release assets
-    /// embed the version in their filename, which breaks the
-    /// releases/latest/download/<stable-name> alias.
-    /// Returns empty string on any failure (network, parse, no assets).
-    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt = ".zip");
+    /// Resolve "@latest_asset:OWNER/REPO[#ASSET_OR_GLOB]" into a concrete
+    /// browser_download_url by querying api.github.com/repos/<slug>/releases/latest.
+    /// When `assetSelector` is supplied, it must match the desired release asset
+    /// exactly or by one '*' wildcard; no unrelated asset is used as a fallback.
+    /// Otherwise, the first asset ending in `preferExt` (default ".zip") is used,
+    /// then assets[0]. This keeps versioned GitHub asset filenames usable while
+    /// allowing Ryazhenka to select its own branded archive deterministically.
+    /// Returns empty string on any failure (network, parse, selector mismatch).
+    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt = ".zip", const std::string& assetSelector = "");
 
     /// Returns up to ~50 releases for `<slug>` as (tag_name, zip_url) pairs,
     /// freshest first. Each release's URL is picked the same way

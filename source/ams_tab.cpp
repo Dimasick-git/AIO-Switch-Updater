@@ -22,7 +22,11 @@ namespace {
 std::string resolveReleaseMarker(const std::string& value) {
     constexpr std::string_view kLatest = "@latest_asset:";
     if (value.rfind(kLatest, 0) == 0) {
-        return download::resolveLatestAssetUrl(value.substr(kLatest.size()));
+        const std::string repoAndAsset = value.substr(kLatest.size());
+        const auto selectorPos = repoAndAsset.find('#');
+        const std::string repo = repoAndAsset.substr(0, selectorPos);
+        const std::string selector = selectorPos == std::string::npos ? "" : repoAndAsset.substr(selectorPos + 1);
+        return download::resolveLatestAssetUrl(repo, ".zip", selector);
     }
     return value;
 }
@@ -54,12 +58,15 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
         }
 
         for (const auto& link : links) {
-            bool pack = link.first.contains("[PACK]");
+            const bool pack = link.first.contains("[PACK]");
+            const bool ryazhenkaOnly = link.first.find("только для Ряженки") != std::string::npos;
             std::string url = link.second;
             std::string text("menus/common/download"_i18n + link.first + "menus/common/from"_i18n + url);
+            if (ryazhenkaOnly)
+                text += "\n\nВНИМАНИЕ: это обновление предназначено только для пользователей прошивки Ряженка.";
             listItem = new brls::ListItem(link.first);
             listItem->setHeight(LISTITEM_HEIGHT);
-            listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams](brls::View* view) {
+            listItem->getClickEvent()->subscribe([this, text, text_hekate, url, hekate_url, hekate, pack, ams, ryazhenkaOnly](brls::View* view) {
                 if (!erista && !std::filesystem::exists(MARIKO_PAYLOAD_PATH)) {
                     brls::Application::crash("menus/errors/mariko_payload_missing"_i18n);
                     return;
@@ -69,7 +76,9 @@ bool AmsTab::CreateDownloadItems(const nlohmann::ordered_json& cfw_links, bool h
                     util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, url));
                     return;
                 }
-                const bool installHekate = hekate && !pack && !hekate_url.empty();
+                // Hekate-RYZ is paired only with the branded Ryazhenka entry;
+                // selecting original Atmosphere must never replace a user's bootloader.
+                const bool installHekate = hekate && ryazhenkaOnly && !pack && !hekate_url.empty();
                 const std::string resolvedHekate = installHekate ? resolveReleaseMarker(hekate_url) : std::string{};
                 if (installHekate && resolvedHekate.empty()) {
                     util::showDialogBoxInfo(fmt::format("menus/errors/no_internet_url"_i18n, hekate_url));

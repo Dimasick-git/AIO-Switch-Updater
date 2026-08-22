@@ -587,15 +587,27 @@ namespace download {
         return out;
     }
 
-    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt)
+    static bool matchesAssetSelector(const std::string& name, const std::string& selector)
+    {
+        if (selector.empty()) return true;
+        const auto wildcard = selector.find('*');
+        if (wildcard == std::string::npos) return name == selector;
+        // One wildcard is enough for stable versioned release assets and avoids
+        // turning the catalog into a permissive pattern language.
+        if (selector.find('*', wildcard + 1) != std::string::npos) return false;
+        const std::string prefix = selector.substr(0, wildcard);
+        const std::string suffix = selector.substr(wildcard + 1);
+        return name.size() >= prefix.size() + suffix.size() &&
+               name.compare(0, prefix.size(), prefix) == 0 &&
+               name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
+
+    std::string resolveLatestAssetUrl(const std::string& slug, const std::string& preferExt, const std::string& assetSelector)
     {
         // GitHub /releases/latest returns the most recent non-draft,
-        // non-prerelease release with its full asset list. We prefer the first
-        // asset whose name ends in preferExt (".zip" for archives we unpack,
-        // ".bin" for raw payloads); if none match we fall back to assets[0].
-        // This covers ovlSysmodules / Mission-Control / NX_Firmware / hekate
-        // where the asset filename embeds the version and breaks the
-        // releases/latest/download/<filename> alias.
+        // non-prerelease release with its full asset list. A configured selector
+        // is strict: if the expected branded asset is absent, fail visibly rather
+        // than installing some other ZIP from the same release.
         const std::string api_url = "https://api.github.com/repos/" + slug + "/releases/latest";
         nlohmann::ordered_json payload;
         const long http = getRequest(api_url, payload);
@@ -607,16 +619,23 @@ namespace download {
         for (const auto& asset : payload["assets"]) {
             if (!asset.contains("browser_download_url") || !asset["browser_download_url"].is_string()) continue;
             const std::string url = asset["browser_download_url"].get<std::string>();
-            if (fallback.empty()) fallback = url;
             if (asset.contains("name") && asset["name"].is_string()) {
                 const std::string name = asset["name"].get<std::string>();
+                if (!assetSelector.empty()) {
+                    if (matchesAssetSelector(name, assetSelector)) return url;
+                    continue;
+                }
+                if (fallback.empty()) fallback = url;
                 if (extLen > 0 && name.size() >= extLen &&
                     name.compare(name.size() - extLen, extLen, preferExt) == 0) {
                     return url;
                 }
             }
+            else if (assetSelector.empty() && fallback.empty()) {
+                fallback = url;
+            }
         }
-        return fallback;
+        return assetSelector.empty() ? fallback : std::string{};
     }
 
 }  // namespace download
