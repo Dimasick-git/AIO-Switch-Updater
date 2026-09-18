@@ -22,7 +22,7 @@ DATA		:=	data
 INCLUDES	:=	include /lib/borealis/library/include/borealis/extern/nlohmann
 APP_TITLE	:=	Ryazhenka Updater
 APP_AUTHOR	:=	Dimasick-git
-APP_VERSION :=	2.24.0
+APP_VERSION :=	2.24.1
 TARGET		:=	ryazhenka-updater
 
 ROMFS				:=	resources
