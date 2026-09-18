@@ -124,11 +124,11 @@ namespace JC {
         nlohmann::ordered_json profilesJson;
         download::getRequest(JC_COLOR_URL, profilesJson);
         if (profilesJson.empty()) {
-            profilesJson = {{{"L_BTN", "0A1E0A"},
-                             {"L_JC", "82FF96"},
-                             {"R_BTN", "0A1E28"},
-                             {"R_JC", "96F5F5"},
-                             {"name", "Animal Crossing: New Horizons"}}};
+            // Keep the complete catalogue in the NRO as a reliable fallback.
+            // Network access is not guaranteed on every Switch setup, and the
+            // old single-profile fallback made Animal Crossing appear to be the
+            // only available theme.
+            profilesJson = fs::parseJsonFile("romfs:/jc_profiles.json");
         }
         for (const auto& profiles : {fs::parseJsonFile(path), profilesJson}) {
             for (const auto& x : profiles.items()) {
